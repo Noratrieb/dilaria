@@ -4,7 +4,20 @@ use std::iter::Peekable;
 use std::str::CharIndices;
 
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
-struct Span(usize);
+pub struct Span {
+    start: usize,
+    len: usize,
+}
+
+impl Span {
+    pub fn new(start: usize, len: usize) -> Self {
+        Self { start, len }
+    }
+
+    pub fn single(start: usize) -> Self {
+        Self { start, len: 1 }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Token<'code> {
@@ -108,6 +121,27 @@ impl<'code> Lexer<'code> {
             .map(|(_, char)| *char == expected)
             .unwrap_or(false)
     }
+
+    fn maybe_next_char(
+        &mut self,
+        expect_char: char,
+        true_type: TokenType,
+        false_type: TokenType,
+        start: usize,
+    ) -> Token {
+        if self.expect(expect_char) {
+            let _ = self.code.next(); // consume =
+            Token {
+                span: Span::new(start, 2),
+                kind: true_type,
+            }
+        } else {
+            Token {
+                span: Span::single(start),
+                kind: false_type,
+            }
+        }
+    }
 }
 
 impl<'code> Iterator for Lexer<'code> {
@@ -122,20 +156,31 @@ impl<'code> Iterator for Lexer<'code> {
                 LexState::StrLit(_) => {}
                 LexState::NumLit(_) => {}
                 LexState::Ident(_) => {}
-                LexState::Equal(_) => {}
+                LexState::Equal(start) => {
+                    self.maybe_next_char('=', TokenType::EqualEqual, TokenType::Equal, start);
+                }
                 LexState::Bang(start) => {
                     return if self.expect('=') {
-                        let _ = self.code.next();
+                        let _ = self.code.next(); // consume =;
                         Some(Ok(Token {
-                            span: Span(start),
+                            span: Span::single(start),
                             kind: TokenType::BangEqual,
                         }))
                     } else {
                         Some(Err(LexError))
-                    }
+                    };
                 }
-                LexState::GreaterThan(_) => {}
-                LexState::LessThan(_) => {}
+                LexState::GreaterThan(start) => {
+                    self.maybe_next_char(
+                        '=',
+                        TokenType::GreaterThanEqual,
+                        TokenType::GreaterThan,
+                        start,
+                    );
+                }
+                LexState::LessThan(start) => {
+                    self.maybe_next_char('=', TokenType::LessThanEqual, TokenType::LessThan, start);
+                }
             }
         }
     }
