@@ -1,3 +1,4 @@
+mod alloc;
 mod lex;
 mod parse;
 mod string;
