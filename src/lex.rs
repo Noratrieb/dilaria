@@ -182,7 +182,7 @@ impl<'code> Iterator for Lexer<'code> {
                             kind: TokenType::BangEqual,
                         };
                     } else {
-                        return Some(Err(LexError));
+                        return Some(Err(LexError("Expected '=' after '!'".to_string())));
                     };
                 }
                 '>' => {
@@ -201,10 +201,30 @@ impl<'code> Iterator for Lexer<'code> {
                         start,
                     );
                 }
+                '"' => {
+                    let mut escaped = false;
+                    let end = loop {
+                        match self.code.next() {
+                            Some((end, '"')) if !escaped => break end,
+                            Some((_, '\\')) if !escaped => escaped = true,
+                            Some((_, _)) => escaped = false,
+                            None => {
+                                return Some(Err(LexError(
+                                    "reached EOF expecting '\"'".to_string(),
+                                )))
+                            }
+                        }
+                    };
+                    break Token::new(
+                        Span::new(start, end - start),
+                        TokenType::String(&self.src[start + 1..end]),
+                    );
+                }
                 char => {
                     if char.is_ascii_digit() {
                         let mut had_dot = false;
                         let end = loop {
+                            // peek here because the character signaling the end should not be consumed
                             match self.code.peek() {
                                 Some((_, '.')) if !had_dot => {
                                     let _ = self.code.next();
@@ -218,7 +238,9 @@ impl<'code> Iterator for Lexer<'code> {
                             }
                         };
                         let number_str = &self.src[start..end];
-                        let number = number_str.parse().map_err(|_| LexError);
+                        let number = number_str
+                            .parse::<f64>()
+                            .map_err(|err| LexError(err.to_string()));
                         match number {
                             Ok(number) => {
                                 break Token::new(
@@ -246,7 +268,7 @@ fn is_valid_ident_start(char: char) -> bool {
 }
 
 #[derive(Debug)]
-pub struct LexError;
+pub struct LexError(String);
 
 #[cfg(test)]
 mod test {
@@ -350,6 +372,26 @@ mod test {
                 Number(123456789.1234),
                 Comma,
                 Number(64785903.0),
+            ],
+        )
+    }
+
+    #[test]
+    fn string() {
+        lex_test(r#""uwu""#, vec![String("uwu")])
+    }
+
+    #[test]
+    fn strings() {
+        lex_test(
+            r#"(  "hi" "uwu" "\"uwu\""  "no \\ u" )"#,
+            vec![
+                ParenO,
+                String("hi"),
+                String("uwu"),
+                String("\"uwu\""),
+                String("no \\ u"),
+                ParenC,
             ],
         )
     }
