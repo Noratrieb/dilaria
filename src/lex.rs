@@ -25,6 +25,19 @@ pub struct Token<'code> {
     kind: TokenType<'code>,
 }
 
+impl<'code> Token<'code> {
+    fn single_span(start: usize, kind: TokenType<'code>) -> Token<'code> {
+        Self {
+            span: Span::single(start),
+            kind,
+        }
+    }
+
+    fn new(span: Span, kind: TokenType<'code>) -> Token<'code> {
+        Self { span, kind }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType<'code> {
     // keywords
@@ -92,26 +105,14 @@ pub enum TokenType<'code> {
 #[derive(Debug, Clone)]
 pub struct Lexer<'code> {
     code: Peekable<CharIndices<'code>>,
-    state: LexState,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum LexState {
-    Init,
-    StrLit(usize),
-    NumLit(usize),
-    Ident(usize),
-    Equal(usize),
-    Bang(usize),
-    GreaterThan(usize),
-    LessThan(usize),
+    src: &'code str,
 }
 
 impl<'code> Lexer<'code> {
     pub fn lex(code: &'code str) -> Self {
         Self {
             code: code.char_indices().peekable(),
-            state: LexState::Init,
+            src: code,
         }
     }
 
@@ -122,15 +123,15 @@ impl<'code> Lexer<'code> {
             .unwrap_or(false)
     }
 
-    fn maybe_next_char(
+    fn maybe_next_char<'a>(
         &mut self,
         expect_char: char,
-        true_type: TokenType,
-        false_type: TokenType,
+        true_type: TokenType<'a>,
+        false_type: TokenType<'a>,
         start: usize,
-    ) -> Token {
+    ) -> Token<'a> {
         if self.expect(expect_char) {
-            let _ = self.code.next(); // consume =
+            let _ = self.code.next(); // consume first one
             Token {
                 span: Span::new(start, 2),
                 kind: true_type,
@@ -148,43 +149,208 @@ impl<'code> Iterator for Lexer<'code> {
     type Item = Result<Token<'code>, LexError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            match self.state {
-                LexState::Init => match self.code.next() {
-                    _ => {}
-                },
-                LexState::StrLit(_) => {}
-                LexState::NumLit(_) => {}
-                LexState::Ident(_) => {}
-                LexState::Equal(start) => {
-                    self.maybe_next_char('=', TokenType::EqualEqual, TokenType::Equal, start);
+        let token = loop {
+            let (start, char) = self.code.next()?;
+            match char {
+                _ if char.is_whitespace() => {}
+                '+' => break Token::single_span(start, TokenType::Plus),
+                '-' => break Token::single_span(start, TokenType::Minus),
+                '*' => break Token::single_span(start, TokenType::Asterisk),
+                '/' => break Token::single_span(start, TokenType::Slash),
+                '%' => break Token::single_span(start, TokenType::Percent),
+                '{' => break Token::single_span(start, TokenType::BraceO),
+                '}' => break Token::single_span(start, TokenType::BraceC),
+                '[' => break Token::single_span(start, TokenType::BracketO),
+                ']' => break Token::single_span(start, TokenType::BracketC),
+                '(' => break Token::single_span(start, TokenType::ParenO),
+                ')' => break Token::single_span(start, TokenType::ParenC),
+                '.' => break Token::single_span(start, TokenType::Dot),
+                ',' => break Token::single_span(start, TokenType::Comma),
+                '=' => {
+                    break self.maybe_next_char(
+                        '=',
+                        TokenType::EqualEqual,
+                        TokenType::Equal,
+                        start,
+                    );
                 }
-                LexState::Bang(start) => {
-                    return if self.expect('=') {
+                '!' => {
+                    if self.expect('=') {
                         let _ = self.code.next(); // consume =;
-                        Some(Ok(Token {
+                        break Token {
                             span: Span::single(start),
                             kind: TokenType::BangEqual,
-                        }))
+                        };
                     } else {
-                        Some(Err(LexError))
+                        return Some(Err(LexError));
                     };
                 }
-                LexState::GreaterThan(start) => {
-                    self.maybe_next_char(
+                '>' => {
+                    break self.maybe_next_char(
                         '=',
                         TokenType::GreaterThanEqual,
                         TokenType::GreaterThan,
                         start,
                     );
                 }
-                LexState::LessThan(start) => {
-                    self.maybe_next_char('=', TokenType::LessThanEqual, TokenType::LessThan, start);
+                '<' => {
+                    break self.maybe_next_char(
+                        '=',
+                        TokenType::LessThanEqual,
+                        TokenType::LessThan,
+                        start,
+                    );
+                }
+                char => {
+                    if char.is_ascii_digit() {
+                        let mut had_dot = false;
+                        let end = loop {
+                            match self.code.peek() {
+                                Some((_, '.')) if !had_dot => {
+                                    let _ = self.code.next();
+                                    had_dot = true;
+                                }
+                                Some((_, next_char)) if next_char.is_ascii_digit() => {
+                                    let _ = self.code.next();
+                                }
+                                Some((end, _)) => break *end,
+                                None => break self.src.len(), // reached EOF, so parse this number
+                            }
+                        };
+                        let number_str = &self.src[start..end];
+                        let number = number_str.parse().map_err(|_| LexError);
+                        match number {
+                            Ok(number) => {
+                                break Token::new(
+                                    Span::new(start, end - start),
+                                    TokenType::Number(number),
+                                )
+                            }
+                            Err(err) => return Some(Err(err)),
+                        }
+                    }
                 }
             }
-        }
+        };
+
+        Some(Ok(token))
     }
+}
+
+fn is_valid_ident_part(char: char) -> bool {
+    char.is_alphanumeric()
+}
+
+fn is_valid_ident_start(char: char) -> bool {
+    char.is_alphabetic() || char == '_'
 }
 
 #[derive(Debug)]
 pub struct LexError;
+
+#[cfg(test)]
+mod test {
+    use crate::lex::Lexer;
+    use crate::lex::TokenType::{self, *};
+
+    fn lex_types(str: &str) -> Vec<TokenType> {
+        let lexer = Lexer::lex(str);
+        lexer.map(|token| token.unwrap().kind).collect::<Vec<_>>()
+    }
+
+    fn lex_test(code: &str, expected: Vec<TokenType>) {
+        assert_eq!(lex_types(code), expected)
+    }
+
+    #[test]
+    fn smiley_face() {
+        lex_test(
+            ">>.<<",
+            vec![GreaterThan, GreaterThan, Dot, LessThan, LessThan],
+        )
+    }
+
+    #[test]
+    fn greater_than_less_than_equal() {
+        lex_test(
+            ">= <= == < < >=",
+            vec![
+                GreaterThanEqual,
+                LessThanEqual,
+                EqualEqual,
+                LessThan,
+                LessThan,
+                GreaterThanEqual,
+            ],
+        )
+    }
+
+    #[test]
+    fn no_no_no() {
+        lex_test("!= != = !=", vec![BangEqual, BangEqual, Equal, BangEqual])
+    }
+
+    #[test]
+    fn braces_brackets_parens() {
+        lex_test(
+            "{([]]}",
+            vec![BraceO, ParenO, BracketO, BracketC, BracketC, BraceC],
+        );
+    }
+
+    #[test]
+    fn braces_brackets_parens_whitespace() {
+        lex_test(
+            "{     (   [      ]         ]   
+            
+            }",
+            vec![BraceO, ParenO, BracketO, BracketC, BracketC, BraceC],
+        );
+    }
+
+    #[test]
+    fn fancy_stuff() {
+        lex_test(
+            ". ,- * -, .",
+            vec![Dot, Comma, Minus, Asterisk, Minus, Comma, Dot],
+        )
+    }
+
+    #[test]
+    fn greeting() {
+        lex_test("-.- /%", vec![Minus, Dot, Minus, Slash, Percent])
+    }
+
+    #[test]
+    fn countdown() {
+        lex_test(
+            "3 . . 2 . . 1 . . 0",
+            vec![
+                Number(3.0),
+                Dot,
+                Dot,
+                Number(2.0),
+                Dot,
+                Dot,
+                Number(1.0),
+                Dot,
+                Dot,
+                Number(0.0),
+            ],
+        )
+    }
+
+    #[test]
+    fn larger_numbers() {
+        lex_test(
+            "123456789, 123456789.1234, 64785903",
+            vec![
+                Number(123456789.0),
+                Comma,
+                Number(123456789.1234),
+                Comma,
+                Number(64785903.0),
+            ],
+        )
+    }
+}
