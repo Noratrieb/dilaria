@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::rc::Rc;
 
 pub struct Alloc {
@@ -9,7 +11,8 @@ pub enum Object {
 }
 
 /// Reference to an interned String
-struct IStr {
+#[derive(Debug)]
+pub struct IStr {
     /// This will be changed to a raw pointer once a tracing GC is implemented
     data: Rc<str>,
     hash: u64,
@@ -26,14 +29,6 @@ mod table {
 
     #[derive(Debug, Default)]
     struct StringHashBuilder;
-
-    impl std::hash::BuildHasher for StringHashBuilder {
-        type Hasher = ();
-
-        fn build_hasher(&self) -> Self::Hasher {
-            todo!()
-        }
-    }
 
     struct PrimitveHasher {}
 }

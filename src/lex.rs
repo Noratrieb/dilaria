@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::iter::Peekable;
 use std::str::CharIndices;
 
@@ -55,7 +53,7 @@ pub enum TokenType<'code> {
     Or,
     Not,
     // literals
-    String(&'code str),
+    String(String),
     Number(f64),
     // ident
     Ident(&'code str),
@@ -153,6 +151,25 @@ impl<'code> Iterator for Lexer<'code> {
             let (start, char) = self.code.next()?;
             match char {
                 _ if char.is_whitespace() => {}
+                '#' => {
+                    // only peek so we don't skip the \n if the # is at the end
+                    if let Some((_, '#')) = self.code.peek() {
+                        let _ = self.code.next();
+                        loop {
+                            if let Some((_, '#')) | None = self.code.next() {
+                                if let Some((_, '#')) | None = self.code.next() {
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        loop {
+                            if let Some((_, '\n')) | None = self.code.next() {
+                                break;
+                            }
+                        }
+                    }
+                }
                 '+' => break Token::single_span(start, TokenType::Plus),
                 '-' => break Token::single_span(start, TokenType::Minus),
                 '*' => break Token::single_span(start, TokenType::Asterisk),
@@ -202,12 +219,16 @@ impl<'code> Iterator for Lexer<'code> {
                     );
                 }
                 '"' => {
+                    let mut buffer = String::new();
                     let mut escaped = false;
                     let end = loop {
                         match self.code.next() {
                             Some((end, '"')) if !escaped => break end,
                             Some((_, '\\')) if !escaped => escaped = true,
-                            Some((_, _)) => escaped = false,
+                            Some((_, char)) => {
+                                escaped = false;
+                                buffer.push(char);
+                            }
                             None => {
                                 return Some(Err(LexError(
                                     "reached EOF expecting '\"'".to_string(),
@@ -215,10 +236,7 @@ impl<'code> Iterator for Lexer<'code> {
                             }
                         }
                     };
-                    break Token::new(
-                        Span::new(start, end - start),
-                        TokenType::String(&self.src[start + 1..end]),
-                    );
+                    break Token::new(Span::new(start, end - start), TokenType::String(buffer));
                 }
                 char => {
                     if char.is_ascii_digit() {
@@ -250,6 +268,23 @@ impl<'code> Iterator for Lexer<'code> {
                             }
                             Err(err) => return Some(Err(err)),
                         }
+                    } else if is_valid_ident_start(char) {
+                        // it must be an identifier
+                        let end = loop {
+                            match self.code.peek() {
+                                Some((_, char)) if is_valid_ident_part(*char) => {
+                                    let _ = self.code.next(); // consume identifier part
+                                }
+                                Some((end, _)) => break *end,
+                                None => break self.src.len(),
+                            }
+                        };
+                        break Token::new(
+                            Span::new(start, end),
+                            keyword_or_ident(&self.src[start..end]),
+                        );
+                    } else {
+                        return Some(Err(LexError(format!("Invalid character: {}", char))));
                     }
                 }
             }
@@ -259,8 +294,54 @@ impl<'code> Iterator for Lexer<'code> {
     }
 }
 
+fn keyword_or_ident(name: &str) -> TokenType {
+    // make this efficient using the trie pattern
+    // ignore that unicode exists, because all keywords are in ascii
+    // we need to use bytes though instead of indexing into the string directly to avoid panics
+    let bs = name.as_bytes();
+    let len = bs.len();
+    // there are no single letter keywords
+    if len < 2 {
+        return TokenType::Ident(name);
+    }
+    match bs[0] {
+        // loop && let
+        b'l' => match bs[1] {
+            b'o' if len == 4 && bs[2..4] == *b"op" => TokenType::Loop,
+            b'e' if len == 3 && bs[2] == b't' => TokenType::Let,
+            _ => TokenType::Ident(name),
+        },
+        // for && fn && false
+        b'f' => match bs[1] {
+            b'n' if len == 2 => TokenType::Fn,
+            b'o' if len == 3 && bs[2] == b'r' => TokenType::For,
+            b'a' if len == 5 && bs[2..5] == *b"lse" => TokenType::False,
+            _ => TokenType::Ident(name),
+        },
+        // if
+        b'i' if len == 2 && bs[1] == b'f' => TokenType::If,
+        // else
+        b'e' if len == 4 && bs[1..4] == *b"lse" => TokenType::Else,
+        // while
+        b'w' if len == 5 && bs[1..5] == *b"hile" => TokenType::While,
+        // true
+        b't' if len == 4 && bs[1..4] == *b"rue" => TokenType::True,
+        // null && not
+        b'n' => match bs[1] {
+            b'u' if len == 4 && bs[2..4] == *b"ll" => TokenType::Null,
+            b'o' if len == 3 && bs[2] == b't' => TokenType::Not,
+            _ => TokenType::Ident(name),
+        },
+        // and
+        b'a' if len == 3 && bs[1..3] == *b"nd" => TokenType::And,
+        // or
+        b'o' if len == 2 && bs[1] == b'r' => TokenType::Or,
+        _ => TokenType::Ident(name),
+    }
+}
+
 fn is_valid_ident_part(char: char) -> bool {
-    char.is_alphanumeric()
+    char.is_alphanumeric() || char == '_'
 }
 
 fn is_valid_ident_start(char: char) -> bool {
@@ -274,6 +355,8 @@ pub struct LexError(String);
 mod test {
     use crate::lex::Lexer;
     use crate::lex::TokenType::{self, *};
+
+    type StdString = std::string::String;
 
     fn lex_types(str: &str) -> Vec<TokenType> {
         let lexer = Lexer::lex(str);
@@ -339,6 +422,44 @@ mod test {
     }
 
     #[test]
+    fn comments() {
+        lex_test("fn # fn", vec![Fn]);
+    }
+
+    #[test]
+    fn long_multiline_comment() {
+        lex_test(
+            "fn ## hello i am something
+         
+         i span multiple lines
+
+        will you love me? 🥺🥺🥺🥺🥺
+
+    pls :) o(*￣▽￣*)ブ
+     
+       i like the indentation here ngl |     sneak for -> ## for ## <- sneak for
+         ## and",
+            vec![Fn, For, And],
+        )
+    }
+
+    #[test]
+    fn terminate_multiline_comment_correctly() {
+        lex_test(
+            "fn ## # no not here :( ## let # ## <- this is commented out 
+            # so no multiline comment
+            ## 
+            
+            here it starts
+            # let #
+            # # and
+            ## or
+            ",
+            vec![Fn, Let, Or],
+        )
+    }
+
+    #[test]
     fn greeting() {
         lex_test("-.- /%", vec![Minus, Dot, Minus, Slash, Percent])
     }
@@ -378,7 +499,7 @@ mod test {
 
     #[test]
     fn string() {
-        lex_test(r#""uwu""#, vec![String("uwu")])
+        lex_test(r#""uwu""#, vec![String("uwu".to_string())])
     }
 
     #[test]
@@ -387,11 +508,120 @@ mod test {
             r#"(  "hi" "uwu" "\"uwu\""  "no \\ u" )"#,
             vec![
                 ParenO,
-                String("hi"),
-                String("uwu"),
-                String("\"uwu\""),
-                String("no \\ u"),
+                String("hi".to_string()),
+                String("uwu".to_string()),
+                String("\"uwu\"".to_string()),
+                String("no \\ u".to_string()),
                 ParenC,
+            ],
+        )
+    }
+
+    #[test]
+    fn keywords() {
+        lex_test(
+            "let fn if else loop while for true false null and not or",
+            vec![
+                Let, Fn, If, Else, Loop, While, For, True, False, Null, And, Not, Or,
+            ],
+        )
+    }
+
+    #[test]
+    fn keyword_and_ident() {
+        lex_test(
+            "let variable be a loop if false is true",
+            vec![
+                Let,
+                Ident("variable"),
+                Ident("be"),
+                Ident("a"),
+                Loop,
+                If,
+                False,
+                Ident("is"),
+                True,
+            ],
+        )
+    }
+
+    #[test]
+    fn not_quite_a_keyword() {
+        let words = [
+            "letter",
+            "fori",
+            "fnfn",
+            "iffy",
+            "bloop",
+            "loopy_yeah",
+            "whileTrue",
+            "truefalse",
+            "falsetrue",
+            "nullability",
+            "rot",
+            "ornot",
+            "nor",
+            "andnowQuestionMark",
+            "notOrAnd",
+        ];
+        let sentences = words
+            .iter()
+            .map(|word| format!("{} ", word))
+            .collect::<StdString>();
+        let expected = words.map(TokenType::Ident).to_vec();
+
+        lex_test(&sentences, expected)
+    }
+
+    #[test]
+    fn serious_program() {
+        lex_test(
+            r#"let string = "hallol"
+        let number = 5
+        let me out ._.
+        fn world() {
+            if number == 5 or true == false and not false {
+                print("Hello \\ World!")
+            }
+        }"#,
+            vec![
+                Let,
+                Ident("string"),
+                Equal,
+                String("hallol".to_string()),
+                Let,
+                Ident("number"),
+                Equal,
+                Number(5.0),
+                Let,
+                Ident("me"),
+                Ident("out"),
+                Dot,
+                Ident("_"),
+                Dot,
+                Fn,
+                Ident("world"),
+                ParenO,
+                ParenC,
+                BraceO,
+                If,
+                Ident("number"),
+                EqualEqual,
+                Number(5.0),
+                Or,
+                True,
+                EqualEqual,
+                False,
+                And,
+                Not,
+                False,
+                BraceO,
+                Ident("print"),
+                ParenO,
+                String("Hello \\ World!".to_string()),
+                ParenC,
+                BraceC,
+                BraceC,
             ],
         )
     }

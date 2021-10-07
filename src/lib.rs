@@ -1,7 +1,6 @@
 mod alloc;
 mod lex;
 mod parse;
-mod string;
 
 pub fn run_program(program: &str) {
     let lexer = lex::Lexer::lex(program);

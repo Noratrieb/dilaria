@@ -58,6 +58,14 @@ Comments using `#`
 # hi!
 ```
 
+Multiline comments using `##` until `##`
+```
+##
+hi
+comment
+##
+```
+
 There are many native functions, that can easily be customized and added/removed by the host
 
 ```
