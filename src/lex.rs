@@ -20,7 +20,7 @@ impl Span {
 #[derive(Debug, Clone)]
 pub struct Token<'code> {
     span: Span,
-    kind: TokenType<'code>,
+    pub(crate) kind: TokenType<'code>,
 }
 
 impl<'code> Token<'code> {
