@@ -35,6 +35,7 @@ pub enum TokenType<'code> {
     Loop,
     While,
     For,
+    Break,
     True,
     False,
     Null,
@@ -322,6 +323,8 @@ fn keyword_or_ident(name: &str) -> TokenType {
         b'e' if len == 4 && bs[1..4] == *b"lse" => TokenType::Else,
         // while
         b'w' if len == 5 && bs[1..5] == *b"hile" => TokenType::While,
+        // break
+        b'b' if len == 5 && bs[1..5] == *b"reak" => TokenType::Break,
         // true
         b't' if len == 4 && bs[1..4] == *b"rue" => TokenType::True,
         // null && not
@@ -568,9 +571,9 @@ mod test {
     #[test]
     fn keywords() {
         lex_test(
-            "let fn if else loop while for true false null and not or",
+            "let fn if else loop while break for true false null and not or",
             vec![
-                Let, Fn, If, Else, Loop, While, For, True, False, Null, And, Not, Or,
+                Let, Fn, If, Else, Loop, While, Break, For, True, False, Null, And, Not, Or,
             ],
         )
     }
@@ -611,6 +614,8 @@ mod test {
             "nor",
             "andnowQuestionMark",
             "notOrAnd",
+            "breakMe",
+            "Ibreak",
         ];
         let sentences = words
             .iter()

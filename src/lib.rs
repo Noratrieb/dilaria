@@ -1,4 +1,5 @@
 mod alloc;
+mod ast;
 mod errors;
 mod lex;
 mod parse;

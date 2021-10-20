@@ -125,6 +125,7 @@ _ is dynamically and *strongly* typed
 `loop`
 `while`
 `for`
+`break`
 
 #### Values
 `true`
