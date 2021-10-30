@@ -162,6 +162,7 @@ impl<'code> Iterator for Lexer<'code> {
                         }
                     }
                 }
+                ';' => break Token::single_span(start, TokenType::Semi),
                 '+' => break Token::single_span(start, TokenType::Plus),
                 '-' => break Token::single_span(start, TokenType::Minus),
                 '*' => break Token::single_span(start, TokenType::Asterisk),
