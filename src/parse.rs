@@ -273,14 +273,13 @@ impl CompilerError for ParseErr<'_> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{BinaryOp, BinaryOpKind};
-    use crate::lex::{Token, TokenType};
+    use crate::ast::BinaryOp;
     use crate::parse::Parser;
     use prelude::*;
 
     mod prelude {
         pub(super) use super::{parser, test_literal_bin_op, token};
-        pub(super) use crate::ast::{Expr, Literal};
+        pub(super) use crate::ast::{BinaryOpKind, Expr, Literal};
         pub(super) use crate::errors::Span;
         pub(super) use crate::lex::{Token, TokenType};
     }
@@ -292,9 +291,9 @@ mod test {
         }
     }
 
-    fn parser<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Parser<'a> {
+    fn parser(tokens: Vec<Token>) -> Parser {
         Parser {
-            tokens: tokens.into().into_iter().peekable(),
+            tokens: tokens.into_iter().peekable(),
         }
     }
 
@@ -318,9 +317,68 @@ mod test {
         );
     }
 
+    mod comparison {
+        use super::prelude::*;
+
+        fn parse_comparison(tokens: Vec<Token>) -> Expr {
+            let mut parser = parser(tokens);
+            parser.comparison().unwrap()
+        }
+
+        #[test]
+        fn greater() {
+            test_literal_bin_op(
+                TokenType::GreaterThan,
+                BinaryOpKind::Greater,
+                parse_comparison,
+            );
+        }
+
+        #[test]
+        fn greater_equal() {
+            test_literal_bin_op(
+                TokenType::GreaterThanEqual,
+                BinaryOpKind::GreaterEqual,
+                parse_comparison,
+            );
+        }
+
+        #[test]
+        fn less() {
+            test_literal_bin_op(TokenType::LessThan, BinaryOpKind::Less, parse_comparison);
+        }
+
+        #[test]
+        fn less_equal() {
+            test_literal_bin_op(
+                TokenType::LessThanEqual,
+                BinaryOpKind::LessEqual,
+                parse_comparison,
+            );
+        }
+    }
+
+    mod term {
+        use super::prelude::*;
+
+        fn parse_term(tokens: Vec<Token>) -> Expr {
+            let mut parser = parser(tokens);
+            parser.term().unwrap()
+        }
+
+        #[test]
+        fn add() {
+            test_literal_bin_op(TokenType::Plus, BinaryOpKind::Add, parse_term);
+        }
+
+        #[test]
+        fn sub() {
+            test_literal_bin_op(TokenType::Minus, BinaryOpKind::Sub, parse_term);
+        }
+    }
+
     mod factor {
         use super::prelude::*;
-        use crate::ast::{BinaryOp, BinaryOpKind};
 
         fn parse_factor(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
@@ -345,7 +403,6 @@ mod test {
 
     mod unary {
         use super::prelude::*;
-        use crate::ast::{UnaryOp, UnaryOpKind};
 
         fn parse_unary(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
