@@ -1,84 +1,102 @@
+#![allow(dead_code)]
+
+/// imagine interning or something here
+pub type Symbol = String;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Program(pub Block);
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Block(pub Vec<Stmt>);
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
-    VariableDecl(VariableDecl),
+    Declaration(Declaration),
     Assignment(Assignment),
     FnDecl(FnDecl),
+    If(IfStmt),
+    Loop(Block),
+    While(WhileStmt),
     Break,
     Return(Option<Expr>),
-    Conditional(Conditional),
-    Loop(Block),
-    WhileLoop(WhileLoop),
-    ForLoop(Box<ForLoop>),
     Expr(Expr),
 }
 
-pub struct VariableDecl {
-    name: String,
-    init: Option<Expr>,
+#[derive(Debug, Clone, PartialEq)]
+pub struct Declaration {
+    name: Symbol,
+    init: Expr,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Assignment {
-    pub lhs: Expr,
+    pub lhs: Symbol,
     pub rhs: Expr,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct FnDecl {
-    pub name: String,
-    pub params: Vec<String>,
+    pub name: Symbol,
+    pub params: Vec<Symbol>,
     pub body: Block,
 }
 
-pub struct Conditional {
+#[derive(Debug, Clone, PartialEq)]
+pub struct IfStmt {
     pub condition: Expr,
     pub body: Block,
-    pub else_block: Option<Block>,
+    pub else_part: Box<ElsePart>,
 }
 
-pub struct WhileLoop {
+#[derive(Debug, Clone, PartialEq)]
+pub enum ElsePart {
+    Else(Block),
+    ElseIf(IfStmt),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WhileStmt {
     pub cond: Expr,
     pub body: Block,
 }
 
-pub struct ForLoop {
-    pub init: Stmt,
-    pub cond: Expr,
-    pub post: Stmt,
-    pub body: Block,
-}
-
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Literal(Literal),
     UnaryOp,
     BinaryOp,
-    Call,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
     String(String),
     Number(f64),
     Array(Vec<Expr>),
-    Object, // todo
+    Object,
     Boolean(bool),
     Null,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct UnaryOp {
     pub expr: Expr,
     pub kind: UnaryOpKind,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum UnaryOpKind {
     Not,
     Neg,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct BinaryOp {
     pub lhs: Expr,
     pub rhs: Expr,
     pub kind: BinaryOpKind,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum BinaryOpKind {
     And,
     Or,
@@ -95,6 +113,7 @@ pub enum BinaryOpKind {
     Mod,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum Call {
     Function(Expr, Vec<Expr>),
     Field(Expr, Vec<Expr>),

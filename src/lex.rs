@@ -48,6 +48,8 @@ pub enum TokenType<'code> {
     // ident
     Ident(&'code str),
     // punctuation
+    /// ;
+    Semi,
     /// +
     Plus,
     /// -
