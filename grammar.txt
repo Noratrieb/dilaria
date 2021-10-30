@@ -61,7 +61,7 @@
 
 <factor> ::= <unary> { ( "*" | "/" | "%" ) <unary> }
 
-<unary> ::= ( "not" | "-" ) <primary>
+<unary> ::= { ( "not" | "-" ) } <primary>
 
 <primary> ::= <NUMBER>
             | <STRING>

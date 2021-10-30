@@ -92,29 +92,78 @@ impl<'code> Parser<'code> {
     }
 
     fn factor(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+        let lhs = self.unary()?;
+        match self.peek() {
+            Some(Token {
+                kind: TokenType::Asterisk,
+                ..
+            }) => {
+                let _ = self.next();
+                let rhs = self.unary()?;
+                Ok(Expr::BinaryOp(Box::new(BinaryOp {
+                    span: lhs.span().extend(rhs.span()),
+                    lhs,
+                    rhs,
+                    kind: BinaryOpKind::Mul,
+                })))
+            }
+            Some(Token {
+                kind: TokenType::Slash,
+                ..
+            }) => {
+                let _ = self.next();
+                let rhs = self.unary()?;
+                Ok(Expr::BinaryOp(Box::new(BinaryOp {
+                    span: lhs.span().extend(rhs.span()),
+                    lhs,
+                    rhs,
+                    kind: BinaryOpKind::Div,
+                })))
+            }
+            Some(Token {
+                kind: TokenType::Percent,
+                ..
+            }) => {
+                let _ = self.next();
+                let rhs = self.unary()?;
+                Ok(Expr::BinaryOp(Box::new(BinaryOp {
+                    span: lhs.span().extend(rhs.span()),
+                    lhs,
+                    rhs,
+                    kind: BinaryOpKind::Mod,
+                })))
+            }
+            _ => Ok(lhs),
+        }
     }
 
     fn unary(&mut self) -> ParseResult<'code, Expr> {
-        let next = self.next().ok_or(ParseErr::EOF)?;
-        match next.kind {
-            TokenType::Not => {
+        match self.peek() {
+            Some(Token {
+                kind: TokenType::Not,
+                ..
+            }) => {
+                let unary_op_span = self.next().unwrap().span;
                 let expr = self.expression()?;
                 Ok(Expr::UnaryOp(Box::new(UnaryOp {
-                    span: next.span,
+                    span: unary_op_span.extend(expr.span()),
                     expr,
                     kind: UnaryOpKind::Not,
                 })))
             }
-            TokenType::Minus => {
+            Some(Token {
+                kind: TokenType::Minus,
+                ..
+            }) => {
+                let unary_op_span = self.next().unwrap().span;
                 let expr = self.expression()?;
                 Ok(Expr::UnaryOp(Box::new(UnaryOp {
-                    span: next.span,
+                    span: unary_op_span.extend(expr.span()),
                     expr,
                     kind: UnaryOpKind::Neg,
                 })))
             }
-            _ => todo!(),
+            _ => self.primary(),
         }
     }
 
@@ -160,10 +209,12 @@ impl<'code> Parser<'code> {
 
     // helpers
 
+    #[must_use]
     fn next(&mut self) -> Option<Token<'code>> {
         self.tokens.next()
     }
 
+    #[must_use]
     fn peek(&mut self) -> Option<&Token<'code>> {
         self.tokens.peek()
     }
@@ -206,6 +257,13 @@ mod test {
     use crate::lex::{Token, TokenType};
     use crate::parse::Parser;
 
+    mod prelude {
+        pub(super) use super::{parser, token};
+        pub(super) use crate::ast::{Expr, Literal};
+        pub(super) use crate::errors::Span;
+        pub(super) use crate::lex::{Token, TokenType};
+    }
+
     fn token(kind: TokenType) -> Token {
         Token {
             span: crate::errors::Span::dummy(),
@@ -219,17 +277,63 @@ mod test {
         }
     }
 
+    mod factor {
+        use super::prelude::*;
+        use crate::ast::{BinaryOp, BinaryOpKind};
+
+        fn parse_factor<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Expr {
+            let mut parser = parser(tokens);
+            parser.factor().unwrap()
+        }
+
+        fn test_literal_factor(token_type: TokenType, expected_op_kind: BinaryOpKind) {
+            let tokens = [TokenType::Number(10.0), token_type, TokenType::Number(4.0)].map(token);
+            let factor = parse_factor(tokens);
+            assert_eq!(
+                Expr::BinaryOp(Box::new(BinaryOp {
+                    span: Span::dummy(),
+                    lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                    rhs: Expr::Literal(Literal::Number(4.0, Span::dummy())),
+                    kind: expected_op_kind
+                })),
+                factor
+            );
+        }
+
+        #[test]
+        fn multiply() {
+            test_literal_factor(TokenType::Asterisk, BinaryOpKind::Mul);
+        }
+
+        #[test]
+        fn divide() {
+            test_literal_factor(TokenType::Slash, BinaryOpKind::Div);
+        }
+
+        #[test]
+        fn modulo() {
+            test_literal_factor(TokenType::Percent, BinaryOpKind::Mod);
+        }
+    }
+
     mod unary {
-        use super::{parser, token};
-        use crate::ast::{Expr, Literal};
-        use crate::lex::{Token, TokenType};
+        use super::prelude::*;
+
+        fn parse_unary<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Expr {
+            let mut parser = parser(tokens);
+            parser.primary().unwrap()
+        }
+
+        #[test]
+        fn number_literal() {
+            let tokens = [TokenType::Number(10.0)].map(token);
+            let unary = parse_unary(tokens);
+            assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), unary);
+        }
     }
 
     mod primary {
-        use super::{parser, token};
-        use crate::ast::{Expr, Literal};
-        use crate::errors::Span;
-        use crate::lex::{Token, TokenType};
+        use super::prelude::*;
 
         fn parse_primary<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Expr {
             let mut parser = parser(tokens);
