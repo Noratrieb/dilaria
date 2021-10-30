@@ -43,7 +43,7 @@ impl<'code> Parser<'code> {
 
     fn statement(&mut self) -> ParseResult<'code, Stmt> {
         let expr = self.expression()?;
-        self.expect(TokenType::Semi);
+        self.expect(TokenType::Semi)?;
         Ok(Stmt::Expr(expr))
     }
 
@@ -96,7 +96,11 @@ impl<'code> Parser<'code> {
     }
 
     fn unary(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+        match self.next().ok_or(ParseErr::EOF)?.kind {
+            TokenType::Not => todo!(),
+            TokenType::Minus => todo!(),
+            _ => todo!(),
+        }
     }
 
     fn primary(&mut self) -> ParseResult<'code, Expr> {
@@ -106,8 +110,20 @@ impl<'code> Parser<'code> {
             TokenType::False => Ok(Expr::Literal(Literal::Boolean(false))),
             TokenType::True => Ok(Expr::Literal(Literal::Boolean(true))),
             TokenType::Null => Ok(Expr::Literal(Literal::Null)),
-            TokenType::BraceO => todo!(),
-            TokenType::BracketO => todo!(),
+            TokenType::BraceO => {
+                self.expect(TokenType::BraceC)?;
+                Ok(Expr::Literal(Literal::Object))
+            }
+            TokenType::BracketO => {
+                let mut elements = Vec::new();
+                while self.peek().ok_or(ParseErr::EOF)?.kind != TokenType::BracketC {
+                    let expr = self.expression()?;
+                    elements.push(expr);
+                    self.expect(TokenType::Comma)?;
+                }
+                self.expect(TokenType::BracketC);
+                Ok(Expr::Literal(Literal::Array(elements)))
+            }
             TokenType::ParenO => todo!(),
             _ => todo!(),
         }
@@ -163,5 +179,84 @@ impl CompilerError for ParseErr<'_> {
 
     fn note(&self) -> Option<String> {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::lex::{Token, TokenType};
+    use crate::parse::Parser;
+
+    fn token(kind: TokenType) -> Token {
+        Token {
+            span: crate::errors::Span::dummy(),
+            kind,
+        }
+    }
+
+    fn parser<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Parser<'a> {
+        Parser {
+            tokens: tokens.into().into_iter().peekable(),
+        }
+    }
+
+    mod primary {
+        use crate::ast::{Expr, Literal};
+        use crate::lex::{Token, TokenType};
+        use crate::parse::test::{parser, token};
+
+        fn parse_primary<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Expr {
+            let mut parser = parser(tokens);
+            parser.primary().unwrap()
+        }
+
+        #[test]
+        fn string() {
+            let tokens = [TokenType::Number(10.0)].map(token);
+            let literal = parse_primary(tokens);
+            assert_eq!(Expr::Literal(Literal::Number(10.0)), literal);
+        }
+
+        #[test]
+        fn number() {
+            let tokens = [TokenType::String("uwu".to_string())].map(token);
+            let literal = parse_primary(tokens);
+            assert_eq!(Expr::Literal(Literal::String("uwu".to_string())), literal);
+        }
+
+        #[test]
+        fn empty_object() {
+            let tokens = [TokenType::BraceO, TokenType::BraceC].map(token);
+            let literal = parse_primary(tokens);
+            assert_eq!(Expr::Literal(Literal::Object), literal);
+        }
+
+        #[test]
+        fn empty_array() {
+            let tokens = [TokenType::BracketO, TokenType::BracketC].map(token);
+            let literal = parse_primary(tokens);
+            assert_eq!(Expr::Literal(Literal::Array(Vec::new())), literal);
+        }
+
+        #[test]
+        fn r#false() {
+            let tokens = [TokenType::False].map(token);
+            let literal = parse_primary(tokens);
+            assert_eq!(Expr::Literal(Literal::Boolean(false)), literal);
+        }
+
+        #[test]
+        fn r#true() {
+            let tokens = [TokenType::True].map(token);
+            let literal = parse_primary(tokens);
+            assert_eq!(Expr::Literal(Literal::Boolean(true)), literal);
+        }
+
+        #[test]
+        fn null() {
+            let tokens = [TokenType::Null].map(token);
+            let literal = parse_primary(tokens);
+            assert_eq!(Expr::Literal(Literal::Null), literal);
+        }
     }
 }

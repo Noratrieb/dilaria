@@ -1,3 +1,6 @@
+//!
+//! The lex module lexes the source code into Tokens
+
 use crate::errors::{CompilerError, Span};
 use std::iter::Peekable;
 use std::str::CharIndices;

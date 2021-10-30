@@ -1,3 +1,6 @@
+//!
+//! This modules handles error reporting in the interpreter
+
 use std::fmt::Debug;
 
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
@@ -17,6 +20,10 @@ impl Span {
 
     pub fn single(start: usize) -> Self {
         Self { start, len: 1 }
+    }
+
+    pub fn dummy() -> Self {
+        Self { start: 0, len: 0 }
     }
 }
 
