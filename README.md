@@ -95,7 +95,7 @@ print(true and false or false or true and false);
 Loops and conditionals
 
 ```
-let x = true
+let x = true;
 if x {
     print("true!");
 } else {
