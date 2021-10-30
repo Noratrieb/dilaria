@@ -3,27 +3,53 @@
 
 use std::fmt::Debug;
 
-#[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
-pub struct Span {
-    start: usize,
-    len: usize,
-}
+pub use span::Span;
 
-impl Span {
-    pub fn new(start: usize, len: usize) -> Self {
-        Self { start, len }
+mod span {
+
+    #[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
+    pub struct Span {
+        pub start: usize,
+        pub end: usize,
     }
 
-    pub fn start_end(start: usize, end: usize) -> Self {
-        Self::new(start, end - start)
-    }
+    impl Span {
+        pub fn new(start: usize, len: usize) -> Self {
+            Self {
+                start,
+                end: start + len,
+            }
+        }
 
-    pub fn single(start: usize) -> Self {
-        Self { start, len: 1 }
-    }
+        pub fn start_end(start: usize, end: usize) -> Self {
+            Self::new(start, end)
+        }
 
-    pub fn dummy() -> Self {
-        Self { start: 0, len: 0 }
+        pub fn single(start: usize) -> Self {
+            Self {
+                start,
+                end: start + 1,
+            }
+        }
+
+        pub fn dummy() -> Self {
+            Self { start: 0, end: 0 }
+        }
+
+        /// Extends the span by the second one
+        /// The other one has to be after the current one
+        pub fn extend(&self, other: Span) -> Span {
+            debug_assert!(self.start <= other.start);
+            debug_assert!(self.end <= other.end);
+            Span {
+                start: self.start,
+                end: other.end,
+            }
+        }
+
+        pub fn len(&self) -> usize {
+            self.end - self.start
+        }
     }
 }
 
@@ -57,7 +83,7 @@ where
                 "{}{}{}{}",
                 " ".repeat(offset_on_line),
                 RED,
-                "^".repeat(error.span().len),
+                "^".repeat(error.span().len()),
                 RESET,
             );
             if let Some(note) = error.note() {
