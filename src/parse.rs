@@ -84,65 +84,74 @@ impl<'code> Parser<'code> {
     }
 
     fn comparison(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+        let lhs = self.term()?;
+        match self.peek().map(|token| &token.kind) {
+            Some(TokenType::GreaterThan) => {
+                let _ = self.next();
+                let rhs = self.term()?;
+                self.binary_op(lhs, BinaryOpKind::Greater, rhs)
+            }
+            Some(TokenType::GreaterThanEqual) => {
+                let _ = self.next();
+                let rhs = self.term()?;
+                self.binary_op(lhs, BinaryOpKind::GreaterEqual, rhs)
+            }
+            Some(TokenType::LessThan) => {
+                let _ = self.next();
+                let rhs = self.term()?;
+                self.binary_op(lhs, BinaryOpKind::Less, rhs)
+            }
+            Some(TokenType::LessThanEqual) => {
+                let _ = self.next();
+                let rhs = self.term()?;
+                self.binary_op(lhs, BinaryOpKind::LessEqual, rhs)
+            }
+            _ => Ok(lhs),
+        }
     }
 
     fn term(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+        let lhs = self.factor()?;
+        match self.peek().map(|token| &token.kind) {
+            Some(TokenType::Plus) => {
+                let _ = self.next();
+                let rhs = self.factor()?;
+                self.binary_op(lhs, BinaryOpKind::Add, rhs)
+            }
+            Some(TokenType::Minus) => {
+                let _ = self.next();
+                let rhs = self.factor()?;
+                self.binary_op(lhs, BinaryOpKind::Sub, rhs)
+            }
+            _ => Ok(lhs),
+        }
     }
 
     fn factor(&mut self) -> ParseResult<'code, Expr> {
         let lhs = self.unary()?;
-        match self.peek() {
-            Some(Token {
-                kind: TokenType::Asterisk,
-                ..
-            }) => {
+        match self.peek().map(|token| &token.kind) {
+            Some(TokenType::Asterisk) => {
                 let _ = self.next();
                 let rhs = self.unary()?;
-                Ok(Expr::BinaryOp(Box::new(BinaryOp {
-                    span: lhs.span().extend(rhs.span()),
-                    lhs,
-                    rhs,
-                    kind: BinaryOpKind::Mul,
-                })))
+                self.binary_op(lhs, BinaryOpKind::Mul, rhs)
             }
-            Some(Token {
-                kind: TokenType::Slash,
-                ..
-            }) => {
+            Some(TokenType::Slash) => {
                 let _ = self.next();
                 let rhs = self.unary()?;
-                Ok(Expr::BinaryOp(Box::new(BinaryOp {
-                    span: lhs.span().extend(rhs.span()),
-                    lhs,
-                    rhs,
-                    kind: BinaryOpKind::Div,
-                })))
+                self.binary_op(lhs, BinaryOpKind::Div, rhs)
             }
-            Some(Token {
-                kind: TokenType::Percent,
-                ..
-            }) => {
+            Some(TokenType::Percent) => {
                 let _ = self.next();
                 let rhs = self.unary()?;
-                Ok(Expr::BinaryOp(Box::new(BinaryOp {
-                    span: lhs.span().extend(rhs.span()),
-                    lhs,
-                    rhs,
-                    kind: BinaryOpKind::Mod,
-                })))
+                self.binary_op(lhs, BinaryOpKind::Mod, rhs)
             }
             _ => Ok(lhs),
         }
     }
 
     fn unary(&mut self) -> ParseResult<'code, Expr> {
-        match self.peek() {
-            Some(Token {
-                kind: TokenType::Not,
-                ..
-            }) => {
+        match self.peek().map(|token| &token.kind) {
+            Some(TokenType::Not) => {
                 let unary_op_span = self.next().unwrap().span;
                 let expr = self.expression()?;
                 Ok(Expr::UnaryOp(Box::new(UnaryOp {
@@ -151,10 +160,7 @@ impl<'code> Parser<'code> {
                     kind: UnaryOpKind::Not,
                 })))
             }
-            Some(Token {
-                kind: TokenType::Minus,
-                ..
-            }) => {
+            Some(TokenType::Minus) => {
                 let unary_op_span = self.next().unwrap().span;
                 let expr = self.expression()?;
                 Ok(Expr::UnaryOp(Box::new(UnaryOp {
@@ -163,7 +169,8 @@ impl<'code> Parser<'code> {
                     kind: UnaryOpKind::Neg,
                 })))
             }
-            _ => self.primary(),
+            Some(_) => self.primary(),
+            None => todo!(),
         }
     }
 
@@ -207,7 +214,18 @@ impl<'code> Parser<'code> {
         todo!()
     }
 
-    // helpers
+    // other helpers
+
+    fn binary_op(&mut self, lhs: Expr, kind: BinaryOpKind, rhs: Expr) -> ParseResult<'code, Expr> {
+        Ok(Expr::BinaryOp(Box::new(BinaryOp {
+            span: lhs.span().extend(rhs.span()),
+            lhs,
+            rhs,
+            kind,
+        })))
+    }
+
+    // token helpers
 
     #[must_use]
     fn next(&mut self) -> Option<Token<'code>> {
@@ -235,6 +253,7 @@ impl<'code> Parser<'code> {
 #[derive(Debug)]
 pub enum ParseErr<'code> {
     MismatchedKind { expected: TokenType<'code> },
+    InvalidToken(TokenType<'code>),
     EOF,
 }
 
