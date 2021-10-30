@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::ast::*;
+use crate::errors::{CompilerError, Span};
 use crate::lex::{Token, TokenType};
 use std::iter::Peekable;
 
@@ -70,6 +71,58 @@ impl<'code> Parser<'code> {
         todo!()
     }
 
+    fn logical_or(&mut self) -> ParseResult<'code, Expr> {
+        todo!()
+    }
+
+    fn logical_and(&mut self) -> ParseResult<'code, Expr> {
+        todo!()
+    }
+
+    fn equality(&mut self) -> ParseResult<'code, Expr> {
+        todo!()
+    }
+
+    fn comparison(&mut self) -> ParseResult<'code, Expr> {
+        todo!()
+    }
+
+    fn term(&mut self) -> ParseResult<'code, Expr> {
+        todo!()
+    }
+
+    fn factor(&mut self) -> ParseResult<'code, Expr> {
+        todo!()
+    }
+
+    fn unary(&mut self) -> ParseResult<'code, Expr> {
+        todo!()
+    }
+
+    fn primary(&mut self) -> ParseResult<'code, Expr> {
+        match self.next().ok_or(ParseErr::EOF)?.kind {
+            TokenType::String(literal) => Ok(Expr::Literal(Literal::String(literal))),
+            TokenType::Number(literal) => Ok(Expr::Literal(Literal::Number(literal))),
+            TokenType::False => Ok(Expr::Literal(Literal::Boolean(false))),
+            TokenType::True => Ok(Expr::Literal(Literal::Boolean(true))),
+            TokenType::Null => Ok(Expr::Literal(Literal::Null)),
+            TokenType::BraceO => todo!(),
+            TokenType::BracketO => todo!(),
+            TokenType::ParenO => todo!(),
+            _ => todo!(),
+        }
+    }
+
+    fn object_literal(&mut self) -> ParseResult<'code, Expr> {
+        self.expect(TokenType::BraceO)?;
+        self.expect(TokenType::BraceC)?;
+        Ok(Expr::Literal(Literal::Object))
+    }
+
+    fn array_literal(&mut self) -> ParseResult<'code, Expr> {
+        todo!()
+    }
+
     // helpers
 
     fn next(&mut self) -> Option<Token<'code>> {
@@ -88,7 +141,7 @@ impl<'code> Parser<'code> {
                 Err(ParseErr::MismatchedKind { expected: kind })
             }
         } else {
-            Err(ParseErr::UnexpectedEOF { expected: kind })
+            Err(ParseErr::EOF)
         }
     }
 }
@@ -96,5 +149,19 @@ impl<'code> Parser<'code> {
 #[derive(Debug)]
 pub enum ParseErr<'code> {
     MismatchedKind { expected: TokenType<'code> },
-    UnexpectedEOF { expected: TokenType<'code> },
+    EOF,
+}
+
+impl CompilerError for ParseErr<'_> {
+    fn span(&self) -> Span {
+        todo!()
+    }
+
+    fn message(&self) -> String {
+        todo!()
+    }
+
+    fn note(&self) -> Option<String> {
+        todo!()
+    }
 }
