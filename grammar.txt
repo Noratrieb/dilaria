@@ -1,0 +1,76 @@
+# todo: calls (property access and function calls)
+
+
+<program> ::= <block>
+
+<block> ::= "{" { <statement> } "}"
+
+<statement> ::= <declaration>
+              | <assignment>
+              | <fn-decl>
+              | <if-stmt>
+              | <loop-stmt>
+              | <while-stmt>
+              | <break-stmt>
+              | <return-stmt>
+              | <expression-statement>
+
+
+<declaration> ::= "let" <IDENT> "=" <expression> ";"
+
+
+<assignment> ::= <IDENT> "=" <expression> ";"
+
+
+<fn-decl> ::= "fn" <IDENT> <fn-args> <block>
+
+<fn-args> ::= "(" { <IDENT> { "," } } ")"
+
+
+<if-stmt> ::= "if" <expression> <block> { <else-stmt> }
+
+<else-stmt> ::= "else" ( <if-stmt> | <block> )
+
+
+<loop-stmt> ::= "loop" <block>
+
+
+<while-stmt> ::= "while" <expression> <block>
+
+
+<break-stmt> ::= "break" ";"
+
+
+<return-stmt> ::= "return" { <expression> } ";"
+
+
+<expression-statement> ::= <expression> ";"
+
+
+<expression> ::= <equality>
+
+<logical-or> ::= <logical-and> { "or" <logical-and> }
+
+<logical-and> ::= <equality> { "and" <equality> }
+
+<equality> ::= <comparison> { ("!=" | "==") <comparison> }
+
+<comparison> ::= <term> { (">" | "<" | ">=" | "<=") <term> }
+
+<term> ::= <factor> { ("-" | "+") <factor> }
+
+<factor> ::= <unary> { ( "*" | "/" | "%" ) <unary> }
+
+<unary> ::= ( "not" | "-" ) <primary>
+
+<primary> ::= <NUMBER>
+            | <STRING>
+            | <object-literal>
+            | <array-literal>
+            | "false"
+            | "true"
+            | "null"
+
+<object-literal> = "{}"
+
+<array-literal> = "[" { <expression> { "," } } "]"
