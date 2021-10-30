@@ -273,11 +273,13 @@ impl CompilerError for ParseErr<'_> {
 
 #[cfg(test)]
 mod test {
+    use crate::ast::{BinaryOp, BinaryOpKind};
     use crate::lex::{Token, TokenType};
     use crate::parse::Parser;
+    use prelude::*;
 
     mod prelude {
-        pub(super) use super::{parser, token};
+        pub(super) use super::{parser, test_literal_bin_op, token};
         pub(super) use crate::ast::{Expr, Literal};
         pub(super) use crate::errors::Span;
         pub(super) use crate::lex::{Token, TokenType};
@@ -296,79 +298,119 @@ mod test {
         }
     }
 
+    fn test_literal_bin_op<F: FnOnce(Vec<Token<'_>>) -> Expr>(
+        token_type: TokenType,
+        expected_op_kind: BinaryOpKind,
+        parser: F,
+    ) {
+        let tokens = [TokenType::Number(10.0), token_type, TokenType::Number(4.0)]
+            .map(token)
+            .into();
+        let factor = parser(tokens);
+        assert_eq!(
+            Expr::BinaryOp(Box::new(BinaryOp {
+                span: Span::dummy(),
+                lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                rhs: Expr::Literal(Literal::Number(4.0, Span::dummy())),
+                kind: expected_op_kind
+            })),
+            factor
+        );
+    }
+
     mod factor {
         use super::prelude::*;
         use crate::ast::{BinaryOp, BinaryOpKind};
 
-        fn parse_factor<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Expr {
+        fn parse_factor(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
             parser.factor().unwrap()
         }
 
-        fn test_literal_factor(token_type: TokenType, expected_op_kind: BinaryOpKind) {
-            let tokens = [TokenType::Number(10.0), token_type, TokenType::Number(4.0)].map(token);
-            let factor = parse_factor(tokens);
-            assert_eq!(
-                Expr::BinaryOp(Box::new(BinaryOp {
-                    span: Span::dummy(),
-                    lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
-                    rhs: Expr::Literal(Literal::Number(4.0, Span::dummy())),
-                    kind: expected_op_kind
-                })),
-                factor
-            );
-        }
-
         #[test]
         fn multiply() {
-            test_literal_factor(TokenType::Asterisk, BinaryOpKind::Mul);
+            test_literal_bin_op(TokenType::Asterisk, BinaryOpKind::Mul, parse_factor);
         }
 
         #[test]
         fn divide() {
-            test_literal_factor(TokenType::Slash, BinaryOpKind::Div);
+            test_literal_bin_op(TokenType::Slash, BinaryOpKind::Div, parse_factor);
         }
 
         #[test]
         fn modulo() {
-            test_literal_factor(TokenType::Percent, BinaryOpKind::Mod);
+            test_literal_bin_op(TokenType::Percent, BinaryOpKind::Mod, parse_factor);
         }
     }
 
     mod unary {
         use super::prelude::*;
+        use crate::ast::{UnaryOp, UnaryOpKind};
 
-        fn parse_unary<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Expr {
+        fn parse_unary(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
-            parser.primary().unwrap()
+            parser.unary().unwrap()
         }
 
         #[test]
         fn number_literal() {
-            let tokens = [TokenType::Number(10.0)].map(token);
+            let tokens = [TokenType::Number(10.0)].map(token).into();
             let unary = parse_unary(tokens);
             assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), unary);
         }
+
+        // needs expr support
+
+        //
+        // #[test]
+        // fn not() {
+        //     let tokens = [TokenType::Not, TokenType::True].map(token).into();
+        //     let unary = parse_unary(tokens);
+        //     assert_eq!(
+        //         Expr::UnaryOp(Box::new(UnaryOp {
+        //             span: Span::dummy(),
+        //             expr: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+        //             kind: UnaryOpKind::Not
+        //         })),
+        //         unary
+        //     );
+        // }
+        //
+        // #[test]
+        // fn neg() {
+        //     let tokens = [TokenType::Minus, TokenType::Number(10.0)]
+        //         .map(token)
+        //         .into();
+        //     let unary = parse_unary(tokens);
+        //     assert_eq!(
+        //         Expr::UnaryOp(Box::new(UnaryOp {
+        //             span: Span::dummy(),
+        //             expr: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+        //             kind: UnaryOpKind::Neg
+        //         })),
+        //         unary
+        //     );
+        // }
     }
 
     mod primary {
         use super::prelude::*;
 
-        fn parse_primary<'a, T: Into<Vec<Token<'a>>>>(tokens: T) -> Expr {
+        fn parse_primary(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
             parser.primary().unwrap()
         }
 
         #[test]
         fn string() {
-            let tokens = [TokenType::Number(10.0)].map(token);
+            let tokens = [TokenType::Number(10.0)].map(token).into();
             let literal = parse_primary(tokens);
             assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), literal);
         }
 
         #[test]
         fn number() {
-            let tokens = [TokenType::String("uwu".to_string())].map(token);
+            let tokens = [TokenType::String("uwu".to_string())].map(token).into();
             let literal = parse_primary(tokens);
             assert_eq!(
                 Expr::Literal(Literal::String("uwu".to_string(), Span::dummy())),
@@ -378,14 +420,14 @@ mod test {
 
         #[test]
         fn empty_object() {
-            let tokens = [TokenType::BraceO, TokenType::BraceC].map(token);
+            let tokens = [TokenType::BraceO, TokenType::BraceC].map(token).into();
             let literal = parse_primary(tokens);
             assert_eq!(Expr::Literal(Literal::Object(Span::dummy())), literal);
         }
 
         #[test]
         fn empty_array() {
-            let tokens = [TokenType::BracketO, TokenType::BracketC].map(token);
+            let tokens = [TokenType::BracketO, TokenType::BracketC].map(token).into();
             let literal = parse_primary(tokens);
             assert_eq!(
                 Expr::Literal(Literal::Array(Vec::new(), Span::dummy())),
@@ -395,7 +437,7 @@ mod test {
 
         #[test]
         fn r#false() {
-            let tokens = [TokenType::False].map(token);
+            let tokens = [TokenType::False].map(token).into();
             let literal = parse_primary(tokens);
             assert_eq!(
                 Expr::Literal(Literal::Boolean(false, Span::dummy())),
@@ -405,7 +447,7 @@ mod test {
 
         #[test]
         fn r#true() {
-            let tokens = [TokenType::True].map(token);
+            let tokens = [TokenType::True].map(token).into();
             let literal = parse_primary(tokens);
             assert_eq!(
                 Expr::Literal(Literal::Boolean(true, Span::dummy())),
@@ -415,7 +457,7 @@ mod test {
 
         #[test]
         fn null() {
-            let tokens = [TokenType::Null].map(token);
+            let tokens = [TokenType::Null].map(token).into();
             let literal = parse_primary(tokens);
             assert_eq!(Expr::Literal(Literal::Null(Span::dummy())), literal);
         }
