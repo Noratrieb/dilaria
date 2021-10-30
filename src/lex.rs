@@ -86,13 +86,13 @@ pub enum TokenType<'code> {
     /// !=
     BangEqual,
     /// >
-    GreaterThan,
+    Greater,
     /// <
-    LessThan,
+    Less,
     /// >=
-    GreaterThanEqual,
+    GreaterEqual,
     /// <=
-    LessThanEqual,
+    LessEqual,
 }
 
 #[derive(Debug, Clone)]
@@ -204,18 +204,13 @@ impl<'code> Iterator for Lexer<'code> {
                 '>' => {
                     break self.maybe_next_char(
                         '=',
-                        TokenType::GreaterThanEqual,
-                        TokenType::GreaterThan,
+                        TokenType::GreaterEqual,
+                        TokenType::Greater,
                         start,
                     );
                 }
                 '<' => {
-                    break self.maybe_next_char(
-                        '=',
-                        TokenType::LessThanEqual,
-                        TokenType::LessThan,
-                        start,
-                    );
+                    break self.maybe_next_char('=', TokenType::LessEqual, TokenType::Less, start);
                 }
                 '"' => {
                     let mut buffer = String::new();
@@ -426,10 +421,7 @@ mod test {
 
     #[test]
     fn smiley_face() {
-        lex_test(
-            ">>.<<",
-            vec![GreaterThan, GreaterThan, Dot, LessThan, LessThan],
-        )
+        lex_test(">>.<<", vec![Greater, Greater, Dot, Less, Less])
     }
 
     #[test]
@@ -437,12 +429,12 @@ mod test {
         lex_test(
             ">= <= == < < >=",
             vec![
-                GreaterThanEqual,
-                LessThanEqual,
+                GreaterEqual,
+                LessEqual,
                 EqualEqual,
-                LessThan,
-                LessThan,
-                GreaterThanEqual,
+                Less,
+                Less,
+                GreaterEqual,
             ],
         )
     }

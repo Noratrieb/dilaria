@@ -86,22 +86,22 @@ impl<'code> Parser<'code> {
     fn comparison(&mut self) -> ParseResult<'code, Expr> {
         let lhs = self.term()?;
         match self.peek().map(|token| &token.kind) {
-            Some(TokenType::GreaterThan) => {
+            Some(TokenType::Greater) => {
                 let _ = self.next();
                 let rhs = self.term()?;
                 self.binary_op(lhs, BinaryOpKind::Greater, rhs)
             }
-            Some(TokenType::GreaterThanEqual) => {
+            Some(TokenType::GreaterEqual) => {
                 let _ = self.next();
                 let rhs = self.term()?;
                 self.binary_op(lhs, BinaryOpKind::GreaterEqual, rhs)
             }
-            Some(TokenType::LessThan) => {
+            Some(TokenType::Less) => {
                 let _ = self.next();
                 let rhs = self.term()?;
                 self.binary_op(lhs, BinaryOpKind::Less, rhs)
             }
-            Some(TokenType::LessThanEqual) => {
+            Some(TokenType::LessEqual) => {
                 let _ = self.next();
                 let rhs = self.term()?;
                 self.binary_op(lhs, BinaryOpKind::LessEqual, rhs)
@@ -327,17 +327,13 @@ mod test {
 
         #[test]
         fn greater() {
-            test_literal_bin_op(
-                TokenType::GreaterThan,
-                BinaryOpKind::Greater,
-                parse_comparison,
-            );
+            test_literal_bin_op(TokenType::Greater, BinaryOpKind::Greater, parse_comparison);
         }
 
         #[test]
         fn greater_equal() {
             test_literal_bin_op(
-                TokenType::GreaterThanEqual,
+                TokenType::GreaterEqual,
                 BinaryOpKind::GreaterEqual,
                 parse_comparison,
             );
@@ -345,13 +341,13 @@ mod test {
 
         #[test]
         fn less() {
-            test_literal_bin_op(TokenType::LessThan, BinaryOpKind::Less, parse_comparison);
+            test_literal_bin_op(TokenType::Less, BinaryOpKind::Less, parse_comparison);
         }
 
         #[test]
         fn less_equal() {
             test_literal_bin_op(
-                TokenType::LessThanEqual,
+                TokenType::LessEqual,
                 BinaryOpKind::LessEqual,
                 parse_comparison,
             );
