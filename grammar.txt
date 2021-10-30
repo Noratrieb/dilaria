@@ -47,7 +47,7 @@
 <expression-statement> ::= <expression> ";"
 
 
-<expression> ::= <equality>
+<expression> ::= <logical-or>
 
 <logical-or> ::= <logical-and> { "or" <logical-and> }
 
