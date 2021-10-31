@@ -19,7 +19,7 @@ pub fn run_program(program: &str) {
         let ast = parse::parse(tokens);
 
         match ast {
-            Ok(ast) => println!("{:#?}", ast),
+            Ok(ast) => println!("{:?}", ast),
             Err(err) => errors::display_error(program, err),
         }
     } else {

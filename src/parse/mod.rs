@@ -103,7 +103,11 @@ impl<'code> Parser<'code> {
         let keyword_span = self.expect(TokenType::Fn)?.span;
         let name = self.ident()?;
         let args = self.fn_args()?;
+
+        self.inside_fn_depth += 1;
         let body = self.block()?;
+        self.inside_fn_depth -= 1;
+
         Ok(Stmt::FnDecl(FnDecl {
             span: keyword_span.extend(body.span),
             name,
