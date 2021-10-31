@@ -7,7 +7,7 @@ pub use span::Span;
 
 mod span {
 
-    #[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
+    #[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
     pub struct Span {
         pub start: usize,
         pub end: usize,

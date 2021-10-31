@@ -3,7 +3,9 @@ use crate::parse::Parser;
 use prelude::*;
 
 mod prelude {
-    pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
+    pub(super) use super::{
+        empty_block, num_lit, parser, test_literal_bin_op, test_number_literal, token,
+    };
     pub(super) use crate::ast::*;
     pub(super) use crate::errors::Span;
     pub(super) use crate::lex::{
@@ -16,6 +18,17 @@ fn token(kind: TokenType) -> Token {
     Token {
         span: Span::dummy(),
         kind,
+    }
+}
+
+fn num_lit(number: f64) -> Expr {
+    Expr::Literal(Literal::Number(number, Span::dummy()))
+}
+
+fn empty_block() -> Block {
+    Block {
+        stmts: vec![],
+        span: Span::dummy(),
     }
 }
 
@@ -39,8 +52,8 @@ fn test_literal_bin_op<F: FnOnce(Vec<Token<'_>>) -> Expr>(
     assert_eq!(
         Expr::BinaryOp(Box::new(BinaryOp {
             span: Span::dummy(),
-            lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
-            rhs: Expr::Literal(Literal::Number(4.0, Span::dummy())),
+            lhs: num_lit(10.0),
+            rhs: num_lit(4.0),
             kind: expected_op_kind
         })),
         factor
@@ -50,7 +63,147 @@ fn test_literal_bin_op<F: FnOnce(Vec<Token<'_>>) -> Expr>(
 fn test_number_literal<F: FnOnce(Vec<Token<'_>>) -> Expr>(parser: F) {
     let tokens = [TokenType::Number(10.0)].map(token).into();
     let unary = parser(tokens);
-    assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), unary);
+    assert_eq!(num_lit(10.0), unary);
+}
+
+mod r#if {
+    use super::prelude::*;
+
+    fn parse_if(tokens: Vec<Token>) -> IfStmt {
+        let mut parser = parser(tokens);
+        parser.if_stmt().unwrap()
+    }
+
+    #[test]
+    fn empty() {
+        let tokens = [If, True, BraceO, BraceC].map(token).into();
+        let ast = parse_if(tokens);
+        assert_eq!(
+            IfStmt {
+                span: Span::dummy(),
+                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                body: empty_block(),
+                else_part: None
+            },
+            ast
+        );
+    }
+
+    #[test]
+    fn if_else() {
+        let tokens = [If, True, BraceO, BraceC, Else, BraceO, BraceC]
+            .map(token)
+            .into();
+        let ast = parse_if(tokens);
+        assert_eq!(
+            IfStmt {
+                span: Span::dummy(),
+                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                body: empty_block(),
+                else_part: Some(Box::new(ElsePart::Else(empty_block(), Span::dummy())))
+            },
+            ast
+        );
+    }
+
+    #[test]
+    fn if_else_if() {
+        let tokens = [If, True, BraceO, BraceC, Else, If, True, BraceO, BraceC]
+            .map(token)
+            .into();
+        let ast = parse_if(tokens);
+        assert_eq!(
+            IfStmt {
+                span: Span::dummy(),
+                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                body: empty_block(),
+                else_part: Some(Box::new(ElsePart::ElseIf(
+                    IfStmt {
+                        span: Span::dummy(),
+                        cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                        body: empty_block(),
+                        else_part: None
+                    },
+                    Span::dummy()
+                )))
+            },
+            ast
+        );
+    }
+
+    #[test]
+    fn if_else_if_else() {
+        let tokens = [
+            If, True, BraceO, BraceC, Else, If, True, BraceO, BraceC, Else, BraceO, BraceC,
+        ]
+        .map(token)
+        .into();
+        let ast = parse_if(tokens);
+        assert_eq!(
+            IfStmt {
+                span: Span::dummy(),
+                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                body: empty_block(),
+                else_part: Some(Box::new(ElsePart::ElseIf(
+                    IfStmt {
+                        span: Span::dummy(),
+                        cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                        body: empty_block(),
+                        else_part: Some(Box::new(ElsePart::Else(empty_block(), Span::dummy())))
+                    },
+                    Span::dummy()
+                )))
+            },
+            ast
+        );
+    }
+}
+
+mod r#while {
+    use super::prelude::*;
+
+    fn parse_while(tokens: Vec<Token>) -> Stmt {
+        let mut parser = parser(tokens);
+        parser.while_stmt().unwrap()
+    }
+
+    #[test]
+    fn empty() {
+        let tokens = [While, True, BraceO, BraceC].map(token).into();
+        let ast = parse_while(tokens);
+        assert_eq!(
+            Stmt::While(WhileStmt {
+                span: Span::dummy(),
+                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                body: empty_block()
+            }),
+            ast
+        );
+    }
+
+    #[test]
+    fn or_condition_break() {
+        let tokens = [While, False, Or, True, BraceO, Break, Semi, BraceC]
+            .map(token)
+            .into();
+        let ast = parse_while(tokens);
+        assert_eq!(
+            Stmt::While(WhileStmt {
+                span: Span::dummy(),
+                cond: Expr::BinaryOp(Box::new(BinaryOp {
+                    span: Span::dummy(),
+                    lhs: Expr::Literal(Literal::Boolean(false, Span::dummy())),
+                    rhs: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                    kind: BinaryOpKind::Or
+                })),
+                body: Block {
+                    stmts: vec![Stmt::Break(Span::dummy())],
+                    span: Span::dummy()
+                }
+            }),
+            ast
+        );
+    }
 }
 
 mod r#loop {
@@ -65,14 +218,86 @@ mod r#loop {
     fn empty() {
         let tokens = [Loop, BraceO, BraceC].map(token).into();
         let ast = parse_loop(tokens);
+        assert_eq!(Stmt::Loop(empty_block(), Span::dummy()), ast);
+    }
+
+    #[test]
+    fn with_break() {
+        let tokens = [Loop, BraceO, Break, Semi, BraceC].map(token).into();
+        let ast = parse_loop(tokens);
         assert_eq!(
             Stmt::Loop(
                 Block {
-                    stmts: vec![],
+                    stmts: vec![Stmt::Break(Span::dummy())],
+                    span: Default::default()
+                },
+                Span::dummy()
+            ),
+            ast
+        );
+    }
+
+    #[test]
+    fn break_after_inner() {
+        let tokens = [Loop, BraceO, Loop, BraceO, BraceC, Break, Semi, BraceC]
+            .map(token)
+            .into();
+        let ast = parse_loop(tokens);
+        assert_eq!(
+            Stmt::Loop(
+                Block {
+                    stmts: vec![
+                        Stmt::Loop(empty_block(), Span::dummy()),
+                        Stmt::Break(Span::dummy())
+                    ],
                     span: Span::dummy()
                 },
                 Span::dummy()
             ),
+            ast
+        );
+    }
+}
+
+mod block {
+    use super::prelude::*;
+
+    fn parse_block(tokens: Vec<Token>) -> Block {
+        let mut parser = parser(tokens);
+        parser.block().unwrap()
+    }
+
+    #[test]
+    fn empty() {
+        let tokens = [BraceO, BraceC].map(token).into();
+        let ast = parse_block(tokens);
+        assert_eq!(empty_block(), ast);
+    }
+
+    #[test]
+    fn two_expressions() {
+        let tokens = [BraceO, Number(10.0), Semi, Number(20.0), Semi, BraceC]
+            .map(token)
+            .into();
+        let ast = parse_block(tokens);
+        assert_eq!(
+            Block {
+                stmts: vec![Stmt::Expr(num_lit(10.0)), Stmt::Expr(num_lit(20.0)),],
+                span: Span::dummy()
+            },
+            ast
+        );
+    }
+
+    #[test]
+    fn nested() {
+        let tokens = [BraceO, BraceO, BraceC, BraceC].map(token).into();
+        let ast = parse_block(tokens);
+        assert_eq!(
+            Block {
+                stmts: vec![Stmt::Block(empty_block())],
+                span: Span::dummy()
+            },
             ast
         );
     }
@@ -101,11 +326,11 @@ mod expr {
         assert_eq!(
             Expr::BinaryOp(Box::new(BinaryOp {
                 span: Span::dummy(),
-                lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                lhs: num_lit(10.0),
                 rhs: Expr::BinaryOp(Box::new(BinaryOp {
                     span: Span::dummy(),
-                    lhs: Expr::Literal(Literal::Number(20.0, Span::dummy())),
-                    rhs: Expr::Literal(Literal::Number(100.0, Span::dummy())),
+                    lhs: num_lit(20.0),
+                    rhs: num_lit(100.0),
 
                     kind: BinaryOpKind::Mul
                 })),
@@ -124,10 +349,10 @@ mod expr {
         assert_eq!(
             Expr::BinaryOp(Box::new(BinaryOp {
                 span: Span::dummy(),
-                lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                lhs: num_lit(10.0),
                 rhs: Expr::UnaryOp(Box::new(UnaryOp {
                     span: Span::dummy(),
-                    expr: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                    expr: num_lit(10.0),
                     kind: UnaryOpKind::Neg
                 })),
                 kind: BinaryOpKind::Equal
@@ -153,11 +378,11 @@ mod expr {
         assert_eq!(
             Expr::BinaryOp(Box::new(BinaryOp {
                 span: Span::dummy(),
-                lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                lhs: num_lit(10.0),
                 rhs: Expr::BinaryOp(Box::new(BinaryOp {
                     span: Span::dummy(),
-                    lhs: Expr::Literal(Literal::Number(20.0, Span::dummy())),
-                    rhs: Expr::Literal(Literal::Number(30.0, Span::dummy())),
+                    lhs: num_lit(20.0),
+                    rhs: num_lit(30.0),
 
                     kind: BinaryOpKind::Add
                 })),
@@ -364,7 +589,7 @@ mod unary {
         assert_eq!(
             Expr::UnaryOp(Box::new(UnaryOp {
                 span: Span::dummy(),
-                expr: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                expr: num_lit(10.0),
                 kind: UnaryOpKind::Neg
             })),
             unary
@@ -397,7 +622,7 @@ mod primary {
     fn string() {
         let tokens = [TokenType::Number(10.0)].map(token).into();
         let literal = parse_primary(tokens);
-        assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), literal);
+        assert_eq!(num_lit(10.0), literal);
     }
 
     #[test]

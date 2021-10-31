@@ -47,7 +47,6 @@ impl<'code> Parser<'code> {
         let mut stmts = Vec::new();
         loop {
             if let Some(TokenType::BraceC) | None = self.peek_kind() {
-                let _ = self.next();
                 return Ok(stmts);
             }
             let stmt = self.statement()?;
@@ -176,7 +175,11 @@ impl<'code> Parser<'code> {
     fn while_stmt(&mut self) -> ParseResult<'code, Stmt> {
         let keyword_span = self.expect(TokenType::While)?.span;
         let cond = self.expression()?;
+
+        self.inside_loop_depth += 1;
         let body = self.block()?;
+        self.inside_loop_depth -= 1;
+
         Ok(Stmt::While(WhileStmt {
             span: keyword_span.extend(body.span),
             cond,
