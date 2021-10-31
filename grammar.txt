@@ -13,6 +13,7 @@
               | <while-stmt>
               | <break-stmt>
               | <return-stmt>
+              | <block>
               | <expression-statement>
 
 
