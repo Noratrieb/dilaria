@@ -53,6 +53,8 @@ fn greet(name) {
 }
 ```
 
+Functions are closures
+
 Comments using `#`
 ```
 # hi!
