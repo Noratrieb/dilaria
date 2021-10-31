@@ -81,19 +81,36 @@ impl<'code> Parser<'code> {
     }
 
     fn expression(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+        self.logical_or()
     }
 
     fn logical_or(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+        let lhs = self.logical_and()?;
+        match self.peek().map(|token| &token.kind) {
+            Some(TokenType::Or) => parse_bin_op!(self, lhs, BinaryOpKind::Or, logical_and),
+            _ => Ok(lhs),
+        }
     }
 
     fn logical_and(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+        let lhs = self.equality()?;
+        match self.peek().map(|token| &token.kind) {
+            Some(TokenType::And) => parse_bin_op!(self, lhs, BinaryOpKind::And, equality),
+            _ => Ok(lhs),
+        }
     }
 
     fn equality(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+        let lhs = self.comparison()?;
+        match self.peek().map(|token| &token.kind) {
+            Some(TokenType::BangEqual) => {
+                parse_bin_op!(self, lhs, BinaryOpKind::NotEqual, comparison)
+            }
+            Some(TokenType::EqualEqual) => {
+                parse_bin_op!(self, lhs, BinaryOpKind::Equal, comparison)
+            }
+            _ => Ok(lhs),
+        }
     }
 
     fn comparison(&mut self) -> ParseResult<'code, Expr> {
@@ -114,8 +131,8 @@ impl<'code> Parser<'code> {
     fn term(&mut self) -> ParseResult<'code, Expr> {
         let lhs = self.factor()?;
         match self.peek().map(|token| &token.kind) {
-            Some(TokenType::Plus) => parse_bin_op!(self, lhs, BinaryOpKind::Add, term),
-            Some(TokenType::Minus) => parse_bin_op!(self, lhs, BinaryOpKind::Sub, term),
+            Some(TokenType::Plus) => parse_bin_op!(self, lhs, BinaryOpKind::Add, factor),
+            Some(TokenType::Minus) => parse_bin_op!(self, lhs, BinaryOpKind::Sub, factor),
             _ => Ok(lhs),
         }
     }
@@ -123,9 +140,9 @@ impl<'code> Parser<'code> {
     fn factor(&mut self) -> ParseResult<'code, Expr> {
         let lhs = self.unary()?;
         match self.peek().map(|token| &token.kind) {
-            Some(TokenType::Asterisk) => parse_bin_op!(self, lhs, BinaryOpKind::Mul, term),
-            Some(TokenType::Slash) => parse_bin_op!(self, lhs, BinaryOpKind::Div, term),
-            Some(TokenType::Percent) => parse_bin_op!(self, lhs, BinaryOpKind::Mod, term),
+            Some(TokenType::Asterisk) => parse_bin_op!(self, lhs, BinaryOpKind::Mul, unary),
+            Some(TokenType::Slash) => parse_bin_op!(self, lhs, BinaryOpKind::Div, unary),
+            Some(TokenType::Percent) => parse_bin_op!(self, lhs, BinaryOpKind::Mod, unary),
             _ => Ok(lhs),
         }
     }
@@ -163,36 +180,30 @@ impl<'code> Parser<'code> {
             TokenType::False => Ok(Expr::Literal(Literal::Boolean(false, next.span))),
             TokenType::True => Ok(Expr::Literal(Literal::Boolean(true, next.span))),
             TokenType::Null => Ok(Expr::Literal(Literal::Null(next.span))),
-            TokenType::BraceO => {
-                self.expect(TokenType::BraceC)?;
-                Ok(Expr::Literal(Literal::Object(next.span)))
-            }
-            TokenType::BracketO => {
-                let mut elements = Vec::new();
-                while self.peek().ok_or(ParseErr::EOF)?.kind != TokenType::BracketC {
-                    let expr = self.expression()?;
-                    elements.push(expr);
-                    self.expect(TokenType::Comma)?;
-                }
-                let closing_bracket = self.expect(TokenType::BracketC)?;
-                Ok(Expr::Literal(Literal::Array(
-                    elements,
-                    next.span.extend(closing_bracket.span),
-                )))
-            }
+            TokenType::BraceO => self.object_literal(next.span),
+            TokenType::BracketO => self.array_literal(next.span),
             TokenType::ParenO => todo!(),
             _ => todo!(),
         }
     }
 
-    fn object_literal(&mut self) -> ParseResult<'code, Expr> {
-        let open_span = self.expect(TokenType::BraceO)?.span;
+    fn object_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr> {
         let close_span = self.expect(TokenType::BraceC)?.span;
         Ok(Expr::Literal(Literal::Object(open_span.extend(close_span))))
     }
 
-    fn array_literal(&mut self) -> ParseResult<'code, Expr> {
-        todo!()
+    fn array_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr> {
+        let mut elements = Vec::new();
+        while self.peek().ok_or(ParseErr::EOF)?.kind != TokenType::BracketC {
+            let expr = self.expression()?;
+            elements.push(expr);
+            self.expect(TokenType::Comma)?;
+        }
+        let closing_bracket = self.expect(TokenType::BracketC)?;
+        Ok(Expr::Literal(Literal::Array(
+            elements,
+            open_span.extend(closing_bracket.span),
+        )))
     }
 
     // token helpers
@@ -248,7 +259,7 @@ mod test {
     use prelude::*;
 
     mod prelude {
-        pub(super) use super::{parser, test_literal_bin_op, token};
+        pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
         pub(super) use crate::ast::{BinaryOpKind, Expr, Literal};
         pub(super) use crate::errors::Span;
         pub(super) use crate::lex::{Token, TokenType};
@@ -287,12 +298,85 @@ mod test {
         );
     }
 
+    fn test_number_literal<F: FnOnce(Vec<Token<'_>>) -> Expr>(parser: F) {
+        let tokens = [TokenType::Number(10.0)].map(token).into();
+        let unary = parser(tokens);
+        assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), unary);
+    }
+
+    mod logical_or {
+        use super::prelude::*;
+
+        fn parse_logical_or(tokens: Vec<Token>) -> Expr {
+            let mut parser = parser(tokens);
+            parser.logical_or().unwrap()
+        }
+
+        #[test]
+        fn number_literal() {
+            test_number_literal(parse_logical_or);
+        }
+
+        #[test]
+        fn and() {
+            test_literal_bin_op(TokenType::Or, BinaryOpKind::Or, parse_logical_or);
+        }
+    }
+
+    mod logical_and {
+        use super::prelude::*;
+
+        fn parse_logical_and(tokens: Vec<Token>) -> Expr {
+            let mut parser = parser(tokens);
+            parser.logical_and().unwrap()
+        }
+
+        #[test]
+        fn number_literal() {
+            test_number_literal(parse_logical_and);
+        }
+
+        #[test]
+        fn and() {
+            test_literal_bin_op(TokenType::And, BinaryOpKind::And, parse_logical_and);
+        }
+    }
+
+    mod equality {
+        use super::prelude::*;
+
+        fn parse_equality(tokens: Vec<Token>) -> Expr {
+            let mut parser = parser(tokens);
+            parser.equality().unwrap()
+        }
+
+        #[test]
+        fn number_literal() {
+            test_number_literal(parse_equality);
+        }
+
+        #[test]
+        fn not_equal() {
+            test_literal_bin_op(TokenType::BangEqual, BinaryOpKind::NotEqual, parse_equality);
+        }
+
+        #[test]
+        fn equal() {
+            test_literal_bin_op(TokenType::EqualEqual, BinaryOpKind::Equal, parse_equality);
+        }
+    }
+
     mod comparison {
         use super::prelude::*;
 
         fn parse_comparison(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
             parser.comparison().unwrap()
+        }
+
+        #[test]
+        fn number_literal() {
+            test_number_literal(parse_comparison);
         }
 
         #[test]
@@ -333,6 +417,11 @@ mod test {
         }
 
         #[test]
+        fn number_literal() {
+            test_number_literal(parse_term);
+        }
+
+        #[test]
         fn add() {
             test_literal_bin_op(TokenType::Plus, BinaryOpKind::Add, parse_term);
         }
@@ -349,6 +438,11 @@ mod test {
         fn parse_factor(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
             parser.factor().unwrap()
+        }
+
+        #[test]
+        fn number_literal() {
+            test_number_literal(parse_factor);
         }
 
         #[test]
@@ -377,9 +471,7 @@ mod test {
 
         #[test]
         fn number_literal() {
-            let tokens = [TokenType::Number(10.0)].map(token).into();
-            let unary = parse_unary(tokens);
-            assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), unary);
+            test_number_literal(parse_unary);
         }
 
         // needs expr support
