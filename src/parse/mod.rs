@@ -225,7 +225,7 @@ impl<'code> Parser<'code> {
     fn logical_or(&mut self) -> ParseResult<'code, Expr> {
         let lhs = self.logical_and()?;
         match self.peek_kind() {
-            Some(TokenType::Or) => parse_bin_op!(self, lhs, BinaryOpKind::Or, logical_and),
+            Some(TokenType::Or) => parse_bin_op!(self, lhs, BinaryOpKind::Or, logical_or),
             _ => Ok(lhs),
         }
     }
@@ -233,7 +233,7 @@ impl<'code> Parser<'code> {
     fn logical_and(&mut self) -> ParseResult<'code, Expr> {
         let lhs = self.equality()?;
         match self.peek_kind() {
-            Some(TokenType::And) => parse_bin_op!(self, lhs, BinaryOpKind::And, equality),
+            Some(TokenType::And) => parse_bin_op!(self, lhs, BinaryOpKind::And, logical_and),
             _ => Ok(lhs),
         }
     }
@@ -269,8 +269,8 @@ impl<'code> Parser<'code> {
     fn term(&mut self) -> ParseResult<'code, Expr> {
         let lhs = self.factor()?;
         match self.peek_kind() {
-            Some(TokenType::Plus) => parse_bin_op!(self, lhs, BinaryOpKind::Add, factor),
-            Some(TokenType::Minus) => parse_bin_op!(self, lhs, BinaryOpKind::Sub, factor),
+            Some(TokenType::Plus) => parse_bin_op!(self, lhs, BinaryOpKind::Add, term),
+            Some(TokenType::Minus) => parse_bin_op!(self, lhs, BinaryOpKind::Sub, term),
             _ => Ok(lhs),
         }
     }
@@ -278,9 +278,9 @@ impl<'code> Parser<'code> {
     fn factor(&mut self) -> ParseResult<'code, Expr> {
         let lhs = self.unary()?;
         match self.peek_kind() {
-            Some(TokenType::Asterisk) => parse_bin_op!(self, lhs, BinaryOpKind::Mul, unary),
-            Some(TokenType::Slash) => parse_bin_op!(self, lhs, BinaryOpKind::Div, unary),
-            Some(TokenType::Percent) => parse_bin_op!(self, lhs, BinaryOpKind::Mod, unary),
+            Some(TokenType::Asterisk) => parse_bin_op!(self, lhs, BinaryOpKind::Mul, factor),
+            Some(TokenType::Slash) => parse_bin_op!(self, lhs, BinaryOpKind::Div, factor),
+            Some(TokenType::Percent) => parse_bin_op!(self, lhs, BinaryOpKind::Mod, factor),
             _ => Ok(lhs),
         }
     }
@@ -289,7 +289,7 @@ impl<'code> Parser<'code> {
         match self.peek_kind() {
             Some(TokenType::Not) => {
                 let unary_op_span = self.next().unwrap().span;
-                let expr = self.expression()?;
+                let expr = self.unary()?;
                 Ok(Expr::UnaryOp(Box::new(UnaryOp {
                     span: unary_op_span.extend(expr.span()),
                     expr,
@@ -298,7 +298,7 @@ impl<'code> Parser<'code> {
             }
             Some(TokenType::Minus) => {
                 let unary_op_span = self.next().unwrap().span;
-                let expr = self.expression()?;
+                let expr = self.unary()?;
                 Ok(Expr::UnaryOp(Box::new(UnaryOp {
                     span: unary_op_span.extend(expr.span()),
                     expr,
@@ -450,16 +450,16 @@ impl CompilerError for ParseErr<'_> {
     fn message(&self) -> String {
         match self {
             ParseErr::MismatchedKind { expected, actual } => {
-                format!("expected: {:?}, received: {:?}", expected, actual.kind)
+                format!("expected `{:?}`, received `{:?}`", expected, actual.kind)
             }
             ParseErr::InvalidTokenPrimary(token) => {
-                format!("invalid token in expression: {:?}", token.kind)
+                format!("invalid token in expression: `{:?}`", token.kind)
             }
             ParseErr::EOFExpecting(token) => {
-                format!("reached EOF searching for: {:?}", token)
+                format!("reached EOF searching for `{:?}`", token)
             }
             ParseErr::EOF(message) => {
-                format!("reached EOF while parsing: {}", message)
+                format!("reached EOF while parsing `{}`", message)
             }
             ParseErr::BreakOutsideLoop(_) => "break used outside of loop".to_string(),
             ParseErr::ReturnOutsideFunction(_) => "return used outside of function".to_string(),

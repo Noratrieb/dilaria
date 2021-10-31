@@ -52,19 +52,19 @@
 
 <expression> ::= <logical-or>
 
-<logical-or> ::= <logical-and> { "or" <logical-and> }
+<logical-or> ::= <logical-and> { "or" <logical-or> }
 
-<logical-and> ::= <equality> { "and" <equality> }
+<logical-and> ::= <equality> { "and" <logical-and> }
 
 <equality> ::= <comparison> { ("!=" | "==") <comparison> }
 
 <comparison> ::= <term> { (">" | "<" | ">=" | "<=") <term> }
 
-<term> ::= <factor> { ("-" | "+") <factor> }
+<term> ::= <factor> { ("-" | "+") <term> }
 
-<factor> ::= <unary> { ( "*" | "/" | "%" ) <unary> }
+<factor> ::= <unary> { ( "*" | "/" | "%" ) <factor> }
 
-<unary> ::= { ( "not" | "-" ) } <primary>
+<unary> ::= { ( "not" | "-" ) } <unary>
 
 <primary> ::= <IDENT>
             | <NUMBER>

@@ -20,9 +20,7 @@ pub fn run_program(program: &str) {
 
         match ast {
             Ok(ast) => println!("{:#?}", ast),
-            Err(err) => {
-                eprintln!("{:?}", err)
-            }
+            Err(err) => errors::display_error(program, err),
         }
     } else {
         errors
