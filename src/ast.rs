@@ -76,6 +76,7 @@ pub struct Break {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
+    Ident(Symbol, Span),
     Literal(Literal),
     UnaryOp(Box<UnaryOp>),
     BinaryOp(Box<BinaryOp>),
@@ -87,6 +88,7 @@ impl Expr {
             Expr::Literal(lit) => lit.span(),
             Expr::UnaryOp(unary) => unary.span,
             Expr::BinaryOp(binary) => binary.span,
+            Expr::Ident(_, span) => *span,
         }
     }
 }

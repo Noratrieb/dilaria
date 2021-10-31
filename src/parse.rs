@@ -181,8 +181,16 @@ impl<'code> Parser<'code> {
             TokenType::Null => Ok(Expr::Literal(Literal::Null(next.span))),
             TokenType::BraceO => self.object_literal(next.span),
             TokenType::BracketO => self.array_literal(next.span),
-            TokenType::ParenO => todo!(),
-            _ => todo!(),
+            TokenType::ParenO => {
+                let expr = self.expression()?;
+                let _ = self.expect(TokenType::ParenC)?;
+                Ok(expr)
+            }
+            TokenType::Ident(name) => {
+                let name_owned = name.to_owned();
+                Ok(Expr::Ident(name_owned, next.span))
+            }
+            _ => Err(ParseErr::InvalidTokenPrimary(next)),
         }
     }
 
@@ -193,7 +201,12 @@ impl<'code> Parser<'code> {
 
     fn array_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr> {
         let mut elements = Vec::new();
-        while self.peek().ok_or(ParseErr::EOF("array literal"))?.kind != TokenType::BracketC {
+        while self
+            .peek()
+            .ok_or(ParseErr::EOFExpecting(TokenType::BracketC))?
+            .kind
+            != TokenType::BracketC
+        {
             let expr = self.expression()?;
             elements.push(expr);
             self.expect(TokenType::Comma)?;
@@ -222,32 +235,60 @@ impl<'code> Parser<'code> {
             if token.kind == kind {
                 Ok(token)
             } else {
-                Err(ParseErr::MismatchedKind { expected: kind })
+                Err(ParseErr::MismatchedKind {
+                    expected: kind,
+                    actual: token,
+                })
             }
         } else {
-            Err(ParseErr::ExpectedToken(kind))
+            Err(ParseErr::EOFExpecting(kind))
         }
     }
 }
 
 #[derive(Debug)]
 pub enum ParseErr<'code> {
-    MismatchedKind { expected: TokenType<'code> },
-    ExpectedToken(TokenType<'code>),
+    MismatchedKind {
+        expected: TokenType<'code>,
+        actual: Token<'code>,
+    },
+    InvalidTokenPrimary(Token<'code>),
+    EOFExpecting(TokenType<'code>),
     EOF(&'static str),
 }
 
 impl CompilerError for ParseErr<'_> {
     fn span(&self) -> Span {
-        todo!()
+        match self {
+            ParseErr::MismatchedKind {
+                actual: Token { span, .. },
+                ..
+            } => *span,
+            ParseErr::InvalidTokenPrimary(Token { span, .. }) => *span,
+            ParseErr::EOFExpecting(_) => Span::dummy(),
+            ParseErr::EOF(_) => Span::dummy(),
+        }
     }
 
     fn message(&self) -> String {
-        todo!()
+        match self {
+            ParseErr::MismatchedKind { expected, actual } => {
+                format!("expected: {:?}, received: {:?}", expected, actual.kind)
+            }
+            ParseErr::InvalidTokenPrimary(token) => {
+                format!("invalid token in expression: {:?}", token.kind)
+            }
+            ParseErr::EOFExpecting(token) => {
+                format!("reached EOF searching for: {:?}", token)
+            }
+            ParseErr::EOF(message) => {
+                format!("reached EOF while parsing: {}", message)
+            }
+        }
     }
 
     fn note(&self) -> Option<String> {
-        todo!()
+        None
     }
 }
 
@@ -266,7 +307,7 @@ mod test {
 
     fn token(kind: TokenType) -> Token {
         Token {
-            span: crate::errors::Span::dummy(),
+            span: Span::dummy(),
             kind,
         }
     }
@@ -305,11 +346,17 @@ mod test {
 
     mod expr {
         use super::prelude::*;
+        use crate::ast::{UnaryOp, UnaryOpKind};
         use TokenType::*;
 
         fn parse_expr(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
             parser.expression().unwrap()
+        }
+
+        #[test]
+        fn number_literal() {
+            test_number_literal(parse_expr);
         }
 
         #[test]
@@ -330,6 +377,58 @@ mod test {
                         kind: BinaryOpKind::Mul
                     })),
                     kind: BinaryOpKind::Add
+                })),
+                expr
+            );
+        }
+
+        #[test]
+        fn equal_unary() {
+            let tokens = [Number(10.0), EqualEqual, Minus, Number(10.0)]
+                .map(token)
+                .into();
+            let expr = parse_expr(tokens);
+            assert_eq!(
+                Expr::BinaryOp(Box::new(BinaryOp {
+                    span: Span::dummy(),
+                    lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                    rhs: Expr::UnaryOp(Box::new(UnaryOp {
+                        span: Span::dummy(),
+                        expr: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                        kind: UnaryOpKind::Neg
+                    })),
+                    kind: BinaryOpKind::Equal
+                })),
+                expr
+            );
+        }
+
+        #[test]
+        fn parentheses_mul_add() {
+            let tokens = [
+                Number(10.0),
+                Asterisk,
+                ParenO,
+                Number(20.0),
+                Plus,
+                Number(30.0),
+                ParenC,
+            ]
+            .map(token)
+            .into();
+            let expr = parse_expr(tokens);
+            assert_eq!(
+                Expr::BinaryOp(Box::new(BinaryOp {
+                    span: Span::dummy(),
+                    lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                    rhs: Expr::BinaryOp(Box::new(BinaryOp {
+                        span: Span::dummy(),
+                        lhs: Expr::Literal(Literal::Number(20.0, Span::dummy())),
+                        rhs: Expr::Literal(Literal::Number(30.0, Span::dummy())),
+
+                        kind: BinaryOpKind::Add
+                    })),
+                    kind: BinaryOpKind::Mul
                 })),
                 expr
             );
@@ -495,6 +594,7 @@ mod test {
 
     mod unary {
         use super::prelude::*;
+        use crate::ast::{UnaryOp, UnaryOpKind};
 
         fn parse_unary(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
@@ -508,36 +608,35 @@ mod test {
 
         // needs expr support
 
-        //
-        // #[test]
-        // fn not() {
-        //     let tokens = [TokenType::Not, TokenType::True].map(token).into();
-        //     let unary = parse_unary(tokens);
-        //     assert_eq!(
-        //         Expr::UnaryOp(Box::new(UnaryOp {
-        //             span: Span::dummy(),
-        //             expr: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-        //             kind: UnaryOpKind::Not
-        //         })),
-        //         unary
-        //     );
-        // }
-        //
-        // #[test]
-        // fn neg() {
-        //     let tokens = [TokenType::Minus, TokenType::Number(10.0)]
-        //         .map(token)
-        //         .into();
-        //     let unary = parse_unary(tokens);
-        //     assert_eq!(
-        //         Expr::UnaryOp(Box::new(UnaryOp {
-        //             span: Span::dummy(),
-        //             expr: Expr::Literal(Literal::Number(10.0, Span::dummy())),
-        //             kind: UnaryOpKind::Neg
-        //         })),
-        //         unary
-        //     );
-        // }
+        #[test]
+        fn not() {
+            let tokens = [TokenType::Not, TokenType::True].map(token).into();
+            let unary = parse_unary(tokens);
+            assert_eq!(
+                Expr::UnaryOp(Box::new(UnaryOp {
+                    span: Span::dummy(),
+                    expr: Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                    kind: UnaryOpKind::Not
+                })),
+                unary
+            );
+        }
+
+        #[test]
+        fn neg() {
+            let tokens = [TokenType::Minus, TokenType::Number(10.0)]
+                .map(token)
+                .into();
+            let unary = parse_unary(tokens);
+            assert_eq!(
+                Expr::UnaryOp(Box::new(UnaryOp {
+                    span: Span::dummy(),
+                    expr: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                    kind: UnaryOpKind::Neg
+                })),
+                unary
+            );
+        }
     }
 
     mod primary {
@@ -546,6 +645,13 @@ mod test {
         fn parse_primary(tokens: Vec<Token>) -> Expr {
             let mut parser = parser(tokens);
             parser.primary().unwrap()
+        }
+
+        #[test]
+        fn ident() {
+            let tokens = [TokenType::Ident("tokens")].map(token).into();
+            let literal = parse_primary(tokens);
+            assert_eq!(Expr::Ident("tokens".to_string(), Span::dummy()), literal);
         }
 
         #[test]
