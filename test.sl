@@ -1,3 +1,9 @@
 fn test() {
-    "u" + "w" + "u";
+    if true {
+        print;
+    } else if false {
+        dont_print;
+    } else {
+        "uwu";
+    }
 }

@@ -14,7 +14,7 @@ mod span {
     }
 
     impl Span {
-        pub fn new(start: usize, len: usize) -> Self {
+        pub fn start_len(start: usize, len: usize) -> Self {
             Self {
                 start,
                 end: start + len,
@@ -22,7 +22,7 @@ mod span {
         }
 
         pub fn start_end(start: usize, end: usize) -> Self {
-            Self::new(start, end)
+            Self { start, end }
         }
 
         pub fn single(start: usize) -> Self {

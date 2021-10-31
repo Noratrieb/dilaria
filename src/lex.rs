@@ -127,7 +127,7 @@ impl<'code> Lexer<'code> {
         if self.expect(expect_char) {
             let _ = self.code.next(); // consume first one
             Token {
-                span: Span::new(start, start + 2),
+                span: Span::start_len(start, start + 2),
                 kind: true_type,
             }
         } else {
@@ -192,7 +192,7 @@ impl<'code> Iterator for Lexer<'code> {
                     if self.expect('=') {
                         let _ = self.code.next(); // consume =;
                         break Token {
-                            span: Span::new(start, start + 2),
+                            span: Span::start_len(start, start + 2),
                             kind: TokenType::BangEqual,
                         };
                     } else {

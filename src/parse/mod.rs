@@ -331,7 +331,10 @@ impl<'code> Parser<'code> {
                     span: next.span,
                 }))
             }
-            _ => Err(ParseErr::InvalidTokenPrimary(next)),
+            _ => {
+                println!("{:?}", next);
+                Err(ParseErr::InvalidTokenPrimary(next))
+            }
         }
     }
 
