@@ -8,7 +8,7 @@ use crate::errors::Span;
 pub type Symbol = String;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Program(pub Block);
+pub struct Program(pub Vec<Stmt>);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block(pub Vec<Stmt>);

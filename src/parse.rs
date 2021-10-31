@@ -35,23 +35,23 @@ macro_rules! parse_bin_op {
 
 impl<'code> Parser<'code> {
     fn program(&mut self) -> ParseResult<'code, Program> {
-        Ok(Program(self.block()?))
+        Ok(Program(self.statement_list()?))
     }
 
-    fn block(&mut self) -> ParseResult<'code, Block> {
+    fn statement_list(&mut self) -> ParseResult<'code, Vec<Stmt>> {
         let mut stmts = Vec::new();
         loop {
-            if let Some(Token {
-                kind: TokenType::BraceC,
-                ..
-            }) = self.peek()
-            {
+            if let Some(TokenType::BraceC) | None = self.peek().map(|token| &token.kind) {
                 let _ = self.next();
-                return Ok(Block(stmts));
+                return Ok(stmts);
             }
             let stmt = self.statement()?;
             stmts.push(stmt);
         }
+    }
+
+    fn block(&mut self) -> ParseResult<'code, Block> {
+        Ok(Block(self.statement_list()?))
     }
 
     fn statement(&mut self) -> ParseResult<'code, Stmt> {
@@ -167,13 +167,12 @@ impl<'code> Parser<'code> {
                     kind: UnaryOpKind::Neg,
                 })))
             }
-            Some(_) => self.primary(),
-            None => todo!(),
+            _ => self.primary(),
         }
     }
 
     fn primary(&mut self) -> ParseResult<'code, Expr> {
-        let next = self.next().ok_or(ParseErr::EOF)?;
+        let next = self.next().ok_or(ParseErr::EOF("primary"))?;
         match next.kind {
             TokenType::String(literal) => Ok(Expr::Literal(Literal::String(literal, next.span))),
             TokenType::Number(literal) => Ok(Expr::Literal(Literal::Number(literal, next.span))),
@@ -194,7 +193,7 @@ impl<'code> Parser<'code> {
 
     fn array_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr> {
         let mut elements = Vec::new();
-        while self.peek().ok_or(ParseErr::EOF)?.kind != TokenType::BracketC {
+        while self.peek().ok_or(ParseErr::EOF("array literal"))?.kind != TokenType::BracketC {
             let expr = self.expression()?;
             elements.push(expr);
             self.expect(TokenType::Comma)?;
@@ -226,7 +225,7 @@ impl<'code> Parser<'code> {
                 Err(ParseErr::MismatchedKind { expected: kind })
             }
         } else {
-            Err(ParseErr::EOF)
+            Err(ParseErr::ExpectedToken(kind))
         }
     }
 }
@@ -234,8 +233,8 @@ impl<'code> Parser<'code> {
 #[derive(Debug)]
 pub enum ParseErr<'code> {
     MismatchedKind { expected: TokenType<'code> },
-    InvalidToken(TokenType<'code>),
-    EOF,
+    ExpectedToken(TokenType<'code>),
+    EOF(&'static str),
 }
 
 impl CompilerError for ParseErr<'_> {
@@ -260,7 +259,7 @@ mod test {
 
     mod prelude {
         pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
-        pub(super) use crate::ast::{BinaryOpKind, Expr, Literal};
+        pub(super) use crate::ast::{BinaryOp, BinaryOpKind, Expr, Literal};
         pub(super) use crate::errors::Span;
         pub(super) use crate::lex::{Token, TokenType};
     }
@@ -302,6 +301,39 @@ mod test {
         let tokens = [TokenType::Number(10.0)].map(token).into();
         let unary = parser(tokens);
         assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), unary);
+    }
+
+    mod expr {
+        use super::prelude::*;
+        use TokenType::*;
+
+        fn parse_expr(tokens: Vec<Token>) -> Expr {
+            let mut parser = parser(tokens);
+            parser.expression().unwrap()
+        }
+
+        #[test]
+        fn add_multiply() {
+            let tokens = [Number(10.0), Plus, Number(20.0), Asterisk, Number(100.0)]
+                .map(token)
+                .into();
+            let expr = parse_expr(tokens);
+            assert_eq!(
+                Expr::BinaryOp(Box::new(BinaryOp {
+                    span: Span::dummy(),
+                    lhs: Expr::Literal(Literal::Number(10.0, Span::dummy())),
+                    rhs: Expr::BinaryOp(Box::new(BinaryOp {
+                        span: Span::dummy(),
+                        lhs: Expr::Literal(Literal::Number(20.0, Span::dummy())),
+                        rhs: Expr::Literal(Literal::Number(100.0, Span::dummy())),
+
+                        kind: BinaryOpKind::Mul
+                    })),
+                    kind: BinaryOpKind::Add
+                })),
+                expr
+            );
+        }
     }
 
     mod logical_or {

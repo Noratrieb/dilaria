@@ -1,9 +1,11 @@
 # todo: calls (property access and function calls)
 
 
-<program> ::= <block>
+<program> ::= <statement-list>
 
-<block> ::= "{" { <statement> } "}"
+<statement-list> ::= { <statement> }
+
+<block> ::= "{" <statement-list> "}"
 
 <statement> ::= <declaration>
               | <assignment>
