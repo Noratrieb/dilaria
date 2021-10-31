@@ -4,9 +4,12 @@ use prelude::*;
 
 mod prelude {
     pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
-    pub(super) use crate::ast::{BinaryOp, BinaryOpKind, Expr, Literal};
+    pub(super) use crate::ast::*;
     pub(super) use crate::errors::Span;
-    pub(super) use crate::lex::{Token, TokenType};
+    pub(super) use crate::lex::{
+        Token,
+        TokenType::{self, *},
+    };
 }
 
 fn token(kind: TokenType) -> Token {
@@ -50,10 +53,34 @@ fn test_number_literal<F: FnOnce(Vec<Token<'_>>) -> Expr>(parser: F) {
     assert_eq!(Expr::Literal(Literal::Number(10.0, Span::dummy())), unary);
 }
 
+mod r#loop {
+    use super::prelude::*;
+
+    fn parse_loop(tokens: Vec<Token>) -> Stmt {
+        let mut parser = parser(tokens);
+        parser.loop_stmt().unwrap()
+    }
+
+    #[test]
+    fn empty() {
+        let tokens = [Loop, BraceO, BraceC].map(token).into();
+        let ast = parse_loop(tokens);
+        assert_eq!(
+            Stmt::Loop(
+                Block {
+                    stmts: vec![],
+                    span: Span::dummy()
+                },
+                Span::dummy()
+            ),
+            ast
+        );
+    }
+}
+
 mod expr {
     use super::prelude::*;
     use crate::ast::{UnaryOp, UnaryOpKind};
-    use TokenType::*;
 
     fn parse_expr(tokens: Vec<Token>) -> Expr {
         let mut parser = parser(tokens);
@@ -357,7 +384,13 @@ mod primary {
     fn ident() {
         let tokens = [TokenType::Ident("tokens")].map(token).into();
         let literal = parse_primary(tokens);
-        assert_eq!(Expr::Ident("tokens".to_string(), Span::dummy()), literal);
+        assert_eq!(
+            Expr::Ident(Ident {
+                name: "tokens".to_string(),
+                span: Span::dummy()
+            }),
+            literal
+        );
     }
 
     #[test]

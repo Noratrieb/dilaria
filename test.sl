@@ -1,1 +1,6 @@
-(1 + 5 and 5) / 2;
+fn test() {
+    let uwu = 2;
+    if uwu {
+        print;
+    }
+}

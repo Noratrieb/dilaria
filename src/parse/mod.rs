@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 #[cfg(test)]
 mod test;
 
@@ -86,15 +84,47 @@ impl<'code> Parser<'code> {
     }
 
     fn declaration(&mut self) -> ParseResult<'code, Stmt> {
-        todo!()
+        let keyword_span = self.expect(TokenType::Let)?.span;
+        let name = self.ident()?;
+        self.expect(TokenType::Equal)?;
+        let init = self.expression()?;
+        self.expect(TokenType::Semi)?;
+        Ok(Stmt::Declaration(Declaration {
+            span: keyword_span.extend(init.span()),
+            name,
+            init,
+        }))
     }
 
     fn assignment(&mut self) -> ParseResult<'code, Stmt> {
-        todo!()
+        todo!("oh god no")
     }
 
     fn fn_decl(&mut self) -> ParseResult<'code, Stmt> {
-        todo!()
+        let keyword_span = self.expect(TokenType::Fn)?.span;
+        let name = self.ident()?;
+        let args = self.fn_args()?;
+        let body = self.block()?;
+        Ok(Stmt::FnDecl(FnDecl {
+            span: keyword_span.extend(body.span),
+            name,
+            params: args,
+            body,
+        }))
+    }
+
+    fn fn_args(&mut self) -> ParseResult<'code, Vec<Ident>> {
+        self.expect(TokenType::ParenO)?;
+        let mut params = Vec::new();
+        while self.peek_kind().ok_or(ParseErr::EOF("function argument"))? != &TokenType::ParenC {
+            let ident = self.ident()?;
+            params.push(ident);
+
+            // todo (ident ident) would be allowed here, but should not
+            self.maybe_consume(TokenType::Comma);
+        }
+        self.expect(TokenType::ParenC)?;
+        Ok(params)
     }
 
     fn if_stmt(&mut self) -> ParseResult<'code, IfStmt> {
@@ -276,7 +306,7 @@ impl<'code> Parser<'code> {
         }
     }
 
-    fn primary(&mut self) -> ParseResult<'code, Expr> {
+    fn primary<'parser>(&'parser mut self) -> ParseResult<'code, Expr> {
         let next = self.next().ok_or(ParseErr::EOF("primary"))?;
         match next.kind {
             TokenType::String(literal) => Ok(Expr::Literal(Literal::String(literal, next.span))),
@@ -293,9 +323,31 @@ impl<'code> Parser<'code> {
             }
             TokenType::Ident(name) => {
                 let name_owned = name.to_owned();
-                Ok(Expr::Ident(name_owned, next.span))
+                Ok(Expr::Ident(Ident {
+                    name: name_owned,
+                    span: next.span,
+                }))
             }
             _ => Err(ParseErr::InvalidTokenPrimary(next)),
+        }
+    }
+
+    fn ident(&mut self) -> ParseResult<'code, Ident> {
+        let Token { kind, span } = self.next().ok_or(ParseErr::EOF("identifier"))?;
+        match kind {
+            TokenType::Ident(name) => {
+                let name_owned = name.to_owned();
+                Ok(Ident {
+                    name: name_owned,
+                    span,
+                })
+            }
+            _ => {
+                return Err(ParseErr::MismatchedKind {
+                    expected: TokenType::Ident("<ident>"),
+                    actual: Token { span, kind },
+                })
+            }
         }
     }
 
@@ -307,14 +359,14 @@ impl<'code> Parser<'code> {
     fn array_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr> {
         let mut elements = Vec::new();
         while self
-            .peek()
+            .peek_kind()
             .ok_or(ParseErr::EOFExpecting(TokenType::BracketC))?
-            .kind
-            != TokenType::BracketC
+            != &TokenType::BracketC
         {
             let expr = self.expression()?;
             elements.push(expr);
-            self.expect(TokenType::Comma)?;
+            // todo [expr expr] would be allowed here, but should not
+            self.maybe_consume(TokenType::Comma);
         }
         let closing_bracket = self.expect(TokenType::BracketC)?;
         Ok(Expr::Literal(Literal::Array(
@@ -338,6 +390,14 @@ impl<'code> Parser<'code> {
     #[must_use]
     fn peek_kind(&mut self) -> Option<&TokenType<'code>> {
         self.peek().map(|token| &token.kind)
+    }
+
+    fn maybe_consume(&mut self, kind: TokenType<'code>) -> Option<Token> {
+        if self.peek_kind() == Some(&kind) {
+            self.next()
+        } else {
+            None
+        }
     }
 
     fn expect(&mut self, kind: TokenType<'code>) -> ParseResult<'code, Token> {
