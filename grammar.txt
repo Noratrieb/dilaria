@@ -30,9 +30,9 @@
 <fn-args> ::= "(" { <IDENT> { "," } } ")"
 
 
-<if-stmt> ::= "if" <expression> <block> { <else-stmt> }
+<if-stmt> ::= "if" <expression> <block> { <else-part> }
 
-<else-stmt> ::= "else" ( <if-stmt> | <block> )
+<else-part> ::= "else" ( <if-stmt> | <block> )
 
 
 <loop-stmt> ::= "loop" <block>

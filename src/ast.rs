@@ -11,7 +11,10 @@ pub type Symbol = String;
 pub struct Program(pub Vec<Stmt>);
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Block(pub Vec<Stmt>);
+pub struct Block {
+    pub stmts: Vec<Stmt>,
+    pub span: Span,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
@@ -19,11 +22,29 @@ pub enum Stmt {
     Assignment(Assignment),
     FnDecl(FnDecl),
     If(IfStmt),
-    Loop(Block),
+    Loop(Block, Span),
     While(WhileStmt),
-    Break(Break),
-    Return(Option<Expr>),
+    Break(Span),
+    Return(Option<Expr>, Span),
+    Block(Block),
     Expr(Expr),
+}
+
+impl Stmt {
+    pub fn span(&self) -> Span {
+        match self {
+            Stmt::Declaration(decl) => decl.span,
+            Stmt::Assignment(assign) => assign.span,
+            Stmt::FnDecl(decl) => decl.span,
+            Stmt::If(if_stmt) => if_stmt.span,
+            Stmt::Loop(_, span) => *span,
+            Stmt::While(while_stmt) => while_stmt.span,
+            Stmt::Break(span) => *span,
+            Stmt::Return(_, span) => *span,
+            Stmt::Block(block) => block.span,
+            Stmt::Expr(expr) => expr.span(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,15 +72,24 @@ pub struct FnDecl {
 #[derive(Debug, Clone, PartialEq)]
 pub struct IfStmt {
     pub span: Span,
-    pub condition: Expr,
+    pub cond: Expr,
     pub body: Block,
-    pub else_part: Box<ElsePart>,
+    pub else_part: Option<Box<ElsePart>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ElsePart {
-    Else(Block),
-    ElseIf(IfStmt),
+    Else(Block, Span),
+    ElseIf(IfStmt, Span),
+}
+
+impl ElsePart {
+    pub fn span(&self) -> Span {
+        match self {
+            ElsePart::Else(_, span) => *span,
+            ElsePart::ElseIf(_, span) => *span,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -67,11 +97,6 @@ pub struct WhileStmt {
     pub span: Span,
     pub cond: Expr,
     pub body: Block,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Break {
-    pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq)]

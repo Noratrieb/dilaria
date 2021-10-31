@@ -47,6 +47,15 @@ mod span {
             }
         }
 
+        /// Extends the span by the second one, if it exists
+        /// The other one has to be after the current one, if it exists
+        pub fn option_extend(&self, other: Option<Span>) -> Span {
+            match other {
+                None => *self,
+                Some(span) => self.extend(span),
+            }
+        }
+
         pub fn len(&self) -> usize {
             self.end - self.start
         }

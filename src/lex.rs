@@ -39,6 +39,7 @@ pub enum TokenType<'code> {
     While,
     For,
     Break,
+    Return,
     True,
     False,
     Null,
@@ -326,6 +327,8 @@ fn keyword_or_ident(name: &str) -> TokenType {
         b'w' if len == 5 && bs[1..5] == *b"hile" => TokenType::While,
         // break
         b'b' if len == 5 && bs[1..5] == *b"reak" => TokenType::Break,
+        // return
+        b'r' if len == 6 && bs[1..6] == *b"eturn" => TokenType::Return,
         // true
         b't' if len == 4 && bs[1..4] == *b"rue" => TokenType::True,
         // null && not
