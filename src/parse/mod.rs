@@ -328,10 +328,7 @@ impl<'code> Parser<'code> {
                     span: next.span,
                 }))
             }
-            _ => {
-                println!("{:?}", next);
-                Err(ParseErr::InvalidTokenPrimary(next))
-            }
+            _ => Err(ParseErr::InvalidTokenPrimary(next)),
         }
     }
 
@@ -418,14 +415,6 @@ impl<'code> Parser<'code> {
     #[must_use]
     fn peek_kind(&mut self) -> Option<&TokenType<'code>> {
         self.peek().map(|token| &token.kind)
-    }
-
-    fn maybe_consume(&mut self, kind: TokenType<'code>) -> Option<Token> {
-        if self.peek_kind() == Some(&kind) {
-            self.next()
-        } else {
-            None
-        }
     }
 
     fn expect(&mut self, kind: TokenType<'code>) -> ParseResult<'code, Token> {
