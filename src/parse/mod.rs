@@ -286,7 +286,7 @@ impl<'code> Parser<'code> {
         match self.peek_kind() {
             Some(TokenType::Not) => {
                 let unary_op_span = self.next().unwrap().span;
-                let expr = self.unary()?;
+                let expr = self.call()?;
                 Ok(Expr::UnaryOp(Box::new(UnaryOp {
                     span: unary_op_span.extend(expr.span()),
                     expr,
@@ -295,18 +295,51 @@ impl<'code> Parser<'code> {
             }
             Some(TokenType::Minus) => {
                 let unary_op_span = self.next().unwrap().span;
-                let expr = self.unary()?;
+                let expr = self.call()?;
                 Ok(Expr::UnaryOp(Box::new(UnaryOp {
                     span: unary_op_span.extend(expr.span()),
                     expr,
                     kind: UnaryOpKind::Neg,
                 })))
             }
-            _ => self.primary(),
+            _ => self.call(),
         }
     }
 
-    fn primary<'parser>(&'parser mut self) -> ParseResult<'code, Expr> {
+    fn call(&mut self) -> ParseResult<'code, Expr> {
+        let mut expr = self.primary()?;
+
+        loop {
+            expr = match self.peek_kind() {
+                Some(TokenType::ParenO) => {
+                    let open_span = self.expect(TokenType::ParenO)?.span;
+                    let args = self.parse_list(TokenType::ParenC, Self::expression)?;
+                    let close_span = self.expect(TokenType::ParenC)?.span;
+
+                    Expr::Call(Box::new(Call {
+                        callee: expr,
+                        span: open_span.extend(close_span),
+                        kind: CallKind::Fn(args),
+                    }))
+                }
+                Some(TokenType::Dot) => {
+                    let dot_span = self.expect(TokenType::Dot)?.span;
+                    let field = self.ident()?;
+
+                    Expr::Call(Box::new(Call {
+                        callee: expr,
+                        span: dot_span.extend(field.span),
+                        kind: CallKind::Field(field),
+                    }))
+                }
+                _ => break,
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn primary(&mut self) -> ParseResult<'code, Expr> {
         let next = self.next().ok_or(ParseErr::Eof("primary"))?;
         match next.kind {
             TokenType::String(literal) => Ok(Expr::Literal(Literal::String(literal, next.span))),

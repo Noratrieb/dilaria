@@ -93,6 +93,7 @@ pub enum Expr {
     Literal(Literal),
     UnaryOp(Box<UnaryOp>),
     BinaryOp(Box<BinaryOp>),
+    Call(Box<Call>),
 }
 
 impl Expr {
@@ -102,6 +103,7 @@ impl Expr {
             Expr::UnaryOp(unary) => unary.span,
             Expr::BinaryOp(binary) => binary.span,
             Expr::Ident(Ident { span, .. }) => *span,
+            Expr::Call(call) => call.span,
         }
     }
 }
@@ -165,4 +167,17 @@ pub enum BinaryOpKind {
     Mul,
     Div,
     Mod,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Call {
+    pub callee: Expr,
+    pub span: Span,
+    pub kind: CallKind,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum CallKind {
+    Field(Ident),
+    Fn(Vec<Expr>),
 }
