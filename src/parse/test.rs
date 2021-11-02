@@ -4,7 +4,7 @@ use prelude::*;
 
 mod prelude {
     pub(super) use super::{
-        empty_block, num_lit, parser, test_literal_bin_op, test_number_literal, token,
+        empty_block, ident, num_lit, parser, test_literal_bin_op, test_number_literal, token,
     };
     pub(super) use crate::ast::*;
     pub(super) use crate::errors::Span;
@@ -23,6 +23,13 @@ fn token(kind: TokenType) -> Token {
 
 fn num_lit(number: f64) -> Expr {
     Expr::Literal(Literal::Number(number, Span::dummy()))
+}
+
+fn ident(name: &str) -> Ident {
+    Ident {
+        name: name.to_string(),
+        span: Default::default(),
+    }
 }
 
 fn empty_block() -> Block {
@@ -83,10 +90,7 @@ mod r#fn {
         assert_eq!(
             Stmt::FnDecl(FnDecl {
                 span: Span::dummy(),
-                name: Ident {
-                    name: "empty".to_string(),
-                    span: Default::default()
-                },
+                name: ident("empty"),
                 params: vec![],
                 body: Block {
                     stmts: vec![],
@@ -120,20 +124,8 @@ mod r#fn {
         assert_eq!(
             Stmt::FnDecl(FnDecl {
                 span: Span::dummy(),
-                name: Ident {
-                    name: "empty".to_string(),
-                    span: Default::default()
-                },
-                params: vec![
-                    Ident {
-                        name: "a".to_string(),
-                        span: Default::default()
-                    },
-                    Ident {
-                        name: "b".to_string(),
-                        span: Default::default()
-                    }
-                ],
+                name: ident("empty"),
+                params: vec![ident("a"), ident("b")],
                 body: Block {
                     stmts: vec![Stmt::Expr(Expr::BinaryOp(Box::new(BinaryOp {
                         span: Default::default(),
@@ -670,6 +662,142 @@ mod unary {
     }
 }
 
+mod call {
+    use super::prelude::*;
+
+    fn parse_call(tokens: Vec<Token>) -> Expr {
+        let mut parser = parser(tokens);
+        parser.call().unwrap()
+    }
+
+    #[test]
+    fn field_simple() {
+        let tokens = [Ident("hugo"), Dot, Ident("name")].map(token).into();
+        let literal = parse_call(tokens);
+        assert_eq!(
+            Expr::Call(Box::new(Call {
+                callee: Expr::Ident(ident("hugo")),
+                span: Default::default(),
+                kind: CallKind::Field(ident("name"))
+            })),
+            literal
+        );
+    }
+
+    #[test]
+    fn simple() {
+        let tokens = [Ident("print"), ParenO, ParenC].map(token).into();
+        let literal = parse_call(tokens);
+        assert_eq!(
+            Expr::Call(Box::new(Call {
+                callee: Expr::Ident(ident("print")),
+                span: Default::default(),
+                kind: CallKind::Fn(Vec::new())
+            })),
+            literal
+        );
+    }
+
+    #[test]
+    fn fn_args() {
+        let tokens = [
+            Ident("print"),
+            ParenO,
+            Number(10.0),
+            Comma,
+            Number(5.0),
+            Comma,
+            ParenC,
+        ]
+        .map(token)
+        .into();
+        let literal = parse_call(tokens);
+        assert_eq!(
+            Expr::Call(Box::new(Call {
+                callee: Expr::Ident(ident("print")),
+                span: Default::default(),
+                kind: CallKind::Fn(vec![num_lit(10.0), num_lit(5.0)])
+            })),
+            literal
+        );
+    }
+
+    #[test]
+    fn nested() {
+        let tokens = [
+            Ident("hugo"),
+            Dot,
+            Ident("name"),
+            Dot,
+            Ident("print"),
+            ParenO,
+            ParenC,
+        ]
+        .map(token)
+        .into();
+        let literal = parse_call(tokens);
+        assert_eq!(
+            Expr::Call(Box::new(Call {
+                callee: Expr::Call(Box::new(Call {
+                    callee: Expr::Call(Box::new(Call {
+                        callee: Expr::Ident(ident("hugo")),
+                        span: Default::default(),
+                        kind: CallKind::Field(ident("name"))
+                    })),
+                    span: Default::default(),
+                    kind: CallKind::Field(ident("print"))
+                })),
+                span: Default::default(),
+                kind: CallKind::Fn(vec![])
+            })),
+            literal
+        );
+    }
+
+    #[test]
+    fn with_exprs() {
+        // print((10 + 5).abs())
+        let tokens = [
+            Ident("print"),
+            ParenO,
+            ParenO,
+            Number(10.0),
+            Plus,
+            Number(5.0),
+            ParenC,
+            Dot,
+            Ident("abs"),
+            ParenO,
+            ParenC,
+            ParenC,
+        ]
+        .map(token)
+        .into();
+        let literal = parse_call(tokens);
+        assert_eq!(
+            Expr::Call(Box::new(Call {
+                callee: Expr::Ident(ident("print")),
+                span: Default::default(),
+                kind: CallKind::Fn(vec![Expr::Call(Box::new(Call {
+                    callee: Expr::Call(Box::new(Call {
+                        callee: Expr::BinaryOp(Box::new(BinaryOp {
+                            span: Default::default(),
+                            lhs: num_lit(10.0),
+                            rhs: num_lit(5.0),
+                            kind: BinaryOpKind::Add
+                        })),
+                        span: Default::default(),
+                        kind: CallKind::Field(ident("abs"))
+                    })),
+                    span: Default::default(),
+                    kind: CallKind::Fn(vec![])
+                })),])
+            })),
+            literal
+        );
+    }
+}
+
 mod primary {
     use super::prelude::*;
 
@@ -679,16 +807,10 @@ mod primary {
     }
 
     #[test]
-    fn ident() {
+    fn ident_test() {
         let tokens = [Ident("tokens")].map(token).into();
         let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Ident(Ident {
-                name: "tokens".to_string(),
-                span: Span::dummy()
-            }),
-            literal
-        );
+        assert_eq!(Expr::Ident(ident("tokens")), literal);
     }
 
     #[test]

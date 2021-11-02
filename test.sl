@@ -1,7 +1,8 @@
 fn fizzbuzz() {
     let i = 0;
     while i < 100 {
-        # don't have function calls yet :(
+        let out = single_fizzbuzz(i);
+        print(out);
     }
 }
 
