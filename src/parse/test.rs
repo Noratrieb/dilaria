@@ -408,7 +408,7 @@ mod logical_or {
 
     #[test]
     fn and() {
-        test_literal_bin_op(TokenType::Or, BinaryOpKind::Or, parse_logical_or);
+        test_literal_bin_op(Or, BinaryOpKind::Or, parse_logical_or);
     }
 }
 
@@ -427,7 +427,7 @@ mod logical_and {
 
     #[test]
     fn and() {
-        test_literal_bin_op(TokenType::And, BinaryOpKind::And, parse_logical_and);
+        test_literal_bin_op(And, BinaryOpKind::And, parse_logical_and);
     }
 }
 
@@ -446,12 +446,12 @@ mod equality {
 
     #[test]
     fn not_equal() {
-        test_literal_bin_op(TokenType::BangEqual, BinaryOpKind::NotEqual, parse_equality);
+        test_literal_bin_op(BangEqual, BinaryOpKind::NotEqual, parse_equality);
     }
 
     #[test]
     fn equal() {
-        test_literal_bin_op(TokenType::EqualEqual, BinaryOpKind::Equal, parse_equality);
+        test_literal_bin_op(EqualEqual, BinaryOpKind::Equal, parse_equality);
     }
 }
 
@@ -470,30 +470,22 @@ mod comparison {
 
     #[test]
     fn greater() {
-        test_literal_bin_op(TokenType::Greater, BinaryOpKind::Greater, parse_comparison);
+        test_literal_bin_op(Greater, BinaryOpKind::Greater, parse_comparison);
     }
 
     #[test]
     fn greater_equal() {
-        test_literal_bin_op(
-            TokenType::GreaterEqual,
-            BinaryOpKind::GreaterEqual,
-            parse_comparison,
-        );
+        test_literal_bin_op(GreaterEqual, BinaryOpKind::GreaterEqual, parse_comparison);
     }
 
     #[test]
     fn less() {
-        test_literal_bin_op(TokenType::Less, BinaryOpKind::Less, parse_comparison);
+        test_literal_bin_op(Less, BinaryOpKind::Less, parse_comparison);
     }
 
     #[test]
     fn less_equal() {
-        test_literal_bin_op(
-            TokenType::LessEqual,
-            BinaryOpKind::LessEqual,
-            parse_comparison,
-        );
+        test_literal_bin_op(LessEqual, BinaryOpKind::LessEqual, parse_comparison);
     }
 }
 
@@ -512,12 +504,12 @@ mod term {
 
     #[test]
     fn add() {
-        test_literal_bin_op(TokenType::Plus, BinaryOpKind::Add, parse_term);
+        test_literal_bin_op(Plus, BinaryOpKind::Add, parse_term);
     }
 
     #[test]
     fn sub() {
-        test_literal_bin_op(TokenType::Minus, BinaryOpKind::Sub, parse_term);
+        test_literal_bin_op(Minus, BinaryOpKind::Sub, parse_term);
     }
 }
 
@@ -536,17 +528,17 @@ mod factor {
 
     #[test]
     fn multiply() {
-        test_literal_bin_op(TokenType::Asterisk, BinaryOpKind::Mul, parse_factor);
+        test_literal_bin_op(Asterisk, BinaryOpKind::Mul, parse_factor);
     }
 
     #[test]
     fn divide() {
-        test_literal_bin_op(TokenType::Slash, BinaryOpKind::Div, parse_factor);
+        test_literal_bin_op(Slash, BinaryOpKind::Div, parse_factor);
     }
 
     #[test]
     fn modulo() {
-        test_literal_bin_op(TokenType::Percent, BinaryOpKind::Mod, parse_factor);
+        test_literal_bin_op(Percent, BinaryOpKind::Mod, parse_factor);
     }
 }
 
@@ -568,7 +560,7 @@ mod unary {
 
     #[test]
     fn not() {
-        let tokens = [TokenType::Not, TokenType::True].map(token).into();
+        let tokens = [Not, True].map(token).into();
         let unary = parse_unary(tokens);
         assert_eq!(
             Expr::UnaryOp(Box::new(UnaryOp {
@@ -582,9 +574,7 @@ mod unary {
 
     #[test]
     fn neg() {
-        let tokens = [TokenType::Minus, TokenType::Number(10.0)]
-            .map(token)
-            .into();
+        let tokens = [Minus, Number(10.0)].map(token).into();
         let unary = parse_unary(tokens);
         assert_eq!(
             Expr::UnaryOp(Box::new(UnaryOp {
@@ -607,7 +597,7 @@ mod primary {
 
     #[test]
     fn ident() {
-        let tokens = [TokenType::Ident("tokens")].map(token).into();
+        let tokens = [Ident("tokens")].map(token).into();
         let literal = parse_primary(tokens);
         assert_eq!(
             Expr::Ident(Ident {
@@ -620,14 +610,14 @@ mod primary {
 
     #[test]
     fn string() {
-        let tokens = [TokenType::Number(10.0)].map(token).into();
+        let tokens = [Number(10.0)].map(token).into();
         let literal = parse_primary(tokens);
         assert_eq!(num_lit(10.0), literal);
     }
 
     #[test]
     fn number() {
-        let tokens = [TokenType::String("uwu".to_string())].map(token).into();
+        let tokens = [String("uwu".to_string())].map(token).into();
         let literal = parse_primary(tokens);
         assert_eq!(
             Expr::Literal(Literal::String("uwu".to_string(), Span::dummy())),
@@ -637,14 +627,14 @@ mod primary {
 
     #[test]
     fn empty_object() {
-        let tokens = [TokenType::BraceO, TokenType::BraceC].map(token).into();
+        let tokens = [BraceO, BraceC].map(token).into();
         let literal = parse_primary(tokens);
         assert_eq!(Expr::Literal(Literal::Object(Span::dummy())), literal);
     }
 
     #[test]
     fn empty_array() {
-        let tokens = [TokenType::BracketO, TokenType::BracketC].map(token).into();
+        let tokens = [BracketO, BracketC].map(token).into();
         let literal = parse_primary(tokens);
         assert_eq!(
             Expr::Literal(Literal::Array(Vec::new(), Span::dummy())),
@@ -654,7 +644,7 @@ mod primary {
 
     #[test]
     fn r#false() {
-        let tokens = [TokenType::False].map(token).into();
+        let tokens = [False].map(token).into();
         let literal = parse_primary(tokens);
         assert_eq!(
             Expr::Literal(Literal::Boolean(false, Span::dummy())),
@@ -664,7 +654,7 @@ mod primary {
 
     #[test]
     fn r#true() {
-        let tokens = [TokenType::True].map(token).into();
+        let tokens = [True].map(token).into();
         let literal = parse_primary(tokens);
         assert_eq!(
             Expr::Literal(Literal::Boolean(true, Span::dummy())),
@@ -674,8 +664,78 @@ mod primary {
 
     #[test]
     fn null() {
-        let tokens = [TokenType::Null].map(token).into();
+        let tokens = [Null].map(token).into();
         let literal = parse_primary(tokens);
         assert_eq!(Expr::Literal(Literal::Null(Span::dummy())), literal);
+    }
+
+    #[test]
+    fn empty_array_literal() {
+        let tokens = [BracketO, BracketC].map(token).into();
+        let literal = parse_primary(tokens);
+        assert_eq!(
+            Expr::Literal(Literal::Array(Vec::new(), Span::dummy())),
+            literal
+        );
+    }
+
+    #[test]
+    fn single_array_literal() {
+        let tokens = [BracketO, Number(10.0), BracketC].map(token).into();
+        let literal = parse_primary(tokens);
+        assert_eq!(
+            Expr::Literal(Literal::Array(vec![num_lit(10.0)], Span::dummy())),
+            literal
+        );
+    }
+
+    #[test]
+    fn single_array_literal_trailing_comma() {
+        let tokens = [BracketO, Number(10.0), Comma, BracketC].map(token).into();
+        let literal = parse_primary(tokens);
+        assert_eq!(
+            Expr::Literal(Literal::Array(vec![num_lit(10.0)], Span::dummy())),
+            literal
+        );
+    }
+
+    #[test]
+    fn two_array_literal() {
+        let tokens = [BracketO, Number(10.0), Comma, Number(10.0), BracketC]
+            .map(token)
+            .into();
+        let literal = parse_primary(tokens);
+        assert_eq!(
+            Expr::Literal(Literal::Array(
+                vec![num_lit(10.0), num_lit(10.0)],
+                Span::dummy()
+            )),
+            literal
+        );
+    }
+
+    #[test]
+    fn two_array_literal_trailing_comma() {
+        let tokens = [BracketO, Number(10.0), Comma, Number(10.0), Comma, BracketC]
+            .map(token)
+            .into();
+        let literal = parse_primary(tokens);
+        assert_eq!(
+            Expr::Literal(Literal::Array(
+                vec![num_lit(10.0), num_lit(10.0)],
+                Span::dummy()
+            )),
+            literal
+        );
+    }
+
+    #[test]
+    fn two_array_literal_no_comma() {
+        let tokens = [BracketO, Number(10.0), Number(10.0), BracketC]
+            .map(token)
+            .into();
+        let mut parser = parser(tokens);
+        let expr = parser.primary();
+        assert!(expr.is_err());
     }
 }

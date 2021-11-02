@@ -1,6 +1,3 @@
-# todo: calls (property access and function calls)
-
-
 <program> ::= <statement-list>
 
 <statement-list> ::= { <statement> }

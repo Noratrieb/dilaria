@@ -118,14 +118,7 @@ impl<'code> Parser<'code> {
 
     fn fn_args(&mut self) -> ParseResult<'code, Vec<Ident>> {
         self.expect(TokenType::ParenO)?;
-        let mut params = Vec::new();
-        while self.peek_kind().ok_or(ParseErr::EOF("function argument"))? != &TokenType::ParenC {
-            let ident = self.ident()?;
-            params.push(ident);
-
-            // todo (ident ident) would be allowed here, but should not
-            self.maybe_consume(TokenType::Comma);
-        }
+        let params = self.parse_list(TokenType::ParenC, Self::ident)?;
         self.expect(TokenType::ParenC)?;
         Ok(params)
     }
@@ -367,22 +360,47 @@ impl<'code> Parser<'code> {
     }
 
     fn array_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr> {
-        let mut elements = Vec::new();
-        while self
-            .peek_kind()
-            .ok_or(ParseErr::EOFExpecting(TokenType::BracketC))?
-            != &TokenType::BracketC
-        {
-            let expr = self.expression()?;
-            elements.push(expr);
-            // todo [expr expr] would be allowed here, but should not
-            self.maybe_consume(TokenType::Comma);
-        }
+        let elements = self.parse_list(TokenType::BracketC, Self::expression)?;
         let closing_bracket = self.expect(TokenType::BracketC)?;
         Ok(Expr::Literal(Literal::Array(
             elements,
             open_span.extend(closing_bracket.span),
         )))
+    }
+
+    fn parse_list<T, F>(
+        &mut self,
+        close: TokenType<'code>,
+        mut parser: F,
+    ) -> ParseResult<'code, Vec<T>>
+    where
+        F: FnMut(&mut Self) -> ParseResult<'code, T>,
+    {
+        let mut elements = Vec::new();
+
+        if self.peek_kind() == Some(&close) {
+            return Ok(elements);
+        }
+
+        let expr = parser(self)?;
+        elements.push(expr);
+
+        while self
+            .peek_kind()
+            .ok_or_else(|| ParseErr::EOFExpecting(close.clone()))?
+            != &close
+        {
+            self.expect(TokenType::Comma)?;
+
+            // trailing comma support
+            if self.peek_kind() == Some(&close) {
+                break;
+            }
+
+            let expr = parser(self)?;
+            elements.push(expr);
+        }
+        Ok(elements)
     }
 
     // token helpers

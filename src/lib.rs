@@ -1,4 +1,3 @@
-mod alloc;
 mod ast;
 mod errors;
 mod lex;
