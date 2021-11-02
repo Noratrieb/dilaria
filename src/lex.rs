@@ -373,7 +373,7 @@ impl CompilerError for LexError {
     fn message(&self) -> String {
         match &self.kind {
             LexErrorKind::InvalidCharacter(char) => format!("Unexpected character: '{}'", char),
-            LexErrorKind::InvalidFloat(_) => format!("Invalid number"),
+            LexErrorKind::InvalidFloat(_) => "Invalid number".to_string(),
             LexErrorKind::FloatInfiniteLiteral => "Number literal too long".to_string(),
             LexErrorKind::UnclosedStringLiteral => "String literal not closed".to_string(),
             LexErrorKind::SingleBang => "Expected '=' after '!'".to_string(),

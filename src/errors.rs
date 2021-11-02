@@ -73,8 +73,8 @@ where
     E: CompilerError + Debug,
 {
     let mut chars = 0;
-    let mut lines = source.split_inclusive('\n').enumerate();
-    while let Some((idx, line)) = lines.next() {
+    let lines = source.split_inclusive('\n').enumerate();
+    for (idx, line) in lines {
         if chars + line.len() + 1 > error.span().start {
             let offset_on_line = error.span().start - chars;
 

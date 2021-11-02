@@ -65,15 +65,15 @@ impl<'code> Parser<'code> {
     }
 
     fn statement(&mut self) -> ParseResult<'code, Stmt> {
-        match self.peek_kind().ok_or(ParseErr::EOF("statement"))? {
-            &TokenType::Let => self.declaration(),
-            &TokenType::Fn => self.fn_decl(),
-            &TokenType::If => Ok(Stmt::If(self.if_stmt()?)),
-            &TokenType::Loop => self.loop_stmt(),
-            &TokenType::While => self.while_stmt(),
-            &TokenType::Break => self.break_stmt(),
-            &TokenType::Return => self.return_stmt(),
-            &TokenType::BraceO => Ok(Stmt::Block(self.block()?)),
+        match *self.peek_kind().ok_or(ParseErr::Eof("statement"))? {
+            TokenType::Let => self.declaration(),
+            TokenType::Fn => self.fn_decl(),
+            TokenType::If => Ok(Stmt::If(self.if_stmt()?)),
+            TokenType::Loop => self.loop_stmt(),
+            TokenType::While => self.while_stmt(),
+            TokenType::Break => self.break_stmt(),
+            TokenType::Return => self.return_stmt(),
+            TokenType::BraceO => Ok(Stmt::Block(self.block()?)),
             _ => {
                 let expr = self.expression()?;
                 self.expect(TokenType::Semi)?;
@@ -307,7 +307,7 @@ impl<'code> Parser<'code> {
     }
 
     fn primary<'parser>(&'parser mut self) -> ParseResult<'code, Expr> {
-        let next = self.next().ok_or(ParseErr::EOF("primary"))?;
+        let next = self.next().ok_or(ParseErr::Eof("primary"))?;
         match next.kind {
             TokenType::String(literal) => Ok(Expr::Literal(Literal::String(literal, next.span))),
             TokenType::Number(literal) => Ok(Expr::Literal(Literal::Number(literal, next.span))),
@@ -333,7 +333,7 @@ impl<'code> Parser<'code> {
     }
 
     fn ident(&mut self) -> ParseResult<'code, Ident> {
-        let Token { kind, span } = self.next().ok_or(ParseErr::EOF("identifier"))?;
+        let Token { kind, span } = self.next().ok_or(ParseErr::Eof("identifier"))?;
         match kind {
             TokenType::Ident(name) => {
                 let name_owned = name.to_owned();
@@ -384,7 +384,7 @@ impl<'code> Parser<'code> {
 
         while self
             .peek_kind()
-            .ok_or_else(|| ParseErr::EOFExpecting(close.clone()))?
+            .ok_or_else(|| ParseErr::EofExpecting(close.clone()))?
             != &close
         {
             self.expect(TokenType::Comma)?;
@@ -428,7 +428,7 @@ impl<'code> Parser<'code> {
                 })
             }
         } else {
-            Err(ParseErr::EOFExpecting(kind))
+            Err(ParseErr::EofExpecting(kind))
         }
     }
 }
@@ -442,8 +442,8 @@ pub enum ParseErr<'code> {
         actual: Token<'code>,
     },
     InvalidTokenPrimary(Token<'code>),
-    EOFExpecting(TokenType<'code>),
-    EOF(&'static str),
+    EofExpecting(TokenType<'code>),
+    Eof(&'static str),
 }
 
 impl CompilerError for ParseErr<'_> {
@@ -454,8 +454,8 @@ impl CompilerError for ParseErr<'_> {
                 ..
             } => *span,
             ParseErr::InvalidTokenPrimary(Token { span, .. }) => *span,
-            ParseErr::EOFExpecting(_) => Span::dummy(),
-            ParseErr::EOF(_) => Span::dummy(),
+            ParseErr::EofExpecting(_) => Span::dummy(),
+            ParseErr::Eof(_) => Span::dummy(),
             ParseErr::BreakOutsideLoop(span) => *span,
             ParseErr::ReturnOutsideFunction(span) => *span,
         }
@@ -469,10 +469,10 @@ impl CompilerError for ParseErr<'_> {
             ParseErr::InvalidTokenPrimary(token) => {
                 format!("invalid token in expression: `{:?}`", token.kind)
             }
-            ParseErr::EOFExpecting(token) => {
+            ParseErr::EofExpecting(token) => {
                 format!("reached EOF searching for `{:?}`", token)
             }
-            ParseErr::EOF(message) => {
+            ParseErr::Eof(message) => {
                 format!("reached EOF while parsing `{}`", message)
             }
             ParseErr::BreakOutsideLoop(_) => "break used outside of loop".to_string(),
