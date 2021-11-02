@@ -66,6 +66,89 @@ fn test_number_literal<F: FnOnce(Vec<Token<'_>>) -> Expr>(parser: F) {
     assert_eq!(num_lit(10.0), unary);
 }
 
+mod r#fn {
+    use super::prelude::*;
+
+    fn parse_fn(tokens: Vec<Token>) -> Stmt {
+        let mut parser = parser(tokens);
+        parser.fn_decl().unwrap()
+    }
+
+    #[test]
+    fn empty() {
+        let tokens = [Fn, Ident("empty"), ParenO, ParenC, BraceO, BraceC]
+            .map(token)
+            .into();
+        let ast = parse_fn(tokens);
+        assert_eq!(
+            Stmt::FnDecl(FnDecl {
+                span: Span::dummy(),
+                name: Ident {
+                    name: "empty".to_string(),
+                    span: Default::default()
+                },
+                params: vec![],
+                body: Block {
+                    stmts: vec![],
+                    span: Default::default()
+                }
+            }),
+            ast
+        );
+    }
+
+    #[test]
+    fn params_body() {
+        let tokens = [
+            Fn,
+            Ident("empty"),
+            ParenO,
+            Ident("a"),
+            Comma,
+            Ident("b"),
+            ParenC,
+            BraceO,
+            Number(10.0),
+            Plus,
+            Number(20.0),
+            Semi,
+            BraceC,
+        ]
+        .map(token)
+        .into();
+        let ast = parse_fn(tokens);
+        assert_eq!(
+            Stmt::FnDecl(FnDecl {
+                span: Span::dummy(),
+                name: Ident {
+                    name: "empty".to_string(),
+                    span: Default::default()
+                },
+                params: vec![
+                    Ident {
+                        name: "a".to_string(),
+                        span: Default::default()
+                    },
+                    Ident {
+                        name: "b".to_string(),
+                        span: Default::default()
+                    }
+                ],
+                body: Block {
+                    stmts: vec![Stmt::Expr(Expr::BinaryOp(Box::new(BinaryOp {
+                        span: Default::default(),
+                        lhs: num_lit(10.0),
+                        rhs: num_lit(20.0),
+                        kind: BinaryOpKind::Add,
+                    })))],
+                    span: Default::default()
+                }
+            }),
+            ast
+        );
+    }
+}
+
 mod r#if {
     use super::prelude::*;
 
