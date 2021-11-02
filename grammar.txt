@@ -64,7 +64,9 @@
 
 <factor> ::= <unary> { ( "*" | "/" | "%" ) <factor> }
 
-<unary> ::= { ( "not" | "-" ) } <unary>
+<unary> ::= { ( "not" | "-" ) } <call>
+
+<call> ::= <primary> ( "(" { <expr> "," } ")" | "." <call> )
 
 <primary> ::= <IDENT>
             | <NUMBER>
