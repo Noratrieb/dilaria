@@ -73,6 +73,63 @@ fn test_number_literal<F: FnOnce(Vec<Token<'_>>) -> Expr>(parser: F) {
     assert_eq!(num_lit(10.0), unary);
 }
 
+mod assignment {
+    use super::prelude::*;
+
+    fn parse_assignment(tokens: Vec<Token>) -> Stmt {
+        let mut parser = parser(tokens);
+        parser.assignment().unwrap()
+    }
+
+    #[test]
+    fn simple() {
+        let tokens = [Ident("hugo"), Equal, Number(10.0), Semi].map(token).into();
+        let ast = parse_assignment(tokens);
+        assert_eq!(
+            Stmt::Assignment(Assignment {
+                span: Default::default(),
+                lhs: Expr::Ident(ident("hugo")),
+                rhs: num_lit(10.0)
+            }),
+            ast
+        );
+    }
+
+    #[test]
+    fn call_expr() {
+        let tokens = [
+            Ident("hugo"),
+            Dot,
+            Ident("age"),
+            Equal,
+            Number(2021.0),
+            Minus,
+            Number(1986.0),
+            Semi,
+        ]
+        .map(token)
+        .into();
+        let ast = parse_assignment(tokens);
+        assert_eq!(
+            Stmt::Assignment(Assignment {
+                span: Default::default(),
+                lhs: Expr::Call(Box::new(Call {
+                    callee: Expr::Ident(ident("hugo")),
+                    span: Default::default(),
+                    kind: CallKind::Field(ident("age"))
+                })),
+                rhs: Expr::BinaryOp(Box::new(BinaryOp {
+                    span: Default::default(),
+                    lhs: num_lit(2021.0),
+                    rhs: num_lit(1986.0),
+                    kind: BinaryOpKind::Sub
+                }))
+            }),
+            ast
+        );
+    }
+}
+
 mod r#fn {
     use super::prelude::*;
 

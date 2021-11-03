@@ -13,13 +13,13 @@
               | <break-stmt>
               | <return-stmt>
               | <block>
-              | <expression-statement>
 
 
 <declaration> ::= "let" <IDENT> "=" <expression> ";"
 
 
 <assignment> ::= { call "." } <IDENT> "=" <expression> ";"
+               | <expression> ";"
 
 
 <fn-decl> ::= "fn" <IDENT> <fn-args> <block>

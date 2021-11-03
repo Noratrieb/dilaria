@@ -75,9 +75,8 @@ impl<'code> Parser<'code> {
             TokenType::Return => self.return_stmt(),
             TokenType::BraceO => Ok(Stmt::Block(self.block()?)),
             _ => {
-                let expr = self.expression()?;
-                self.expect(TokenType::Semi)?;
-                Ok(Stmt::Expr(expr))
+                let stmt = self.assignment()?;
+                Ok(stmt)
             }
         }
     }
@@ -93,10 +92,6 @@ impl<'code> Parser<'code> {
             name,
             init,
         }))
-    }
-
-    fn assignment(&mut self) -> ParseResult<'code, Stmt> {
-        todo!("oh god no")
     }
 
     fn fn_decl(&mut self) -> ParseResult<'code, Stmt> {
@@ -212,6 +207,24 @@ impl<'code> Parser<'code> {
             ))
         } else {
             Ok(Stmt::Return(expr, keyword_span.extend(semi_span)))
+        }
+    }
+
+    fn assignment(&mut self) -> ParseResult<'code, Stmt> {
+        let expr = self.expression()?;
+
+        if let Some(TokenType::Equal) = self.peek_kind() {
+            let _ = self.expect(TokenType::Equal)?;
+            let init = self.expression()?;
+            let semi_span = self.expect(TokenType::Semi)?.span;
+            Ok(Stmt::Assignment(Assignment {
+                span: expr.span().extend(semi_span),
+                lhs: expr,
+                rhs: init,
+            }))
+        } else {
+            let _ = self.expect(TokenType::Semi)?;
+            Ok(Stmt::Expr(expr))
         }
     }
 
