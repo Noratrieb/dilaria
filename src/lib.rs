@@ -1,4 +1,5 @@
 mod ast;
+mod bird;
 mod errors;
 mod lex;
 mod parse;

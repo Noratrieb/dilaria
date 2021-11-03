@@ -1,3 +1,5 @@
+There is currently a tree-walking interpreter called `bird` in progress, but the plan is to have a bytecode vm in the end
+
 language_name is a small embeddable scripting language
 
 language_name is inspired by Javascript, Lox, Lua, Python, Rust and more
