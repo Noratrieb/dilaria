@@ -42,6 +42,7 @@ fn empty_block() -> Block {
 fn parser(tokens: Vec<Token>) -> Parser {
     Parser {
         tokens: tokens.into_iter().peekable(),
+        depth: 0,
         inside_fn_depth: 0,
         inside_loop_depth: 0,
     }
@@ -442,6 +443,16 @@ mod expr {
     fn parse_expr(tokens: Vec<Token>) -> Expr {
         let mut parser = parser(tokens);
         parser.expression().unwrap()
+    }
+
+    #[test]
+    fn stack_overflow() {
+        let tokens = std::iter::repeat(BracketO)
+            .map(token)
+            .take(100_000)
+            .collect();
+        let expr = parser(tokens).expression();
+        assert!(expr.is_err());
     }
 
     #[test]

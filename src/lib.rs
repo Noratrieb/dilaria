@@ -5,6 +5,7 @@ mod lex;
 mod parse;
 
 pub use lex::*;
+pub use parse::*;
 
 pub fn run_program(program: &str) {
     let lexer = lex::Lexer::lex(program);
