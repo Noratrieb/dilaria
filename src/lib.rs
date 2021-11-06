@@ -4,6 +4,8 @@ mod errors;
 mod lex;
 mod parse;
 
+pub use lex::*;
+
 pub fn run_program(program: &str) {
     let lexer = lex::Lexer::lex(program);
     let (success, errors) = lexer.partition::<Vec<_>, _>(|result| result.is_ok());
