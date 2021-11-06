@@ -7,4 +7,4 @@ use crate::ast::Program;
 #[derive(Debug)]
 struct Vm {}
 
-fn execute(program: Program) {}
+fn execute(_program: Program) {}
