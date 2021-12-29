@@ -187,12 +187,16 @@ impl Compiler {
 
     fn lookup_local(&self, name: &Ident) -> CResult<usize> {
         for locals in self.locals.iter().rev() {
+            dbg!("searching");
             if let Some(&position) = locals.get(name) {
                 return Ok(position);
             }
         }
 
-        Err(CompileError)
+        Err(CompileError::new(
+            name.span,
+            format!("variable {} not found", name.sym),
+        ))
     }
 
     fn current_stack_top(&self) -> usize {
@@ -221,18 +225,32 @@ enum StackChange {
 }
 
 #[derive(Debug)]
-pub struct CompileError;
+pub struct CompileError {
+    span: Span,
+    message: String,
+    note: Option<String>,
+}
+
+impl CompileError {
+    fn new(span: Span, message: String) -> Self {
+        Self {
+            span,
+            message,
+            note: None,
+        }
+    }
+}
 
 impl CompilerError for CompileError {
     fn span(&self) -> Span {
-        todo!()
+        self.span
     }
 
     fn message(&self) -> String {
-        todo!()
+        self.message.clone()
     }
 
     fn note(&self) -> Option<String> {
-        todo!()
+        self.note.clone()
     }
 }
