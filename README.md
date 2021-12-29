@@ -10,22 +10,22 @@ language_name is inspired by Javascript, Lox, Lua, Python, Rust and more
 
 Declaring variables using `let`
 
-```
+```rust
 let hello = 4;
 ```
 
 Semicolons are needed :)
 
-```
+```rust
 let test = 5;
 let another = 4;
 ```
 
 The language has strings, numbers, arrays, objects and null and booleans
 
-```
+```rust
 let string = "hallo";
-let number = 4;
+let number = 4; 
 let array = [];
 let object = {};
 let _null = null;
@@ -34,14 +34,14 @@ let bool = true;
 
 You access properties on objects using `.`
 
-```
+```rust
 let obj = {};
 obj.hi = "hi!";
 ```
 
 Functions are first class
 
-```
+```rust
 let obj = {};
 obj.hello = helloFn;
 obj.hello();
@@ -49,7 +49,7 @@ obj.hello();
 
 Functions are declared using `fn`
 
-```
+```rust
 fn greet(name) {
     return "hello, " + name;
 }
@@ -58,7 +58,7 @@ fn greet(name) {
 Functions are closures
 
 Comments using `#`
-```
+```py
 # hi!
 ```
 
@@ -72,7 +72,7 @@ comment
 
 There are many native functions, that can easily be customized and added/removed by the host
 
-```
+```rust
 # rocket game
 turnRocketLeft(29);
 turnRocketRight(32);
@@ -89,7 +89,7 @@ fetch("https://github.com/Nilstrieb", callback);
 
 Basic arithmetic and boolean logic is available
 
-```
+```rust
 let a = 5;
 let b = 5;
 print(a + b / b * b - a % b);
@@ -98,7 +98,7 @@ print(true and false or false or true and false);
 
 Loops and conditionals
 
-```
+```rust
 let x = true;
 if x {
     print("true!");

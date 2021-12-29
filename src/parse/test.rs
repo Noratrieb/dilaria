@@ -27,7 +27,7 @@ fn num_lit(number: f64) -> Expr {
 
 fn ident(name: &str) -> Ident {
     Ident {
-        name: name.to_string(),
+        sym: name.to_string(),
         span: Default::default(),
     }
 }

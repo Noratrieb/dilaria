@@ -495,7 +495,7 @@ impl<'code> Parser<'code> {
             TokenType::Ident(name) => {
                 let name_owned = name.to_owned();
                 Ok(Expr::Ident(Ident {
-                    name: name_owned,
+                    sym: name_owned,
                     span: next.span,
                 }))
             }
@@ -513,7 +513,7 @@ impl<'code> Parser<'code> {
             TokenType::Ident(name) => {
                 let name_owned = name.to_owned();
                 Ok(Ident {
-                    name: name_owned,
+                    sym: name_owned,
                     span,
                 })
             }
