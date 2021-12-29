@@ -1,0 +1,21 @@
+---
+source: src/parse/test.rs
+assertion_line: 209
+expression: ast
+
+---
+Print(
+    Literal(
+        Boolean(
+            true,
+            Span {
+                start: 0,
+                end: 0,
+            },
+        ),
+    ),
+    Span {
+        start: 0,
+        end: 0,
+    },
+)

@@ -1,0 +1,74 @@
+---
+source: src/parse/test.rs
+assertion_line: 148
+expression: ast
+
+---
+FnDecl(
+    FnDecl {
+        span: Span {
+            start: 0,
+            end: 0,
+        },
+        name: Ident {
+            sym: "empty",
+            span: Span {
+                start: 0,
+                end: 0,
+            },
+        },
+        params: [
+            Ident {
+                sym: "a",
+                span: Span {
+                    start: 0,
+                    end: 0,
+                },
+            },
+            Ident {
+                sym: "b",
+                span: Span {
+                    start: 0,
+                    end: 0,
+                },
+            },
+        ],
+        body: Block {
+            stmts: [
+                Expr(
+                    BinaryOp(
+                        BinaryOp {
+                            span: Span {
+                                start: 0,
+                                end: 0,
+                            },
+                            lhs: Literal(
+                                Number(
+                                    10.0,
+                                    Span {
+                                        start: 0,
+                                        end: 0,
+                                    },
+                                ),
+                            ),
+                            rhs: Literal(
+                                Number(
+                                    20.0,
+                                    Span {
+                                        start: 0,
+                                        end: 0,
+                                    },
+                                ),
+                            ),
+                            kind: Add,
+                        },
+                    ),
+                ),
+            ],
+            span: Span {
+                start: 0,
+                end: 0,
+            },
+        },
+    },
+)

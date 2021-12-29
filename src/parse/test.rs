@@ -1,12 +1,9 @@
-use crate::ast::BinaryOp;
 use crate::parse::Parser;
 use prelude::*;
 
 mod prelude {
-    pub(super) use super::{
-        empty_block, ident, num_lit, parser, test_literal_bin_op, test_number_literal, token,
-    };
-    pub(super) use crate::ast::*;
+    pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
+    pub(super) use crate::ast::{Expr, Stmt};
     pub(super) use crate::errors::Span;
     pub(super) use crate::lex::{
         Token,
@@ -21,24 +18,6 @@ fn token(kind: TokenType) -> Token {
     }
 }
 
-fn num_lit(number: f64) -> Expr {
-    Expr::Literal(Literal::Number(number, Span::dummy()))
-}
-
-fn ident(name: &str) -> Ident {
-    Ident {
-        sym: name.to_string(),
-        span: Default::default(),
-    }
-}
-
-fn empty_block() -> Block {
-    Block {
-        stmts: vec![],
-        span: Span::dummy(),
-    }
-}
-
 fn parser(tokens: Vec<Token>) -> Parser {
     Parser {
         tokens: tokens.into_iter().peekable(),
@@ -48,30 +27,18 @@ fn parser(tokens: Vec<Token>) -> Parser {
     }
 }
 
-fn test_literal_bin_op<F: FnOnce(Vec<Token<'_>>) -> Expr>(
-    token_type: TokenType,
-    expected_op_kind: BinaryOpKind,
-    parser: F,
-) {
+fn test_literal_bin_op<F: FnOnce(Vec<Token<'_>>) -> Expr>(token_type: TokenType, parser: F) {
     let tokens = [TokenType::Number(10.0), token_type, TokenType::Number(4.0)]
         .map(token)
         .into();
-    let factor = parser(tokens);
-    assert_eq!(
-        Expr::BinaryOp(Box::new(BinaryOp {
-            span: Span::dummy(),
-            lhs: num_lit(10.0),
-            rhs: num_lit(4.0),
-            kind: expected_op_kind
-        })),
-        factor
-    );
+    let ast = parser(tokens);
+    insta::assert_debug_snapshot!(ast);
 }
 
 fn test_number_literal<F: FnOnce(Vec<Token<'_>>) -> Expr>(parser: F) {
     let tokens = [TokenType::Number(10.0)].map(token).into();
-    let unary = parser(tokens);
-    assert_eq!(num_lit(10.0), unary);
+    let ast = parser(tokens);
+    insta::assert_debug_snapshot!(ast);
 }
 
 mod assignment {
@@ -86,14 +53,7 @@ mod assignment {
     fn simple() {
         let tokens = [Ident("hugo"), Equal, Number(10.0), Semi].map(token).into();
         let ast = parse_assignment(tokens);
-        assert_eq!(
-            Stmt::Assignment(Assignment {
-                span: Default::default(),
-                lhs: Expr::Ident(ident("hugo")),
-                rhs: num_lit(10.0)
-            }),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -111,23 +71,7 @@ mod assignment {
         .map(token)
         .into();
         let ast = parse_assignment(tokens);
-        assert_eq!(
-            Stmt::Assignment(Assignment {
-                span: Default::default(),
-                lhs: Expr::Call(Box::new(Call {
-                    callee: Expr::Ident(ident("hugo")),
-                    span: Default::default(),
-                    kind: CallKind::Field(ident("age"))
-                })),
-                rhs: Expr::BinaryOp(Box::new(BinaryOp {
-                    span: Default::default(),
-                    lhs: num_lit(2021.0),
-                    rhs: num_lit(1986.0),
-                    kind: BinaryOpKind::Sub
-                }))
-            }),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
@@ -145,18 +89,7 @@ mod r#fn {
             .map(token)
             .into();
         let ast = parse_fn(tokens);
-        assert_eq!(
-            Stmt::FnDecl(FnDecl {
-                span: Span::dummy(),
-                name: ident("empty"),
-                params: vec![],
-                body: Block {
-                    stmts: vec![],
-                    span: Default::default()
-                }
-            }),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -179,28 +112,13 @@ mod r#fn {
         .map(token)
         .into();
         let ast = parse_fn(tokens);
-        assert_eq!(
-            Stmt::FnDecl(FnDecl {
-                span: Span::dummy(),
-                name: ident("empty"),
-                params: vec![ident("a"), ident("b")],
-                body: Block {
-                    stmts: vec![Stmt::Expr(Expr::BinaryOp(Box::new(BinaryOp {
-                        span: Default::default(),
-                        lhs: num_lit(10.0),
-                        rhs: num_lit(20.0),
-                        kind: BinaryOpKind::Add,
-                    })))],
-                    span: Default::default()
-                }
-            }),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
 mod r#if {
     use super::prelude::*;
+    use crate::ast::IfStmt;
 
     fn parse_if(tokens: Vec<Token>) -> IfStmt {
         let mut parser = parser(tokens);
@@ -211,15 +129,7 @@ mod r#if {
     fn empty() {
         let tokens = [If, True, BraceO, BraceC].map(token).into();
         let ast = parse_if(tokens);
-        assert_eq!(
-            IfStmt {
-                span: Span::dummy(),
-                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                body: empty_block(),
-                else_part: None
-            },
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -228,15 +138,7 @@ mod r#if {
             .map(token)
             .into();
         let ast = parse_if(tokens);
-        assert_eq!(
-            IfStmt {
-                span: Span::dummy(),
-                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                body: empty_block(),
-                else_part: Some(Box::new(ElsePart::Else(empty_block(), Span::dummy())))
-            },
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -245,23 +147,7 @@ mod r#if {
             .map(token)
             .into();
         let ast = parse_if(tokens);
-        assert_eq!(
-            IfStmt {
-                span: Span::dummy(),
-                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                body: empty_block(),
-                else_part: Some(Box::new(ElsePart::ElseIf(
-                    IfStmt {
-                        span: Span::dummy(),
-                        cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                        body: empty_block(),
-                        else_part: None
-                    },
-                    Span::dummy()
-                )))
-            },
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -272,23 +158,7 @@ mod r#if {
         .map(token)
         .into();
         let ast = parse_if(tokens);
-        assert_eq!(
-            IfStmt {
-                span: Span::dummy(),
-                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                body: empty_block(),
-                else_part: Some(Box::new(ElsePart::ElseIf(
-                    IfStmt {
-                        span: Span::dummy(),
-                        cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                        body: empty_block(),
-                        else_part: Some(Box::new(ElsePart::Else(empty_block(), Span::dummy())))
-                    },
-                    Span::dummy()
-                )))
-            },
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
@@ -302,15 +172,9 @@ mod print {
 
     #[test]
     fn print_true() {
-        let tokens = [Print, True].map(token).into();
+        let tokens = [Print, True, Semi].map(token).into();
         let ast = parse_print(tokens);
-        assert_eq!(
-            Stmt::Print(
-                Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                Span::dummy()
-            ),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
@@ -326,14 +190,7 @@ mod r#while {
     fn empty() {
         let tokens = [While, True, BraceO, BraceC].map(token).into();
         let ast = parse_while(tokens);
-        assert_eq!(
-            Stmt::While(WhileStmt {
-                span: Span::dummy(),
-                cond: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                body: empty_block()
-            }),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -342,22 +199,7 @@ mod r#while {
             .map(token)
             .into();
         let ast = parse_while(tokens);
-        assert_eq!(
-            Stmt::While(WhileStmt {
-                span: Span::dummy(),
-                cond: Expr::BinaryOp(Box::new(BinaryOp {
-                    span: Span::dummy(),
-                    lhs: Expr::Literal(Literal::Boolean(false, Span::dummy())),
-                    rhs: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                    kind: BinaryOpKind::Or
-                })),
-                body: Block {
-                    stmts: vec![Stmt::Break(Span::dummy())],
-                    span: Span::dummy()
-                }
-            }),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
@@ -373,23 +215,14 @@ mod r#loop {
     fn empty() {
         let tokens = [Loop, BraceO, BraceC].map(token).into();
         let ast = parse_loop(tokens);
-        assert_eq!(Stmt::Loop(empty_block(), Span::dummy()), ast);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn with_break() {
         let tokens = [Loop, BraceO, Break, Semi, BraceC].map(token).into();
         let ast = parse_loop(tokens);
-        assert_eq!(
-            Stmt::Loop(
-                Block {
-                    stmts: vec![Stmt::Break(Span::dummy())],
-                    span: Default::default()
-                },
-                Span::dummy()
-            ),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -398,24 +231,13 @@ mod r#loop {
             .map(token)
             .into();
         let ast = parse_loop(tokens);
-        assert_eq!(
-            Stmt::Loop(
-                Block {
-                    stmts: vec![
-                        Stmt::Loop(empty_block(), Span::dummy()),
-                        Stmt::Break(Span::dummy())
-                    ],
-                    span: Span::dummy()
-                },
-                Span::dummy()
-            ),
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
 mod block {
     use super::prelude::*;
+    use crate::ast::Block;
 
     fn parse_block(tokens: Vec<Token>) -> Block {
         let mut parser = parser(tokens);
@@ -426,7 +248,7 @@ mod block {
     fn empty() {
         let tokens = [BraceO, BraceC].map(token).into();
         let ast = parse_block(tokens);
-        assert_eq!(empty_block(), ast);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -435,32 +257,19 @@ mod block {
             .map(token)
             .into();
         let ast = parse_block(tokens);
-        assert_eq!(
-            Block {
-                stmts: vec![Stmt::Expr(num_lit(10.0)), Stmt::Expr(num_lit(20.0)),],
-                span: Span::dummy()
-            },
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn nested() {
         let tokens = [BraceO, BraceO, BraceC, BraceC].map(token).into();
         let ast = parse_block(tokens);
-        assert_eq!(
-            Block {
-                stmts: vec![Stmt::Block(empty_block())],
-                span: Span::dummy()
-            },
-            ast
-        );
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
 mod expr {
     use super::prelude::*;
-    use crate::ast::{UnaryOp, UnaryOpKind};
 
     fn parse_expr(tokens: Vec<Token>) -> Expr {
         let mut parser = parser(tokens);
@@ -487,22 +296,8 @@ mod expr {
         let tokens = [Number(10.0), Plus, Number(20.0), Asterisk, Number(100.0)]
             .map(token)
             .into();
-        let expr = parse_expr(tokens);
-        assert_eq!(
-            Expr::BinaryOp(Box::new(BinaryOp {
-                span: Span::dummy(),
-                lhs: num_lit(10.0),
-                rhs: Expr::BinaryOp(Box::new(BinaryOp {
-                    span: Span::dummy(),
-                    lhs: num_lit(20.0),
-                    rhs: num_lit(100.0),
-
-                    kind: BinaryOpKind::Mul
-                })),
-                kind: BinaryOpKind::Add
-            })),
-            expr
-        );
+        let ast = parse_expr(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -510,20 +305,8 @@ mod expr {
         let tokens = [Number(10.0), EqualEqual, Minus, Number(10.0)]
             .map(token)
             .into();
-        let expr = parse_expr(tokens);
-        assert_eq!(
-            Expr::BinaryOp(Box::new(BinaryOp {
-                span: Span::dummy(),
-                lhs: num_lit(10.0),
-                rhs: Expr::UnaryOp(Box::new(UnaryOp {
-                    span: Span::dummy(),
-                    expr: num_lit(10.0),
-                    kind: UnaryOpKind::Neg
-                })),
-                kind: BinaryOpKind::Equal
-            })),
-            expr
-        );
+        let ast = parse_expr(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -539,22 +322,8 @@ mod expr {
         ]
         .map(token)
         .into();
-        let expr = parse_expr(tokens);
-        assert_eq!(
-            Expr::BinaryOp(Box::new(BinaryOp {
-                span: Span::dummy(),
-                lhs: num_lit(10.0),
-                rhs: Expr::BinaryOp(Box::new(BinaryOp {
-                    span: Span::dummy(),
-                    lhs: num_lit(20.0),
-                    rhs: num_lit(30.0),
-
-                    kind: BinaryOpKind::Add
-                })),
-                kind: BinaryOpKind::Mul
-            })),
-            expr
-        );
+        let ast = parse_expr(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
@@ -573,7 +342,7 @@ mod logical_or {
 
     #[test]
     fn and() {
-        test_literal_bin_op(Or, BinaryOpKind::Or, parse_logical_or);
+        test_literal_bin_op(Or, parse_logical_or);
     }
 }
 
@@ -592,7 +361,7 @@ mod logical_and {
 
     #[test]
     fn and() {
-        test_literal_bin_op(And, BinaryOpKind::And, parse_logical_and);
+        test_literal_bin_op(And, parse_logical_and);
     }
 }
 
@@ -611,12 +380,12 @@ mod equality {
 
     #[test]
     fn not_equal() {
-        test_literal_bin_op(BangEqual, BinaryOpKind::NotEqual, parse_equality);
+        test_literal_bin_op(BangEqual, parse_equality);
     }
 
     #[test]
     fn equal() {
-        test_literal_bin_op(EqualEqual, BinaryOpKind::Equal, parse_equality);
+        test_literal_bin_op(EqualEqual, parse_equality);
     }
 }
 
@@ -635,22 +404,22 @@ mod comparison {
 
     #[test]
     fn greater() {
-        test_literal_bin_op(Greater, BinaryOpKind::Greater, parse_comparison);
+        test_literal_bin_op(Greater, parse_comparison);
     }
 
     #[test]
     fn greater_equal() {
-        test_literal_bin_op(GreaterEqual, BinaryOpKind::GreaterEqual, parse_comparison);
+        test_literal_bin_op(GreaterEqual, parse_comparison);
     }
 
     #[test]
     fn less() {
-        test_literal_bin_op(Less, BinaryOpKind::Less, parse_comparison);
+        test_literal_bin_op(Less, parse_comparison);
     }
 
     #[test]
     fn less_equal() {
-        test_literal_bin_op(LessEqual, BinaryOpKind::LessEqual, parse_comparison);
+        test_literal_bin_op(LessEqual, parse_comparison);
     }
 }
 
@@ -669,12 +438,12 @@ mod term {
 
     #[test]
     fn add() {
-        test_literal_bin_op(Plus, BinaryOpKind::Add, parse_term);
+        test_literal_bin_op(Plus, parse_term);
     }
 
     #[test]
     fn sub() {
-        test_literal_bin_op(Minus, BinaryOpKind::Sub, parse_term);
+        test_literal_bin_op(Minus, parse_term);
     }
 }
 
@@ -693,23 +462,22 @@ mod factor {
 
     #[test]
     fn multiply() {
-        test_literal_bin_op(Asterisk, BinaryOpKind::Mul, parse_factor);
+        test_literal_bin_op(Asterisk, parse_factor);
     }
 
     #[test]
     fn divide() {
-        test_literal_bin_op(Slash, BinaryOpKind::Div, parse_factor);
+        test_literal_bin_op(Slash, parse_factor);
     }
 
     #[test]
     fn modulo() {
-        test_literal_bin_op(Percent, BinaryOpKind::Mod, parse_factor);
+        test_literal_bin_op(Percent, parse_factor);
     }
 }
 
 mod unary {
     use super::prelude::*;
-    use crate::ast::{UnaryOp, UnaryOpKind};
 
     fn parse_unary(tokens: Vec<Token>) -> Expr {
         let mut parser = parser(tokens);
@@ -721,34 +489,18 @@ mod unary {
         test_number_literal(parse_unary);
     }
 
-    // needs expr support
-
     #[test]
     fn not() {
         let tokens = [Not, True].map(token).into();
-        let unary = parse_unary(tokens);
-        assert_eq!(
-            Expr::UnaryOp(Box::new(UnaryOp {
-                span: Span::dummy(),
-                expr: Expr::Literal(Literal::Boolean(true, Span::dummy())),
-                kind: UnaryOpKind::Not
-            })),
-            unary
-        );
+        let ast = parse_unary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn neg() {
         let tokens = [Minus, Number(10.0)].map(token).into();
-        let unary = parse_unary(tokens);
-        assert_eq!(
-            Expr::UnaryOp(Box::new(UnaryOp {
-                span: Span::dummy(),
-                expr: num_lit(10.0),
-                kind: UnaryOpKind::Neg
-            })),
-            unary
-        );
+        let ast = parse_unary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
@@ -763,29 +515,15 @@ mod call {
     #[test]
     fn field_simple() {
         let tokens = [Ident("hugo"), Dot, Ident("name")].map(token).into();
-        let literal = parse_call(tokens);
-        assert_eq!(
-            Expr::Call(Box::new(Call {
-                callee: Expr::Ident(ident("hugo")),
-                span: Default::default(),
-                kind: CallKind::Field(ident("name"))
-            })),
-            literal
-        );
+        let ast = parse_call(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn simple() {
         let tokens = [Ident("print"), ParenO, ParenC].map(token).into();
-        let literal = parse_call(tokens);
-        assert_eq!(
-            Expr::Call(Box::new(Call {
-                callee: Expr::Ident(ident("print")),
-                span: Default::default(),
-                kind: CallKind::Fn(Vec::new())
-            })),
-            literal
-        );
+        let ast = parse_call(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -801,15 +539,8 @@ mod call {
         ]
         .map(token)
         .into();
-        let literal = parse_call(tokens);
-        assert_eq!(
-            Expr::Call(Box::new(Call {
-                callee: Expr::Ident(ident("print")),
-                span: Default::default(),
-                kind: CallKind::Fn(vec![num_lit(10.0), num_lit(5.0)])
-            })),
-            literal
-        );
+        let ast = parse_call(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -825,23 +556,8 @@ mod call {
         ]
         .map(token)
         .into();
-        let literal = parse_call(tokens);
-        assert_eq!(
-            Expr::Call(Box::new(Call {
-                callee: Expr::Call(Box::new(Call {
-                    callee: Expr::Call(Box::new(Call {
-                        callee: Expr::Ident(ident("hugo")),
-                        span: Default::default(),
-                        kind: CallKind::Field(ident("name"))
-                    })),
-                    span: Default::default(),
-                    kind: CallKind::Field(ident("print"))
-                })),
-                span: Default::default(),
-                kind: CallKind::Fn(vec![])
-            })),
-            literal
-        );
+        let ast = parse_call(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -863,28 +579,8 @@ mod call {
         ]
         .map(token)
         .into();
-        let literal = parse_call(tokens);
-        assert_eq!(
-            Expr::Call(Box::new(Call {
-                callee: Expr::Ident(ident("print")),
-                span: Default::default(),
-                kind: CallKind::Fn(vec![Expr::Call(Box::new(Call {
-                    callee: Expr::Call(Box::new(Call {
-                        callee: Expr::BinaryOp(Box::new(BinaryOp {
-                            span: Default::default(),
-                            lhs: num_lit(10.0),
-                            rhs: num_lit(5.0),
-                            kind: BinaryOpKind::Add
-                        })),
-                        span: Default::default(),
-                        kind: CallKind::Field(ident("abs"))
-                    })),
-                    span: Default::default(),
-                    kind: CallKind::Fn(vec![])
-                })),])
-            })),
-            literal
-        );
+        let ast = parse_call(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 }
 
@@ -899,99 +595,78 @@ mod primary {
     #[test]
     fn ident_test() {
         let tokens = [Ident("tokens")].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(Expr::Ident(ident("tokens")), literal);
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn string() {
         let tokens = [Number(10.0)].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(num_lit(10.0), literal);
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn number() {
         let tokens = [String("uwu".to_string())].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::String("uwu".to_string(), Span::dummy())),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn empty_object() {
         let tokens = [BraceO, BraceC].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(Expr::Literal(Literal::Object(Span::dummy())), literal);
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn empty_array() {
         let tokens = [BracketO, BracketC].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::Array(Vec::new(), Span::dummy())),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn r#false() {
         let tokens = [False].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::Boolean(false, Span::dummy())),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn r#true() {
         let tokens = [True].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::Boolean(true, Span::dummy())),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn null() {
         let tokens = [Null].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(Expr::Literal(Literal::Null(Span::dummy())), literal);
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn empty_array_literal() {
         let tokens = [BracketO, BracketC].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::Array(Vec::new(), Span::dummy())),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn single_array_literal() {
         let tokens = [BracketO, Number(10.0), BracketC].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::Array(vec![num_lit(10.0)], Span::dummy())),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn single_array_literal_trailing_comma() {
         let tokens = [BracketO, Number(10.0), Comma, BracketC].map(token).into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::Array(vec![num_lit(10.0)], Span::dummy())),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -999,14 +674,8 @@ mod primary {
         let tokens = [BracketO, Number(10.0), Comma, Number(10.0), BracketC]
             .map(token)
             .into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::Array(
-                vec![num_lit(10.0), num_lit(10.0)],
-                Span::dummy()
-            )),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
@@ -1014,14 +683,8 @@ mod primary {
         let tokens = [BracketO, Number(10.0), Comma, Number(10.0), Comma, BracketC]
             .map(token)
             .into();
-        let literal = parse_primary(tokens);
-        assert_eq!(
-            Expr::Literal(Literal::Array(
-                vec![num_lit(10.0), num_lit(10.0)],
-                Span::dummy()
-            )),
-            literal
-        );
+        let ast = parse_primary(tokens);
+        insta::assert_debug_snapshot!(ast);
     }
 
     #[test]

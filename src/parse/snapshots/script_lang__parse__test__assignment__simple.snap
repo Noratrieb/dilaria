@@ -1,0 +1,32 @@
+---
+source: src/parse/test.rs
+assertion_line: 89
+expression: ast
+
+---
+Assignment(
+    Assignment {
+        span: Span {
+            start: 0,
+            end: 0,
+        },
+        lhs: Ident(
+            Ident {
+                sym: "hugo",
+                span: Span {
+                    start: 0,
+                    end: 0,
+                },
+            },
+        ),
+        rhs: Literal(
+            Number(
+                10.0,
+                Span {
+                    start: 0,
+                    end: 0,
+                },
+            ),
+        ),
+    },
+)
