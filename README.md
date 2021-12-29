@@ -39,6 +39,12 @@ let obj = {};
 obj.hi = "hi!";
 ```
 
+There is the `print` statement to print a value, but this will be removed
+```rust
+let name = "nils";
+print name;
+```
+
 Functions are first class
 
 ```rust

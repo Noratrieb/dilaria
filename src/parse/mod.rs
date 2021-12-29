@@ -111,6 +111,7 @@ impl<'code> Parser<'code> {
             TokenType::While => self.while_stmt(),
             TokenType::Break => self.break_stmt(),
             TokenType::Return => self.return_stmt(),
+            TokenType::Print => self.print_stmt(),
             TokenType::BraceO => Ok(Stmt::Block(self.block()?)),
             _ => {
                 let stmt = self.assignment()?;
@@ -289,6 +290,20 @@ impl<'code> Parser<'code> {
         } else {
             Ok(Stmt::Return(expr, keyword_span.extend(semi_span)))
         }
+    }
+
+    fn print_stmt(&mut self) -> ParseResult<'code, Stmt> {
+        enter_parse!(self);
+
+        let print_span = self.expect(TokenType::Print)?.span;
+
+        let expr = self.expression()?;
+
+        let semi_span = self.expect(TokenType::Semi)?.span;
+
+        exit_parse!(self);
+
+        Ok(Stmt::Print(expr, print_span.extend(semi_span)))
     }
 
     fn assignment(&mut self) -> ParseResult<'code, Stmt> {

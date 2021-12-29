@@ -75,18 +75,12 @@ where
     let mut chars = 0;
     let lines = source.split_inclusive('\n').enumerate();
     for (idx, line) in lines {
-        if chars + line.len() + 1 > error.span().start {
+        if chars + line.len() > error.span().start {
             let offset_on_line = error.span().start - chars;
 
             println!("{}error: {}{}", RED, error.message(), RESET);
             println!("      {}|{}", CYAN, RESET);
-            println!(
-                "{}{:>5} |{} {}",
-                CYAN,
-                idx + 1,
-                RESET,
-                &line[..line.len() - 1]
-            );
+            println!("{}{:>5} |{} {}", CYAN, idx + 1, RESET, line);
             print!("      {}|{} ", CYAN, RESET);
             println!(
                 "{}{}{}{}",

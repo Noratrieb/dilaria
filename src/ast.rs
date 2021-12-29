@@ -31,6 +31,7 @@ pub enum Stmt {
     Return(Option<Expr>, Span),
     Block(Block),
     Expr(Expr),
+    Print(Expr, Span),
 }
 
 #[derive(Debug, Clone, PartialEq)]

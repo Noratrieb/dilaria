@@ -1,3 +1,4 @@
+use crate::errors::Span;
 use crate::value::{HashMap, Symbol};
 use std::rc::Rc;
 
@@ -5,6 +6,7 @@ use std::rc::Rc;
 pub struct FnBlock {
     pub code: Vec<Instr>,
     pub stack_sizes: Vec<usize>,
+    pub spans: Vec<Span>,
     pub arity: u8,
 }
 
@@ -32,6 +34,9 @@ pub enum Instr {
     CmpLessEq,
     CmpEq,
     CmpNotEq,
+
+    /// Println the value on top of the stack
+    Print,
 }
 
 #[derive(Debug)]

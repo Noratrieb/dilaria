@@ -292,6 +292,28 @@ mod r#if {
     }
 }
 
+mod print {
+    use super::prelude::*;
+
+    fn parse_print(tokens: Vec<Token>) -> Stmt {
+        let mut parser = parser(tokens);
+        parser.print_stmt().unwrap()
+    }
+
+    #[test]
+    fn print_true() {
+        let tokens = [Print, True].map(token).into();
+        let ast = parse_print(tokens);
+        assert_eq!(
+            Stmt::Print(
+                Expr::Literal(Literal::Boolean(true, Span::dummy())),
+                Span::dummy()
+            ),
+            ast
+        );
+    }
+}
+
 mod r#while {
     use super::prelude::*;
 

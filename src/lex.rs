@@ -32,6 +32,7 @@ impl<'code> Token<'code> {
 pub enum TokenType<'code> {
     // keywords
     Let,
+    Print,
     Fn,
     If,
     Else,
@@ -341,6 +342,7 @@ fn keyword_or_ident(name: &str) -> TokenType {
         b'a' if len == 3 && bs[1..3] == *b"nd" => TokenType::And,
         // or
         b'o' if len == 2 && bs[1] == b'r' => TokenType::Or,
+        b'p' if len == 5 && bs[1..5] == *b"rint" => TokenType::Print,
         _ => TokenType::Ident(name),
     }
 }
@@ -572,9 +574,9 @@ mod test {
     #[test]
     fn keywords() {
         lex_test(
-            "let fn if else loop while break for true false null and not or",
+            "let fn if else loop while break for true false null and not or print",
             vec![
-                Let, Fn, If, Else, Loop, While, Break, For, True, False, Null, And, Not, Or,
+                Let, Fn, If, Else, Loop, While, Break, For, True, False, Null, And, Not, Or, Print,
             ],
         )
     }
@@ -635,7 +637,7 @@ mod test {
         let me out ._.
         fn world() {
             if number == 5 or true == false and not false {
-                print("Hello \\ World!")
+                println("Hello \\ World!")
             }
         }"#,
             vec![
@@ -670,7 +672,7 @@ mod test {
                 Not,
                 False,
                 BraceO,
-                Ident("print"),
+                Ident("println"),
                 ParenO,
                 String("Hello \\ World!".to_string()),
                 ParenC,

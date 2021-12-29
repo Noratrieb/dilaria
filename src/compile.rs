@@ -4,16 +4,47 @@ use crate::ast::{
 };
 use crate::bytecode::{FnBlock, Instr, Value};
 use crate::errors::{CompilerError, Span};
-use crate::value::HashMap;
+use crate::value::{HashMap, Symbol};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 type CResult<T> = Result<T, CompileError>;
+
+#[derive(Debug, Default)]
+struct Env {
+    locals: HashMap<Symbol, usize>,
+    outer: Option<Rc<RefCell<Env>>>,
+}
+
+impl Env {
+    fn lookup_local(&self, name: &Ident) -> CResult<usize> {
+        fn lookup_inner(env: &Env, name: &Ident) -> Option<usize> {
+            env.locals.get(&name.sym).copied().or_else(|| {
+                env.outer
+                    .as_ref()
+                    .map(|outer| lookup_inner(&outer.borrow(), name))
+                    .flatten()
+            })
+        }
+
+        lookup_inner(self, name)
+            .ok_or_else(|| CompileError::new(name.span, format!("variable {} not found", name.sym)))
+    }
+
+    fn new_inner(outer: Rc<RefCell<Self>>) -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Self {
+            locals: HashMap::default(),
+            outer: Some(outer),
+        }))
+    }
+}
 
 #[derive(Debug, Default)]
 struct Compiler {
     blocks: Vec<FnBlock>,
     current_block: usize,
     /// the current local variables that are in scope, only needed for compiling
-    locals: Vec<HashMap<Ident, usize>>,
+    env: Rc<RefCell<Env>>,
 }
 
 pub fn compile(ast: &Program) -> Result<Vec<FnBlock>, CompileError> {
@@ -29,12 +60,11 @@ impl Compiler {
         let global_block = FnBlock::default();
         self.blocks.push(global_block);
         self.current_block = self.blocks.len() - 1;
-        self.locals.push(HashMap::default());
-        self.compile_fn_block(&ast.0)?;
+        self.compile_stmts(&ast.0)?;
         Ok(())
     }
 
-    fn compile_fn_block(&mut self, stmts: &[Stmt]) -> CResult<()> {
+    fn compile_stmts(&mut self, stmts: &[Stmt]) -> CResult<()> {
         for stmt in stmts {
             match stmt {
                 Stmt::Declaration(inner) => self.compile_declaration(inner),
@@ -45,6 +75,7 @@ impl Compiler {
                 Stmt::While(inner) => self.compile_while(inner),
                 Stmt::Break(span) => self.compile_break(*span),
                 Stmt::Return(expr, span) => self.compile_return(expr, *span),
+                Stmt::Print(expr, span) => self.compile_print(expr, *span),
                 Stmt::Block(inner) => self.compile_block(inner),
                 Stmt::Expr(inner) => self.compile_expr(inner),
             }?;
@@ -58,7 +89,10 @@ impl Compiler {
         self.compile_expr(&declaration.init)?;
         // Now just remember that the value at this stack location is this variable name
         let stack_pos = self.current_stack_top();
-        self.locals().insert(declaration.name.clone(), stack_pos);
+        self.env
+            .borrow_mut()
+            .locals
+            .insert(declaration.name.sym.clone(), stack_pos);
         Ok(())
     }
 
@@ -68,11 +102,15 @@ impl Compiler {
             _ => todo!(),
         };
 
-        let stack_pos = self.lookup_local(local)?;
+        let stack_pos = self.env.borrow().lookup_local(local)?;
 
         self.compile_expr(&assignment.rhs)?;
 
-        self.push_instr(Instr::Store(stack_pos), StackChange::Shrink);
+        self.push_instr(
+            Instr::Store(stack_pos),
+            StackChange::Shrink,
+            assignment.span,
+        );
 
         Ok(())
     }
@@ -101,8 +139,23 @@ impl Compiler {
         todo!()
     }
 
-    fn compile_block(&mut self, _: &Block) -> CResult<()> {
-        todo!()
+    fn compile_print(&mut self, expr: &Expr, span: Span) -> CResult<()> {
+        self.compile_expr(expr)?;
+
+        self.push_instr(Instr::Print, StackChange::Shrink, span);
+
+        Ok(())
+    }
+
+    fn compile_block(&mut self, block: &Block) -> CResult<()> {
+        let next_env = Env::new_inner(self.env.clone());
+        self.env = next_env;
+
+        self.compile_stmts(&block.stmts)?;
+
+        let outer = self.env.borrow().outer.clone().expect("outer env got lost");
+        self.env = outer;
+        Ok(())
     }
 
     fn compile_expr(&mut self, expr: &Expr) -> CResult<()> {
@@ -116,8 +169,8 @@ impl Compiler {
     }
 
     fn compile_expr_ident(&mut self, name: &Ident) -> CResult<()> {
-        let offset = self.lookup_local(name)?;
-        self.push_instr(Instr::Load(offset), StackChange::Grow);
+        let offset = self.env.borrow().lookup_local(name)?;
+        self.push_instr(Instr::Load(offset), StackChange::Grow, name.span);
         Ok(())
     }
 
@@ -137,26 +190,30 @@ impl Compiler {
             Literal::Null(_) => Value::Null,
         };
 
-        self.push_instr(Instr::PushVal(Box::new(value)), StackChange::Grow);
+        self.push_instr(
+            Instr::PushVal(Box::new(value)),
+            StackChange::Grow,
+            lit.span(),
+        );
 
         Ok(())
     }
 
-    fn compile_expr_unary(&mut self, inner: &UnaryOp) -> CResult<()> {
-        self.compile_expr(&inner.expr)?;
+    fn compile_expr_unary(&mut self, unary: &UnaryOp) -> CResult<()> {
+        self.compile_expr(&unary.expr)?;
 
         // not and neg compile to the same instruction
-        self.push_instr(Instr::Neg, StackChange::None);
+        self.push_instr(Instr::Neg, StackChange::None, unary.span);
 
         Ok(())
     }
 
-    fn compile_expr_binary(&mut self, inner: &BinaryOp) -> CResult<()> {
+    fn compile_expr_binary(&mut self, binary: &BinaryOp) -> CResult<()> {
         // todo: is this the correct ordering?
-        self.compile_expr(&inner.lhs)?;
-        self.compile_expr(&inner.rhs)?;
+        self.compile_expr(&binary.lhs)?;
+        self.compile_expr(&binary.rhs)?;
 
-        let instruction = match inner.kind {
+        let instruction = match binary.kind {
             BinaryOpKind::Add => Instr::BinAdd,
             BinaryOpKind::And => Instr::BinAnd,
             BinaryOpKind::Or => Instr::BinOr,
@@ -172,7 +229,7 @@ impl Compiler {
             BinaryOpKind::Mod => Instr::BinMod,
         };
 
-        self.push_instr(instruction, StackChange::Shrink);
+        self.push_instr(instruction, StackChange::Shrink, binary.span);
 
         Ok(())
     }
@@ -181,30 +238,13 @@ impl Compiler {
         todo!()
     }
 
-    fn locals(&mut self) -> &mut HashMap<Ident, usize> {
-        self.locals.last_mut().expect("no locals found")
-    }
-
-    fn lookup_local(&self, name: &Ident) -> CResult<usize> {
-        for locals in self.locals.iter().rev() {
-            dbg!("searching");
-            if let Some(&position) = locals.get(name) {
-                return Ok(position);
-            }
-        }
-
-        Err(CompileError::new(
-            name.span,
-            format!("variable {} not found", name.sym),
-        ))
-    }
-
     fn current_stack_top(&self) -> usize {
         let block = &self.blocks[self.current_block];
-        *block.stack_sizes.last().expect("empty stack")
+        // we want the stack position, not the size, so the `- 1`
+        *block.stack_sizes.last().expect("empty stack") - 1
     }
 
-    fn push_instr(&mut self, instr: Instr, stack_change: StackChange) {
+    fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) {
         let block = &mut self.blocks[self.current_block];
         let stack_top = block.stack_sizes.last().copied().unwrap_or(0);
         let new_stack_top = stack_top as isize + stack_change as isize;
@@ -213,6 +253,10 @@ impl Compiler {
 
         block.code.push(instr);
         block.stack_sizes.push(new_stack_top);
+        block.spans.push(span);
+
+        debug_assert_eq!(block.code.len(), block.stack_sizes.len());
+        debug_assert_eq!(block.code.len(), block.spans.len());
     }
 }
 
