@@ -1,5 +1,8 @@
 //!
 //! The lex module lexes the source code into Tokens
+//!
+//! For error handling, there is a single `Error` token, which contains the error. The lexer
+//! is an iterator, and can therefore be used without any allocations
 
 use crate::errors::{CompilerError, Span};
 use std::iter::Peekable;
@@ -96,8 +99,8 @@ pub enum TokenKind<'code> {
     /// <=
     LessEqual,
 
-    /// An error occurred
-    Error(CompilerError),
+    /// An error occurred. It's boxed to save space, since `CompilerError` is > 6 `usize` big
+    Error(Box<CompilerError>),
 }
 
 #[derive(Debug, Clone)]
@@ -199,11 +202,11 @@ impl<'code> Iterator for Lexer<'code> {
                     } else {
                         Token::new(
                             Span::single(start),
-                            TokenKind::Error(CompilerError::with_note(
+                            TokenKind::Error(Box::new(CompilerError::with_note(
                                 Span::single(start),
                                 "Expected '=' after '!'".to_string(),
                                 "If you meant to use it for negation, use `not`".to_string(),
-                            )),
+                            ))),
                         )
                     };
                 }
@@ -232,11 +235,11 @@ impl<'code> Iterator for Lexer<'code> {
                             None => {
                                 return Some(Token::new(
                                     Span::single(start),
-                                    TokenKind::Error(CompilerError::with_note(
+                                    TokenKind::Error(Box::new(CompilerError::with_note(
                                         Span::single(start), // no not show the whole literal, this does not make sense
                                         "String literal not closed".to_string(),
                                         "Close the literal using '\"'".to_string(),
-                                    )),
+                                    ))),
                                 ));
                             }
                         }
@@ -265,19 +268,19 @@ impl<'code> Iterator for Lexer<'code> {
                         let number = number_str.parse::<f64>();
                         break match number {
                             Ok(number) if number.is_infinite() => {
-                                Token::new(span, TokenKind::Error(CompilerError::with_note(
+                                Token::new(span, TokenKind::Error(Box::new(CompilerError::with_note(
                                     span,
                                     "Number literal too long".to_string(),
                                     "A number literal cannot be larger than a 64 bit float can represent"
                                         .to_string(),
-                                )))
+                                ))))
                             }
                             Ok(number) => Token::new(span, TokenKind::Number(number)),
-                            Err(err) => Token::new(span, TokenKind::Error(CompilerError::with_note(
+                            Err(err) => Token::new(span, TokenKind::Error(Box::new(CompilerError::with_note(
                                 span,
                                 "Invalid number".to_string(),
                                 err.to_string(),
-                            ))),
+                            )))),
                         };
                     } else if is_valid_ident_start(char) {
                         // it must be an identifier
@@ -297,12 +300,12 @@ impl<'code> Iterator for Lexer<'code> {
                     } else {
                         break Token::new(
                             Span::single(start),
-                            TokenKind::Error(CompilerError::with_note(
+                            TokenKind::Error(Box::new(CompilerError::with_note(
                                 Span::single(start),
                                 format!("Unexpected character: '{}'", char),
                                 "Character is not allowed outside of string literals and comments"
                                     .to_string(),
-                            )),
+                            ))),
                         );
                     }
                 }

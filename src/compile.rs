@@ -1,3 +1,5 @@
+//! The compiler that compiles the AST down to bytecode
+
 use crate::ast::{
     Assignment, BinaryOp, BinaryOpKind, Block, Call, Declaration, Expr, FnDecl, Ident, IfStmt,
     Literal, Program, Stmt, UnaryOp, WhileStmt,

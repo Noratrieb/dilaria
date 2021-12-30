@@ -1,3 +1,5 @@
+//! The bytecode that is executed in the vm
+
 use crate::errors::Span;
 use crate::value::{HashMap, Symbol};
 use bumpalo::boxed::Box;

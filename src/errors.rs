@@ -1,5 +1,10 @@
 //!
 //! This modules handles error reporting in the interpreter
+//! 
+//! The `span` submodule handles Spans, which are used for tracking locations in the source code.
+//! 
+//! There is a single type `CompilerError` that can be created from anywhere, and reported using 
+//! functions from here. 
 
 use std::fmt::Debug;
 
