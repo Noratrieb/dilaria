@@ -1,4 +1,4 @@
-use crate::errors::{CompilerError, Span};
+use crate::errors::Span;
 use crate::parse::Parser;
 use bumpalo::Bump;
 use prelude::*;
@@ -6,9 +6,9 @@ use prelude::*;
 mod prelude {
     pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
     pub(super) use crate::ast::{Expr, Stmt};
-    pub(super) use crate::lex::TokenType::*;
+    pub(super) use crate::lex::TokenKind::*;
     pub type Token = crate::lex::Token<'static>;
-    pub type TokenType = crate::lex::TokenType<'static>;
+    pub type TokenType = crate::lex::TokenKind<'static>;
     pub(super) use bumpalo::Bump;
 }
 
@@ -22,13 +22,8 @@ fn token(kind: TokenType) -> Token {
 fn parser<'ast>(
     tokens: std::vec::Vec<Token>,
     alloc: &'ast Bump,
-) -> Parser<'static, 'ast, std::vec::IntoIter<Result<Token, CompilerError>>>
+) -> Parser<'static, 'ast, std::vec::IntoIter<Token>>
 where {
-    let tokens = tokens
-        .into_iter()
-        .map(Ok)
-        .collect::<Vec<Result<Token, CompilerError>>>();
-
     Parser {
         tokens: tokens.into_iter().peekable(),
         depth: 0,

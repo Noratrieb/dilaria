@@ -12,24 +12,24 @@ use std::str::CharIndices;
 #[derive(Debug, Clone)]
 pub struct Token<'code> {
     pub span: Span,
-    pub kind: TokenType<'code>,
+    pub kind: TokenKind<'code>,
 }
 
 impl<'code> Token<'code> {
-    fn single_span(start: usize, kind: TokenType<'code>) -> Token<'code> {
+    fn single_span(start: usize, kind: TokenKind<'code>) -> Token<'code> {
         Self {
             span: Span::single(start),
             kind,
         }
     }
 
-    fn new(span: Span, kind: TokenType<'code>) -> Token<'code> {
+    fn new(span: Span, kind: TokenKind<'code>) -> Token<'code> {
         Self { span, kind }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenType<'code> {
+pub enum TokenKind<'code> {
     // keywords
     Let,
     Print,
@@ -124,8 +124,8 @@ impl<'code> Lexer<'code> {
     fn maybe_next_char<'a>(
         &mut self,
         expect_char: char,
-        true_type: TokenType<'a>,
-        false_type: TokenType<'a>,
+        true_type: TokenKind<'a>,
+        false_type: TokenKind<'a>,
         start: usize,
     ) -> Token<'a> {
         if self.expect(expect_char) {
@@ -170,36 +170,36 @@ impl<'code> Iterator for Lexer<'code> {
                         }
                     }
                 }
-                ';' => break Token::single_span(start, TokenType::Semi),
-                '+' => break Token::single_span(start, TokenType::Plus),
-                '-' => break Token::single_span(start, TokenType::Minus),
-                '*' => break Token::single_span(start, TokenType::Asterisk),
-                '/' => break Token::single_span(start, TokenType::Slash),
-                '%' => break Token::single_span(start, TokenType::Percent),
-                '{' => break Token::single_span(start, TokenType::BraceO),
-                '}' => break Token::single_span(start, TokenType::BraceC),
-                '[' => break Token::single_span(start, TokenType::BracketO),
-                ']' => break Token::single_span(start, TokenType::BracketC),
-                '(' => break Token::single_span(start, TokenType::ParenO),
-                ')' => break Token::single_span(start, TokenType::ParenC),
-                '.' => break Token::single_span(start, TokenType::Dot),
-                ',' => break Token::single_span(start, TokenType::Comma),
+                ';' => break Token::single_span(start, TokenKind::Semi),
+                '+' => break Token::single_span(start, TokenKind::Plus),
+                '-' => break Token::single_span(start, TokenKind::Minus),
+                '*' => break Token::single_span(start, TokenKind::Asterisk),
+                '/' => break Token::single_span(start, TokenKind::Slash),
+                '%' => break Token::single_span(start, TokenKind::Percent),
+                '{' => break Token::single_span(start, TokenKind::BraceO),
+                '}' => break Token::single_span(start, TokenKind::BraceC),
+                '[' => break Token::single_span(start, TokenKind::BracketO),
+                ']' => break Token::single_span(start, TokenKind::BracketC),
+                '(' => break Token::single_span(start, TokenKind::ParenO),
+                ')' => break Token::single_span(start, TokenKind::ParenC),
+                '.' => break Token::single_span(start, TokenKind::Dot),
+                ',' => break Token::single_span(start, TokenKind::Comma),
                 '=' => {
                     break self.maybe_next_char(
                         '=',
-                        TokenType::EqualEqual,
-                        TokenType::Equal,
+                        TokenKind::EqualEqual,
+                        TokenKind::Equal,
                         start,
                     );
                 }
                 '!' => {
                     break if self.expect('=') {
                         let _ = self.code.next(); // consume =;
-                        Token::new(Span::start_len(start, start + 2), TokenType::BangEqual)
+                        Token::new(Span::start_len(start, start + 2), TokenKind::BangEqual)
                     } else {
                         Token::new(
                             Span::single(start),
-                            TokenType::Error(CompilerError::with_note(
+                            TokenKind::Error(CompilerError::with_note(
                                 Span::single(start),
                                 "Expected '=' after '!'".to_string(),
                                 "If you meant to use it for negation, use `not`".to_string(),
@@ -210,13 +210,13 @@ impl<'code> Iterator for Lexer<'code> {
                 '>' => {
                     break self.maybe_next_char(
                         '=',
-                        TokenType::GreaterEqual,
-                        TokenType::Greater,
+                        TokenKind::GreaterEqual,
+                        TokenKind::Greater,
                         start,
                     );
                 }
                 '<' => {
-                    break self.maybe_next_char('=', TokenType::LessEqual, TokenType::Less, start);
+                    break self.maybe_next_char('=', TokenKind::LessEqual, TokenKind::Less, start);
                 }
                 '"' => {
                     let mut buffer = String::new();
@@ -232,7 +232,7 @@ impl<'code> Iterator for Lexer<'code> {
                             None => {
                                 return Some(Token::new(
                                     Span::single(start),
-                                    TokenType::Error(CompilerError::with_note(
+                                    TokenKind::Error(CompilerError::with_note(
                                         Span::single(start), // no not show the whole literal, this does not make sense
                                         "String literal not closed".to_string(),
                                         "Close the literal using '\"'".to_string(),
@@ -241,7 +241,7 @@ impl<'code> Iterator for Lexer<'code> {
                             }
                         }
                     };
-                    break Token::new(Span::start_end(start, end), TokenType::String(buffer));
+                    break Token::new(Span::start_end(start, end), TokenKind::String(buffer));
                 }
                 char => {
                     if char.is_ascii_digit() {
@@ -265,15 +265,15 @@ impl<'code> Iterator for Lexer<'code> {
                         let number = number_str.parse::<f64>();
                         break match number {
                             Ok(number) if number.is_infinite() => {
-                                Token::new(span, TokenType::Error(CompilerError::with_note(
+                                Token::new(span, TokenKind::Error(CompilerError::with_note(
                                     span,
                                     "Number literal too long".to_string(),
                                     "A number literal cannot be larger than a 64 bit float can represent"
                                         .to_string(),
                                 )))
                             }
-                            Ok(number) => Token::new(span, TokenType::Number(number)),
-                            Err(err) => Token::new(span, TokenType::Error(CompilerError::with_note(
+                            Ok(number) => Token::new(span, TokenKind::Number(number)),
+                            Err(err) => Token::new(span, TokenKind::Error(CompilerError::with_note(
                                 span,
                                 "Invalid number".to_string(),
                                 err.to_string(),
@@ -297,7 +297,7 @@ impl<'code> Iterator for Lexer<'code> {
                     } else {
                         break Token::new(
                             Span::single(start),
-                            TokenType::Error(CompilerError::with_note(
+                            TokenKind::Error(CompilerError::with_note(
                                 Span::single(start),
                                 format!("Unexpected character: '{}'", char),
                                 "Character is not allowed outside of string literals and comments"
@@ -313,25 +313,25 @@ impl<'code> Iterator for Lexer<'code> {
     }
 }
 
-fn keyword_or_ident(name: &str) -> TokenType {
+fn keyword_or_ident(name: &str) -> TokenKind {
     match name {
-        "loop" => TokenType::Loop,
-        "let" => TokenType::Let,
-        "fn" => TokenType::Fn,
-        "for" => TokenType::For,
-        "false" => TokenType::False,
-        "if" => TokenType::If,
-        "else" => TokenType::Else,
-        "while" => TokenType::While,
-        "break" => TokenType::Break,
-        "return" => TokenType::Return,
-        "true" => TokenType::True,
-        "null" => TokenType::Null,
-        "not" => TokenType::Not,
-        "and" => TokenType::And,
-        "or" => TokenType::Or,
-        "print" => TokenType::Print,
-        _ => TokenType::Ident(name),
+        "loop" => TokenKind::Loop,
+        "let" => TokenKind::Let,
+        "fn" => TokenKind::Fn,
+        "for" => TokenKind::For,
+        "false" => TokenKind::False,
+        "if" => TokenKind::If,
+        "else" => TokenKind::Else,
+        "while" => TokenKind::While,
+        "break" => TokenKind::Break,
+        "return" => TokenKind::Return,
+        "true" => TokenKind::True,
+        "null" => TokenKind::Null,
+        "not" => TokenKind::Not,
+        "and" => TokenKind::And,
+        "or" => TokenKind::Or,
+        "print" => TokenKind::Print,
+        _ => TokenKind::Ident(name),
     }
 }
 
@@ -346,16 +346,16 @@ fn is_valid_ident_start(char: char) -> bool {
 #[cfg(test)]
 mod test {
     use crate::lex::Lexer;
-    use crate::lex::TokenType::{self, *};
+    use crate::lex::TokenKind::{self, *};
 
     type StdString = std::string::String;
 
-    fn lex_types(str: &str) -> Vec<TokenType> {
+    fn lex_types(str: &str) -> Vec<TokenKind> {
         let lexer = Lexer::new(str);
         lexer.map(|token| token.kind).collect::<Vec<_>>()
     }
 
-    fn lex_test(code: &str, expected: Vec<TokenType>) {
+    fn lex_test(code: &str, expected: Vec<TokenKind>) {
         assert_eq!(lex_types(code), expected)
     }
 
@@ -559,7 +559,7 @@ mod test {
             .iter()
             .map(|word| format!("{} ", word))
             .collect::<StdString>();
-        let expected = words.map(TokenType::Ident).to_vec();
+        let expected = words.map(TokenKind::Ident).to_vec();
 
         lex_test(&sentences, expected)
     }

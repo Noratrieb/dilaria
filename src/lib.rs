@@ -18,13 +18,7 @@ pub fn run_program(program: &str) {
     let ast_alloc = Bump::new();
 
     let lexer = lex::Lexer::new(program);
-    let ast = parse::parse(
-        lexer.map(|token| match &token.kind {
-            TokenType::Error(err) => Err(err.clone()),
-            _ => Ok(token),
-        }),
-        &ast_alloc,
-    );
+    let ast = parse::parse(lexer, &ast_alloc);
 
     match ast {
         Ok(ast) => process_ast(program, ast),
