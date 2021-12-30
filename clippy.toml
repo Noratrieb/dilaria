@@ -1,8 +1,6 @@
 disallowed-types = [
-    # we want to use our custom HashMap/HashSet from `values.rs`, so that consumers can choose between which HashMap they want
-    "std::collections::HashMap",
-    "std::collections::HashSet",
-    # we want to use bumpalo::collections::Vec, this can be removed later I guess
-    "std::collections::Vec",
-    "std::boxed::Box",
+    { path = "std::collections::HashMap", reason = "may be fxhash or siphash, depending on the feature, stay flexible" },
+    { path = "std::collections::HashSet", reason = "may be fxhash or siphash, depending on the feature, stay flexible" },
+    { path = "std::collections::Vec", reason = "we generally want to use bumpalos collections" },
+    { path = "std::boxed::Box", reason = "we generally want to use bumpalos allocation" },
 ]

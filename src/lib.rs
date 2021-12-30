@@ -10,14 +10,14 @@ mod value;
 
 use crate::ast::Program;
 use bumpalo::Bump;
+
 pub use lex::*;
 pub use parse::*;
 
 pub fn run_program(program: &str) {
-    let lexer = lex::Lexer::lex(program);
-
     let ast_alloc = Bump::new();
 
+    let lexer = lex::Lexer::new(program);
     let ast = parse::parse(lexer, &ast_alloc);
 
     match ast {

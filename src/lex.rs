@@ -104,7 +104,7 @@ pub struct Lexer<'code> {
 }
 
 impl<'code> Lexer<'code> {
-    pub fn lex(code: &'code str) -> Self {
+    pub fn new(code: &'code str) -> Self {
         Self {
             code: code.char_indices().peekable(),
             src: code,
@@ -416,7 +416,7 @@ mod test {
     type StdString = std::string::String;
 
     fn lex_types(str: &str) -> Vec<TokenType> {
-        let lexer = Lexer::lex(str);
+        let lexer = Lexer::new(str);
         lexer.map(|token| token.unwrap().kind).collect::<Vec<_>>()
     }
 
