@@ -6,7 +6,7 @@ use crate::ast::{
 };
 use crate::bytecode::{FnBlock, Instr, Value};
 use crate::errors::{CompilerError, Span};
-use crate::value::{HashMap, Symbol};
+use crate::value::HashMap;
 use bumpalo::boxed::Box;
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
@@ -16,15 +16,15 @@ use std::rc::Rc;
 type CResult<T> = Result<T, CompilerError>;
 
 #[derive(Debug, Default)]
-struct Env {
-    locals: HashMap<Symbol, usize>,
-    outer: Option<Rc<RefCell<Env>>>,
+struct Env<'ast> {
+    locals: HashMap<&'ast str, usize>,
+    outer: Option<Rc<RefCell<Env<'ast>>>>,
 }
 
-impl Env {
+impl Env<'_> {
     fn lookup_local(&self, name: &Ident) -> CResult<usize> {
         fn lookup_inner(env: &Env, name: &Ident) -> Option<usize> {
-            env.locals.get(&name.sym).copied().or_else(|| {
+            env.locals.get(name.sym.as_str()).copied().or_else(|| {
                 env.outer
                     .as_ref()
                     .map(|outer| lookup_inner(&outer.borrow(), name))
@@ -46,12 +46,12 @@ impl Env {
 }
 
 #[derive(Debug)]
-struct Compiler<'bc> {
+struct Compiler<'ast, 'bc> {
     blocks: Vec<'bc, FnBlock<'bc>>,
     current_block: usize,
     bump: &'bc Bump,
     /// the current local variables that are in scope, only needed for compiling
-    env: Rc<RefCell<Env>>,
+    env: Rc<RefCell<Env<'ast>>>,
 }
 
 pub fn compile<'bc>(
@@ -70,8 +70,8 @@ pub fn compile<'bc>(
     Ok(compiler.blocks)
 }
 
-impl<'bc> Compiler<'bc> {
-    fn compile(&mut self, ast: &Program) -> CResult<()> {
+impl<'ast, 'bc> Compiler<'ast, 'bc> {
+    fn compile(&mut self, ast: &'ast Program<'ast>) -> CResult<()> {
         let global_block = FnBlock {
             code: Vec::new_in(self.bump),
             stack_sizes: Vec::new_in(self.bump),
@@ -84,7 +84,7 @@ impl<'bc> Compiler<'bc> {
         Ok(())
     }
 
-    fn compile_stmts(&mut self, stmts: &[Stmt]) -> CResult<()> {
+    fn compile_stmts(&mut self, stmts: &'ast [Stmt]) -> CResult<()> {
         for stmt in stmts {
             match stmt {
                 Stmt::Declaration(inner) => self.compile_declaration(inner),
@@ -104,7 +104,7 @@ impl<'bc> Compiler<'bc> {
         Ok(())
     }
 
-    fn compile_declaration(&mut self, declaration: &Declaration) -> CResult<()> {
+    fn compile_declaration(&mut self, declaration: &'ast Declaration<'ast>) -> CResult<()> {
         // Compile the expression, the result of the expression will be the last thing left on the stack
         self.compile_expr(&declaration.init)?;
         // Now just remember that the value at this stack location is this variable name
@@ -112,7 +112,7 @@ impl<'bc> Compiler<'bc> {
         self.env
             .borrow_mut()
             .locals
-            .insert(declaration.name.sym.clone(), stack_pos);
+            .insert(declaration.name.sym.as_str(), stack_pos);
         Ok(())
     }
 
@@ -167,7 +167,7 @@ impl<'bc> Compiler<'bc> {
         Ok(())
     }
 
-    fn compile_block(&mut self, block: &Block) -> CResult<()> {
+    fn compile_block(&mut self, block: &'ast Block) -> CResult<()> {
         let next_env = Env::new_inner(self.env.clone());
         self.env = next_env;
 

@@ -1,13 +1,13 @@
 fn main() {
     if let Some(filename) = std::env::args().nth(1) {
-        match std::fs::read_to_string(filename) {
-            Ok(contents) => {
-                dilaria::run_program(&contents);
-            }
-            Err(err) => {
-                eprintln!("{}", err);
-            }
-        }
+        // match Ok("fn main() {}") {
+        //     Ok(contents) => {
+        dilaria::run_program("fn main() {}");
+        //     }
+        //     Err(err) => {
+        //         eprintln!("{}", err);
+        //     }
+        // }
     } else {
         eprintln!("Usage: <filename>")
     }

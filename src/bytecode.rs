@@ -1,7 +1,7 @@
 //! The bytecode that is executed in the vm
 
 use crate::errors::Span;
-use crate::value::{HashMap, Symbol};
+use crate::value::{HashMap, NewSym};
 use bumpalo::boxed::Box;
 use bumpalo::collections::Vec;
 use std::rc::Rc;
@@ -50,5 +50,5 @@ pub enum Value {
     Num(f64),
     String(Rc<str>),
     Array,
-    Object(HashMap<Symbol, Value>),
+    Object(HashMap<NewSym, Value>),
 }

@@ -189,7 +189,7 @@ where
         }))
     }
 
-    fn fn_args(&mut self) -> ParseResult<Vec<'ast, Ident>> {
+    fn fn_args(&mut self) -> ParseResult<Vec<'ast, Ident<'ast>>> {
         enter_parse!(self);
 
         self.expect(TokenKind::ParenO)?;
@@ -540,7 +540,7 @@ where
                 Ok(expr)
             }
             TokenKind::Ident(name) => {
-                let name_owned = name.to_owned();
+                let name_owned = bumpalo::collections::String::from_str_in(name, self.bump);
                 Ok(Expr::Ident(Ident {
                     sym: name_owned,
                     span: next.span,
@@ -556,7 +556,7 @@ where
         return_expr
     }
 
-    fn ident(&mut self) -> ParseResult<Ident> {
+    fn ident(&mut self) -> ParseResult<Ident<'ast>> {
         enter_parse!(self);
 
         let Token { kind, span } = self
@@ -564,7 +564,7 @@ where
             .ok_or_else(|| CompilerError::eof("identifier"))?;
         let return_expr = match kind {
             TokenKind::Ident(name) => {
-                let name_owned = name.to_owned();
+                let name_owned = bumpalo::collections::String::from_str_in(name, self.bump);
                 Ok(Ident {
                     sym: name_owned,
                     span,

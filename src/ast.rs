@@ -8,8 +8,8 @@ use crate::value::Symbol;
 use bumpalo::collections::Vec;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Ident {
-    pub sym: Symbol,
+pub struct Ident<'ast> {
+    pub sym: Symbol<'ast>,
     pub span: Span,
 }
 
@@ -40,7 +40,7 @@ pub enum Stmt<'ast> {
 #[derive(Debug, PartialEq)]
 pub struct Declaration<'ast> {
     pub span: Span,
-    pub name: Ident,
+    pub name: Ident<'ast>,
     pub init: Expr<'ast>,
 }
 
@@ -54,8 +54,8 @@ pub struct Assignment<'ast> {
 #[derive(Debug, PartialEq)]
 pub struct FnDecl<'ast> {
     pub span: Span,
-    pub name: Ident,
-    pub params: Vec<'ast, Ident>,
+    pub name: Ident<'ast>,
+    pub params: Vec<'ast, Ident<'ast>>,
     pub body: Block<'ast>,
 }
 
@@ -91,7 +91,7 @@ pub struct WhileStmt<'ast> {
 
 #[derive(Debug, PartialEq)]
 pub enum Expr<'ast> {
-    Ident(Ident),
+    Ident(Ident<'ast>),
     Literal(Literal<'ast>),
     UnaryOp(&'ast UnaryOp<'ast>),
     BinaryOp(&'ast BinaryOp<'ast>),
@@ -180,6 +180,6 @@ pub struct Call<'ast> {
 
 #[derive(Debug, PartialEq)]
 pub enum CallKind<'ast> {
-    Field(Ident),
+    Field(Ident<'ast>),
     Fn(Vec<'ast, Expr<'ast>>),
 }
