@@ -1,14 +1,16 @@
 use crate::errors::Span;
 use crate::parse::Parser;
+use crate::LexError;
+use bumpalo::Bump;
 use prelude::*;
 
 mod prelude {
     pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
     pub(super) use crate::ast::{Expr, Stmt};
-    pub(super) use crate::lex::{
-        Token,
-        TokenType::{self, *},
-    };
+    pub(super) use crate::lex::TokenType::*;
+    pub type Token = crate::lex::Token<'static>;
+    pub type TokenType = crate::lex::TokenType<'static>;
+    pub(super) use bumpalo::Bump;
 }
 
 fn token(kind: TokenType) -> Token {
@@ -18,39 +20,56 @@ fn token(kind: TokenType) -> Token {
     }
 }
 
-fn parser(tokens: Vec<Token>) -> Parser {
+fn parser<'ast>(
+    tokens: std::vec::Vec<Token>,
+    alloc: &'ast Bump,
+) -> Parser<'static, 'ast, std::vec::IntoIter<Result<Token, LexError>>>
+where {
+    let tokens = tokens
+        .into_iter()
+        .map(Ok)
+        .collect::<Vec<Result<Token, LexError>>>();
+
     Parser {
         tokens: tokens.into_iter().peekable(),
         depth: 0,
         inside_fn_depth: 0,
         inside_loop_depth: 0,
+        bump: alloc,
     }
 }
 
-fn test_literal_bin_op<F: FnOnce(Vec<Token<'_>>) -> Expr>(token_type: TokenType, parser: F) {
+fn test_literal_bin_op<F: FnOnce(Vec<Token>, &Bump) -> Expr>(token_type: TokenType, parser: F) {
     let tokens = [Number(10.0), token_type, Number(4.0)].map(token).into();
-    let ast = parser(tokens);
+
+    let alloc = Bump::new();
+    let ast = parser(tokens, &alloc);
     insta::assert_debug_snapshot!(ast);
 }
 
-fn test_number_literal<F: FnOnce(Vec<Token<'_>>) -> Expr>(parser: F) {
+fn test_number_literal<F: FnOnce(Vec<Token>, &Bump) -> Expr>(parser: F) {
     let tokens = [Number(10.0)].map(token).into();
-    let ast = parser(tokens);
+
+    let alloc = Bump::new();
+    let ast = parser(tokens, &alloc);
     insta::assert_debug_snapshot!(ast);
 }
 
 mod assignment {
     use super::prelude::*;
+    use bumpalo::Bump;
 
-    fn parse_assignment(tokens: Vec<Token>) -> Stmt {
-        let mut parser = parser(tokens);
+    fn parse_assignment(tokens: Vec<Token>, alloc: &Bump) -> Stmt {
+        let mut parser = parser(tokens, alloc);
         parser.assignment().unwrap()
     }
 
     #[test]
     fn simple() {
         let tokens = [Ident("hugo"), Equal, Number(10.0), Semi].map(token).into();
-        let ast = parse_assignment(tokens);
+
+        let alloc = Bump::new();
+        let ast = parse_assignment(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -68,7 +87,9 @@ mod assignment {
         ]
         .map(token)
         .into();
-        let ast = parse_assignment(tokens);
+
+        let alloc = Bump::new();
+        let ast = parse_assignment(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -76,8 +97,8 @@ mod assignment {
 mod r#fn {
     use super::prelude::*;
 
-    fn parse_fn(tokens: Vec<Token>) -> Stmt {
-        let mut parser = parser(tokens);
+    fn parse_fn(tokens: Vec<Token>, alloc: &Bump) -> Stmt {
+        let mut parser = parser(tokens, alloc);
         parser.fn_decl().unwrap()
     }
 
@@ -86,7 +107,9 @@ mod r#fn {
         let tokens = [Fn, Ident("empty"), ParenO, ParenC, BraceO, BraceC]
             .map(token)
             .into();
-        let ast = parse_fn(tokens);
+
+        let alloc = Bump::new();
+        let ast = parse_fn(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -109,7 +132,8 @@ mod r#fn {
         ]
         .map(token)
         .into();
-        let ast = parse_fn(tokens);
+        let alloc = Bump::new();
+        let ast = parse_fn(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -118,15 +142,16 @@ mod r#if {
     use super::prelude::*;
     use crate::ast::IfStmt;
 
-    fn parse_if(tokens: Vec<Token>) -> IfStmt {
-        let mut parser = parser(tokens);
+    fn parse_if(tokens: Vec<Token>, alloc: &Bump) -> IfStmt {
+        let mut parser = parser(tokens, alloc);
         parser.if_stmt().unwrap()
     }
 
     #[test]
     fn empty() {
         let tokens = [If, True, BraceO, BraceC].map(token).into();
-        let ast = parse_if(tokens);
+        let alloc = Bump::new();
+        let ast = parse_if(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -135,7 +160,8 @@ mod r#if {
         let tokens = [If, True, BraceO, BraceC, Else, BraceO, BraceC]
             .map(token)
             .into();
-        let ast = parse_if(tokens);
+        let alloc = Bump::new();
+        let ast = parse_if(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -144,7 +170,8 @@ mod r#if {
         let tokens = [If, True, BraceO, BraceC, Else, If, True, BraceO, BraceC]
             .map(token)
             .into();
-        let ast = parse_if(tokens);
+        let alloc = Bump::new();
+        let ast = parse_if(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -155,7 +182,8 @@ mod r#if {
         ]
         .map(token)
         .into();
-        let ast = parse_if(tokens);
+        let alloc = Bump::new();
+        let ast = parse_if(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -163,15 +191,16 @@ mod r#if {
 mod print {
     use super::prelude::*;
 
-    fn parse_print(tokens: Vec<Token>) -> Stmt {
-        let mut parser = parser(tokens);
+    fn parse_print(tokens: Vec<Token>, alloc: &Bump) -> Stmt {
+        let mut parser = parser(tokens, alloc);
         parser.print_stmt().unwrap()
     }
 
     #[test]
     fn print_true() {
         let tokens = [Print, True, Semi].map(token).into();
-        let ast = parse_print(tokens);
+        let alloc = Bump::new();
+        let ast = parse_print(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -179,15 +208,16 @@ mod print {
 mod r#while {
     use super::prelude::*;
 
-    fn parse_while(tokens: Vec<Token>) -> Stmt {
-        let mut parser = parser(tokens);
+    fn parse_while(tokens: Vec<Token>, alloc: &Bump) -> Stmt {
+        let mut parser = parser(tokens, alloc);
         parser.while_stmt().unwrap()
     }
 
     #[test]
     fn empty() {
         let tokens = [While, True, BraceO, BraceC].map(token).into();
-        let ast = parse_while(tokens);
+        let alloc = Bump::new();
+        let ast = parse_while(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -196,7 +226,8 @@ mod r#while {
         let tokens = [While, False, Or, True, BraceO, Break, Semi, BraceC]
             .map(token)
             .into();
-        let ast = parse_while(tokens);
+        let alloc = Bump::new();
+        let ast = parse_while(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -204,22 +235,24 @@ mod r#while {
 mod r#loop {
     use super::prelude::*;
 
-    fn parse_loop(tokens: Vec<Token>) -> Stmt {
-        let mut parser = parser(tokens);
+    fn parse_loop(tokens: Vec<Token>, alloc: &Bump) -> Stmt {
+        let mut parser = parser(tokens, alloc);
         parser.loop_stmt().unwrap()
     }
 
     #[test]
     fn empty() {
         let tokens = [Loop, BraceO, BraceC].map(token).into();
-        let ast = parse_loop(tokens);
+        let alloc = Bump::new();
+        let ast = parse_loop(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn with_break() {
         let tokens = [Loop, BraceO, Break, Semi, BraceC].map(token).into();
-        let ast = parse_loop(tokens);
+        let alloc = Bump::new();
+        let ast = parse_loop(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -228,7 +261,8 @@ mod r#loop {
         let tokens = [Loop, BraceO, Loop, BraceO, BraceC, Break, Semi, BraceC]
             .map(token)
             .into();
-        let ast = parse_loop(tokens);
+        let alloc = Bump::new();
+        let ast = parse_loop(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -237,15 +271,16 @@ mod block {
     use super::prelude::*;
     use crate::ast::Block;
 
-    fn parse_block(tokens: Vec<Token>) -> Block {
-        let mut parser = parser(tokens);
+    fn parse_block(tokens: Vec<Token>, alloc: &Bump) -> Block {
+        let mut parser = parser(tokens, alloc);
         parser.block().unwrap()
     }
 
     #[test]
     fn empty() {
         let tokens = [BraceO, BraceC].map(token).into();
-        let ast = parse_block(tokens);
+        let alloc = Bump::new();
+        let ast = parse_block(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -254,14 +289,16 @@ mod block {
         let tokens = [BraceO, Number(10.0), Semi, Number(20.0), Semi, BraceC]
             .map(token)
             .into();
-        let ast = parse_block(tokens);
+        let alloc = Bump::new();
+        let ast = parse_block(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn nested() {
         let tokens = [BraceO, BraceO, BraceC, BraceC].map(token).into();
-        let ast = parse_block(tokens);
+        let alloc = Bump::new();
+        let ast = parse_block(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -269,8 +306,8 @@ mod block {
 mod expr {
     use super::prelude::*;
 
-    fn parse_expr(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_expr(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.expression().unwrap()
     }
 
@@ -280,8 +317,10 @@ mod expr {
             .map(token)
             .take(100_000)
             .collect();
-        let expr = parser(tokens).expression();
-        assert!(expr.is_err());
+
+        let alloc = Bump::new();
+        let ast = parser(tokens, &alloc).expression();
+        assert!(ast.is_err());
     }
 
     #[test]
@@ -294,7 +333,8 @@ mod expr {
         let tokens = [Number(10.0), Plus, Number(20.0), Asterisk, Number(100.0)]
             .map(token)
             .into();
-        let ast = parse_expr(tokens);
+        let alloc = Bump::new();
+        let ast = parse_expr(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -303,7 +343,8 @@ mod expr {
         let tokens = [Number(10.0), EqualEqual, Minus, Number(10.0)]
             .map(token)
             .into();
-        let ast = parse_expr(tokens);
+        let alloc = Bump::new();
+        let ast = parse_expr(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -320,7 +361,8 @@ mod expr {
         ]
         .map(token)
         .into();
-        let ast = parse_expr(tokens);
+        let alloc = Bump::new();
+        let ast = parse_expr(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -328,8 +370,8 @@ mod expr {
 mod logical_or {
     use super::prelude::*;
 
-    fn parse_logical_or(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_logical_or(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.logical_or().unwrap()
     }
 
@@ -339,7 +381,7 @@ mod logical_or {
     }
 
     #[test]
-    fn and() {
+    fn or() {
         test_literal_bin_op(Or, parse_logical_or);
     }
 }
@@ -347,8 +389,8 @@ mod logical_or {
 mod logical_and {
     use super::prelude::*;
 
-    fn parse_logical_and(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_logical_and(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.logical_and().unwrap()
     }
 
@@ -366,8 +408,8 @@ mod logical_and {
 mod equality {
     use super::prelude::*;
 
-    fn parse_equality(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_equality(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.equality().unwrap()
     }
 
@@ -390,8 +432,8 @@ mod equality {
 mod comparison {
     use super::prelude::*;
 
-    fn parse_comparison(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_comparison(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.comparison().unwrap()
     }
 
@@ -424,8 +466,8 @@ mod comparison {
 mod term {
     use super::prelude::*;
 
-    fn parse_term(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_term(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.term().unwrap()
     }
 
@@ -448,8 +490,8 @@ mod term {
 mod factor {
     use super::prelude::*;
 
-    fn parse_factor(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_factor(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.factor().unwrap()
     }
 
@@ -477,8 +519,8 @@ mod factor {
 mod unary {
     use super::prelude::*;
 
-    fn parse_unary(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_unary(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.unary().unwrap()
     }
 
@@ -490,14 +532,16 @@ mod unary {
     #[test]
     fn not() {
         let tokens = [Not, True].map(token).into();
-        let ast = parse_unary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_unary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn neg() {
         let tokens = [Minus, Number(10.0)].map(token).into();
-        let ast = parse_unary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_unary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -505,22 +549,24 @@ mod unary {
 mod call {
     use super::prelude::*;
 
-    fn parse_call(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_call(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.call().unwrap()
     }
 
     #[test]
     fn field_simple() {
         let tokens = [Ident("hugo"), Dot, Ident("name")].map(token).into();
-        let ast = parse_call(tokens);
+        let alloc = Bump::new();
+        let ast = parse_call(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn simple() {
         let tokens = [Ident("print"), ParenO, ParenC].map(token).into();
-        let ast = parse_call(tokens);
+        let alloc = Bump::new();
+        let ast = parse_call(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -537,7 +583,8 @@ mod call {
         ]
         .map(token)
         .into();
-        let ast = parse_call(tokens);
+        let alloc = Bump::new();
+        let ast = parse_call(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -554,7 +601,8 @@ mod call {
         ]
         .map(token)
         .into();
-        let ast = parse_call(tokens);
+        let alloc = Bump::new();
+        let ast = parse_call(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -577,7 +625,8 @@ mod call {
         ]
         .map(token)
         .into();
-        let ast = parse_call(tokens);
+        let alloc = Bump::new();
+        let ast = parse_call(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 }
@@ -585,85 +634,96 @@ mod call {
 mod primary {
     use super::prelude::*;
 
-    fn parse_primary(tokens: Vec<Token>) -> Expr {
-        let mut parser = parser(tokens);
+    fn parse_primary(tokens: Vec<Token>, alloc: &Bump) -> Expr {
+        let mut parser = parser(tokens, alloc);
         parser.primary().unwrap()
     }
 
     #[test]
     fn ident_test() {
         let tokens = [Ident("tokens")].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn string() {
         let tokens = [Number(10.0)].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn number() {
         let tokens = [String("uwu".to_string())].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn empty_object() {
         let tokens = [BraceO, BraceC].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn empty_array() {
         let tokens = [BracketO, BracketC].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn r#false() {
         let tokens = [False].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn r#true() {
         let tokens = [True].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn null() {
         let tokens = [Null].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn empty_array_literal() {
         let tokens = [BracketO, BracketC].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn single_array_literal() {
         let tokens = [BracketO, Number(10.0), BracketC].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
     #[test]
     fn single_array_literal_trailing_comma() {
         let tokens = [BracketO, Number(10.0), Comma, BracketC].map(token).into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -672,7 +732,8 @@ mod primary {
         let tokens = [BracketO, Number(10.0), Comma, Number(10.0), BracketC]
             .map(token)
             .into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -681,7 +742,8 @@ mod primary {
         let tokens = [BracketO, Number(10.0), Comma, Number(10.0), Comma, BracketC]
             .map(token)
             .into();
-        let ast = parse_primary(tokens);
+        let alloc = Bump::new();
+        let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
     }
 
@@ -690,7 +752,9 @@ mod primary {
         let tokens = [BracketO, Number(10.0), Number(10.0), BracketC]
             .map(token)
             .into();
-        let mut parser = parser(tokens);
+
+        let alloc = Bump::new();
+        let mut parser = parser(tokens, &alloc);
         let expr = parser.primary();
         assert!(expr.is_err());
     }

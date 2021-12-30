@@ -28,6 +28,6 @@ BinaryOp(
                 },
             ),
         ),
-        kind: And,
+        kind: Or,
     },
 )
