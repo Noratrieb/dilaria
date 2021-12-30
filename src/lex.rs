@@ -355,7 +355,7 @@ fn is_valid_ident_start(char: char) -> bool {
     char.is_alphabetic() || char == '_'
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LexError {
     pub span: Span,
     pub kind: LexErrorKind,
@@ -399,7 +399,7 @@ impl CompilerError for LexError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LexErrorKind {
     InvalidCharacter(char),
     InvalidFloat(std::num::ParseFloatError),

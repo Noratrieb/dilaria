@@ -1,2 +1,8 @@
-# we want to use our custom type from `values.rs`, so that consumers can choose between which HashMap they want
-disallowed-types = ["std::collections::HashMap", "std::collections::HashSet"]
+disallowed-types = [
+    # we want to use our custom HashMap/HashSet from `values.rs`, so that consumers can choose between which HashMap they want
+    "std::collections::HashMap",
+    "std::collections::HashSet",
+    # we want to use bumpalo::collections::Vec, this can be removed later I guess
+    "std::collections::Vec",
+    "std::boxed::Box",
+]

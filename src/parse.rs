@@ -4,25 +4,38 @@ mod test;
 use crate::ast::*;
 use crate::errors::{CompilerError, Span};
 use crate::lex::{Token, TokenType};
+use crate::LexError;
+use bumpalo::boxed::Box;
+use bumpalo::collections::Vec;
+use bumpalo::Bump;
 use std::iter::Peekable;
 
-pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseErr> {
-    let mut parser = Parser {
-        tokens: tokens.into_iter().peekable(),
-        depth: 0,
-        inside_fn_depth: 0,
-        inside_loop_depth: 0,
-    };
-    let program = parser.program()?;
-    Ok(program)
-}
-
 #[derive(Debug)]
-struct Parser<'code> {
-    tokens: Peekable<std::vec::IntoIter<Token<'code>>>,
+struct Parser<'code, 'ast, I>
+where
+    I: Iterator<Item = Result<Token<'code>, LexError>>,
+    I: 'code,
+{
+    tokens: Peekable<I>,
     depth: usize,
     inside_fn_depth: usize,
     inside_loop_depth: usize,
+    bump: &'ast Bump,
+}
+
+pub fn parse<'ast, 'code>(
+    tokens: impl Iterator<Item = Result<Token<'code>, LexError>> + 'code,
+    ast_bump: &'ast Bump,
+) -> Result<Program<'ast>, ParseErr<'code>> {
+    let mut parser = Parser {
+        tokens: tokens.peekable(),
+        depth: 0,
+        inside_fn_depth: 0,
+        inside_loop_depth: 0,
+        bump: ast_bump,
+    };
+    let program = parser.program()?;
+    Ok(program)
 }
 
 type ParseResult<'code, T> = Result<T, ParseErr<'code>>;
@@ -31,12 +44,15 @@ macro_rules! parse_bin_op {
     ($self: ident, $lhs: ident, $kind: expr, $function: ident) => {{
         let _ = $self.next();
         let rhs = $self.$function()?;
-        Ok(Expr::BinaryOp(Box::new(BinaryOp {
-            span: $lhs.span().extend(rhs.span()),
-            lhs: $lhs,
-            rhs,
-            kind: $kind,
-        })))
+        Ok(Expr::BinaryOp(Box::new_in(
+            BinaryOp {
+                span: $lhs.span().extend(rhs.span()),
+                lhs: $lhs,
+                rhs,
+                kind: $kind,
+            },
+            $self.bump,
+        )))
     }};
 }
 
@@ -56,26 +72,30 @@ macro_rules! enter_parse {
     };
 }
 
-impl<'code> Parser<'code> {
+impl<'code, 'ast, I> Parser<'code, 'ast, I>
+where
+    I: Iterator<Item = Result<Token<'code>, LexError>>,
+    I: 'code,
+{
     const MAX_DEPTH: usize = 100;
 
-    fn program(&mut self) -> ParseResult<'code, Program> {
+    fn program(&mut self) -> ParseResult<'code, Program<'ast>> {
         Ok(Program(self.statement_list()?))
     }
 
     fn too_nested_error(&mut self) -> ParseResult<'code, ()> {
-        let next_token = self.next();
+        let next_token = self.next()?;
         match next_token {
             Some(token) => Err(ParseErr::MaxDepth(token.span)),
             None => Err(ParseErr::Eof("reached EOF while being nested to deeply")),
         }
     }
 
-    fn statement_list(&mut self) -> ParseResult<'code, Vec<Stmt>> {
+    fn statement_list(&mut self) -> ParseResult<'code, Vec<'ast, Stmt<'ast>>> {
         enter_parse!(self);
-        let mut stmts = Vec::new();
+        let mut stmts = Vec::new_in(self.bump);
         let return_stmts = loop {
-            if let Some(TokenType::BraceC) | None = self.peek_kind() {
+            if let Some(TokenType::BraceC) | None = self.peek_kind()? {
                 break Ok(stmts);
             }
             let stmt = self.statement()?;
@@ -85,7 +105,7 @@ impl<'code> Parser<'code> {
         return_stmts
     }
 
-    fn block(&mut self) -> ParseResult<'code, Block> {
+    fn block(&mut self) -> ParseResult<'code, Block<'ast>> {
         enter_parse!(self);
 
         let start_span = self.expect(TokenType::BraceO)?.span;
@@ -100,10 +120,10 @@ impl<'code> Parser<'code> {
         })
     }
 
-    fn statement(&mut self) -> ParseResult<'code, Stmt> {
+    fn statement(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
-        let stmt = match *self.peek_kind().ok_or(ParseErr::Eof("statement"))? {
+        let stmt = match *self.peek_kind()?.ok_or(ParseErr::Eof("statement"))? {
             TokenType::Let => self.declaration(),
             TokenType::Fn => self.fn_decl(),
             TokenType::If => Ok(Stmt::If(self.if_stmt()?)),
@@ -122,7 +142,7 @@ impl<'code> Parser<'code> {
         stmt
     }
 
-    fn declaration(&mut self) -> ParseResult<'code, Stmt> {
+    fn declaration(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
         let keyword_span = self.expect(TokenType::Let)?.span;
@@ -140,7 +160,7 @@ impl<'code> Parser<'code> {
         }))
     }
 
-    fn fn_decl(&mut self) -> ParseResult<'code, Stmt> {
+    fn fn_decl(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
         let keyword_span = self.expect(TokenType::Fn)?.span;
@@ -161,7 +181,7 @@ impl<'code> Parser<'code> {
         }))
     }
 
-    fn fn_args(&mut self) -> ParseResult<'code, Vec<Ident>> {
+    fn fn_args(&mut self) -> ParseResult<'code, Vec<'ast, Ident>> {
         enter_parse!(self);
 
         self.expect(TokenType::ParenO)?;
@@ -173,14 +193,14 @@ impl<'code> Parser<'code> {
         Ok(params)
     }
 
-    fn if_stmt(&mut self) -> ParseResult<'code, IfStmt> {
+    fn if_stmt(&mut self) -> ParseResult<'code, IfStmt<'ast>> {
         enter_parse!(self);
 
         let keyword_span = self.expect(TokenType::If)?.span;
         let cond = self.expression()?;
         let body = self.block()?;
 
-        let else_part = if let Some(TokenType::Else) = self.peek_kind() {
+        let else_part = if let Some(TokenType::Else) = self.peek_kind()? {
             Some(self.else_part()?)
         } else {
             None
@@ -194,16 +214,16 @@ impl<'code> Parser<'code> {
                 .option_extend(else_part.as_ref().map(|part| part.span())),
             cond,
             body,
-            else_part: else_part.map(Box::new),
+            else_part: else_part.map(|part| Box::new_in(part, self.bump)),
         })
     }
 
-    fn else_part(&mut self) -> ParseResult<'code, ElsePart> {
+    fn else_part(&mut self) -> ParseResult<'code, ElsePart<'ast>> {
         enter_parse!(self);
 
         let keyword_span = self.expect(TokenType::Else)?.span;
 
-        let else_part = if let Some(TokenType::If) = self.peek_kind() {
+        let else_part = if let Some(TokenType::If) = self.peek_kind()? {
             let else_if_stmt = self.if_stmt()?;
             let else_span = keyword_span.extend(else_if_stmt.span);
             Ok(ElsePart::ElseIf(else_if_stmt, else_span))
@@ -218,7 +238,7 @@ impl<'code> Parser<'code> {
         else_part
     }
 
-    fn loop_stmt(&mut self) -> ParseResult<'code, Stmt> {
+    fn loop_stmt(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
         let keyword_span = self.expect(TokenType::Loop)?.span;
@@ -234,7 +254,7 @@ impl<'code> Parser<'code> {
         Ok(Stmt::Loop(block, keyword_span.extend(loop_span)))
     }
 
-    fn while_stmt(&mut self) -> ParseResult<'code, Stmt> {
+    fn while_stmt(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
         let keyword_span = self.expect(TokenType::While)?.span;
@@ -253,7 +273,7 @@ impl<'code> Parser<'code> {
         }))
     }
 
-    fn break_stmt(&mut self) -> ParseResult<'code, Stmt> {
+    fn break_stmt(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
         let keyword_span = self.expect(TokenType::Break)?.span;
@@ -268,12 +288,12 @@ impl<'code> Parser<'code> {
         }
     }
 
-    fn return_stmt(&mut self) -> ParseResult<'code, Stmt> {
+    fn return_stmt(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
         let keyword_span = self.expect(TokenType::Return)?.span;
 
-        let expr = if let Some(TokenType::Semi) = self.peek_kind() {
+        let expr = if let Some(TokenType::Semi) = self.peek_kind()? {
             None
         } else {
             Some(self.expression()?)
@@ -292,7 +312,7 @@ impl<'code> Parser<'code> {
         }
     }
 
-    fn print_stmt(&mut self) -> ParseResult<'code, Stmt> {
+    fn print_stmt(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
         let print_span = self.expect(TokenType::Print)?.span;
@@ -306,12 +326,12 @@ impl<'code> Parser<'code> {
         Ok(Stmt::Print(expr, print_span.extend(semi_span)))
     }
 
-    fn assignment(&mut self) -> ParseResult<'code, Stmt> {
+    fn assignment(&mut self) -> ParseResult<'code, Stmt<'ast>> {
         enter_parse!(self);
 
         let expr = self.expression()?;
 
-        let stmt = if let Some(TokenType::Equal) = self.peek_kind() {
+        let stmt = if let Some(TokenType::Equal) = self.peek_kind()? {
             let _ = self.expect(TokenType::Equal)?;
             let init = self.expression()?;
             let semi_span = self.expect(TokenType::Semi)?.span;
@@ -329,18 +349,18 @@ impl<'code> Parser<'code> {
         stmt
     }
 
-    fn expression(&mut self) -> ParseResult<'code, Expr> {
+    fn expression(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
         let return_expr = self.logical_or();
         exit_parse!(self);
         return_expr
     }
 
-    fn logical_or(&mut self) -> ParseResult<'code, Expr> {
+    fn logical_or(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let lhs = self.logical_and()?;
-        let return_expr = match self.peek_kind() {
+        let return_expr = match self.peek_kind()? {
             Some(TokenType::Or) => parse_bin_op!(self, lhs, BinaryOpKind::Or, logical_or),
             _ => Ok(lhs),
         };
@@ -349,11 +369,11 @@ impl<'code> Parser<'code> {
         return_expr
     }
 
-    fn logical_and(&mut self) -> ParseResult<'code, Expr> {
+    fn logical_and(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let lhs = self.equality()?;
-        let return_expr = match self.peek_kind() {
+        let return_expr = match self.peek_kind()? {
             Some(TokenType::And) => parse_bin_op!(self, lhs, BinaryOpKind::And, logical_and),
             _ => Ok(lhs),
         };
@@ -362,11 +382,11 @@ impl<'code> Parser<'code> {
         return_expr
     }
 
-    fn equality(&mut self) -> ParseResult<'code, Expr> {
+    fn equality(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let lhs = self.comparison()?;
-        let return_expr = match self.peek_kind() {
+        let return_expr = match self.peek_kind()? {
             Some(TokenType::BangEqual) => {
                 parse_bin_op!(self, lhs, BinaryOpKind::NotEqual, comparison)
             }
@@ -379,11 +399,11 @@ impl<'code> Parser<'code> {
         return_expr
     }
 
-    fn comparison(&mut self) -> ParseResult<'code, Expr> {
+    fn comparison(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let lhs = self.term()?;
-        let return_expr = match self.peek_kind() {
+        let return_expr = match self.peek_kind()? {
             Some(TokenType::Greater) => parse_bin_op!(self, lhs, BinaryOpKind::Greater, term),
             Some(TokenType::GreaterEqual) => {
                 parse_bin_op!(self, lhs, BinaryOpKind::GreaterEqual, term)
@@ -398,11 +418,11 @@ impl<'code> Parser<'code> {
         return_expr
     }
 
-    fn term(&mut self) -> ParseResult<'code, Expr> {
+    fn term(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let lhs = self.factor()?;
-        let return_expr = match self.peek_kind() {
+        let return_expr = match self.peek_kind()? {
             Some(TokenType::Plus) => parse_bin_op!(self, lhs, BinaryOpKind::Add, term),
             Some(TokenType::Minus) => parse_bin_op!(self, lhs, BinaryOpKind::Sub, term),
             _ => Ok(lhs),
@@ -411,11 +431,11 @@ impl<'code> Parser<'code> {
         return_expr
     }
 
-    fn factor(&mut self) -> ParseResult<'code, Expr> {
+    fn factor(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let lhs = self.unary()?;
-        let return_expr = match self.peek_kind() {
+        let return_expr = match self.peek_kind()? {
             Some(TokenType::Asterisk) => parse_bin_op!(self, lhs, BinaryOpKind::Mul, factor),
             Some(TokenType::Slash) => parse_bin_op!(self, lhs, BinaryOpKind::Div, factor),
             Some(TokenType::Percent) => parse_bin_op!(self, lhs, BinaryOpKind::Mod, factor),
@@ -425,27 +445,33 @@ impl<'code> Parser<'code> {
         return_expr
     }
 
-    fn unary(&mut self) -> ParseResult<'code, Expr> {
+    fn unary(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
-        let return_expr = match self.peek_kind() {
+        let return_expr = match self.peek_kind()? {
             Some(TokenType::Not) => {
-                let unary_op_span = self.next().unwrap().span;
+                let unary_op_span = self.next()?.unwrap().span;
                 let expr = self.call()?;
-                Ok(Expr::UnaryOp(Box::new(UnaryOp {
-                    span: unary_op_span.extend(expr.span()),
-                    expr,
-                    kind: UnaryOpKind::Not,
-                })))
+                Ok(Expr::UnaryOp(Box::new_in(
+                    UnaryOp {
+                        span: unary_op_span.extend(expr.span()),
+                        expr,
+                        kind: UnaryOpKind::Not,
+                    },
+                    self.bump,
+                )))
             }
             Some(TokenType::Minus) => {
-                let unary_op_span = self.next().unwrap().span;
+                let unary_op_span = self.next()?.unwrap().span;
                 let expr = self.call()?;
-                Ok(Expr::UnaryOp(Box::new(UnaryOp {
-                    span: unary_op_span.extend(expr.span()),
-                    expr,
-                    kind: UnaryOpKind::Neg,
-                })))
+                Ok(Expr::UnaryOp(Box::new_in(
+                    UnaryOp {
+                        span: unary_op_span.extend(expr.span()),
+                        expr,
+                        kind: UnaryOpKind::Neg,
+                    },
+                    self.bump,
+                )))
             }
             _ => self.call(),
         };
@@ -453,33 +479,39 @@ impl<'code> Parser<'code> {
         return_expr
     }
 
-    fn call(&mut self) -> ParseResult<'code, Expr> {
+    fn call(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let mut expr = self.primary()?;
 
         loop {
-            expr = match self.peek_kind() {
+            expr = match self.peek_kind()? {
                 Some(TokenType::ParenO) => {
                     let open_span = self.expect(TokenType::ParenO)?.span;
                     let args = self.parse_list(TokenType::ParenC, Self::expression)?;
                     let close_span = self.expect(TokenType::ParenC)?.span;
 
-                    Expr::Call(Box::new(Call {
-                        callee: expr,
-                        span: open_span.extend(close_span),
-                        kind: CallKind::Fn(args),
-                    }))
+                    Expr::Call(Box::new_in(
+                        Call {
+                            callee: expr,
+                            span: open_span.extend(close_span),
+                            kind: CallKind::Fn(args),
+                        },
+                        self.bump,
+                    ))
                 }
                 Some(TokenType::Dot) => {
                     let dot_span = self.expect(TokenType::Dot)?.span;
                     let field = self.ident()?;
 
-                    Expr::Call(Box::new(Call {
-                        callee: expr,
-                        span: dot_span.extend(field.span),
-                        kind: CallKind::Field(field),
-                    }))
+                    Expr::Call(Box::new_in(
+                        Call {
+                            callee: expr,
+                            span: dot_span.extend(field.span),
+                            kind: CallKind::Field(field),
+                        },
+                        self.bump,
+                    ))
                 }
                 _ => break,
             }
@@ -490,10 +522,10 @@ impl<'code> Parser<'code> {
         Ok(expr)
     }
 
-    fn primary(&mut self) -> ParseResult<'code, Expr> {
+    fn primary(&mut self) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
-        let next = self.next().ok_or(ParseErr::Eof("primary"))?;
+        let next = self.next()?.ok_or(ParseErr::Eof("primary"))?;
         let return_expr = match next.kind {
             TokenType::String(literal) => Ok(Expr::Literal(Literal::String(literal, next.span))),
             TokenType::Number(literal) => Ok(Expr::Literal(Literal::Number(literal, next.span))),
@@ -523,7 +555,7 @@ impl<'code> Parser<'code> {
     fn ident(&mut self) -> ParseResult<'code, Ident> {
         enter_parse!(self);
 
-        let Token { kind, span } = self.next().ok_or(ParseErr::Eof("identifier"))?;
+        let Token { kind, span } = self.next()?.ok_or(ParseErr::Eof("identifier"))?;
         let return_expr = match kind {
             TokenType::Ident(name) => {
                 let name_owned = name.to_owned();
@@ -543,7 +575,7 @@ impl<'code> Parser<'code> {
         return_expr
     }
 
-    fn object_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr> {
+    fn object_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let close_span = self.expect(TokenType::BraceC)?.span;
@@ -552,7 +584,7 @@ impl<'code> Parser<'code> {
         Ok(Expr::Literal(Literal::Object(open_span.extend(close_span))))
     }
 
-    fn array_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr> {
+    fn array_literal(&mut self, open_span: Span) -> ParseResult<'code, Expr<'ast>> {
         enter_parse!(self);
 
         let elements = self.parse_list(TokenType::BracketC, Self::expression)?;
@@ -570,15 +602,15 @@ impl<'code> Parser<'code> {
         &mut self,
         close: TokenType<'code>,
         mut parser: F,
-    ) -> ParseResult<'code, Vec<T>>
+    ) -> ParseResult<'code, Vec<'ast, T>>
     where
         F: FnMut(&mut Self) -> ParseResult<'code, T>,
     {
         enter_parse!(self);
 
-        let mut elements = Vec::new();
+        let mut elements = Vec::new_in(self.bump);
 
-        if self.peek_kind() == Some(&close) {
+        if self.peek_kind()? == Some(&close) {
             return Ok(elements);
         }
 
@@ -586,14 +618,14 @@ impl<'code> Parser<'code> {
         elements.push(expr);
 
         while self
-            .peek_kind()
+            .peek_kind()?
             .ok_or_else(|| ParseErr::EofExpecting(close.clone()))?
             != &close
         {
             self.expect(TokenType::Comma)?;
 
             // trailing comma support
-            if self.peek_kind() == Some(&close) {
+            if self.peek_kind()? == Some(&close) {
                 break;
             }
 
@@ -607,23 +639,28 @@ impl<'code> Parser<'code> {
 
     // token helpers
 
-    #[must_use]
-    fn next(&mut self) -> Option<Token<'code>> {
-        self.tokens.next()
+    fn next(&mut self) -> ParseResult<'code, Option<Token<'code>>> {
+        match self.tokens.next() {
+            Some(Ok(t)) => Ok(Some(t)),
+            Some(Err(t)) => Err(t.into()),
+            None => Ok(None),
+        }
     }
 
-    #[must_use]
-    fn peek(&mut self) -> Option<&Token<'code>> {
-        self.tokens.peek()
+    fn peek(&mut self) -> ParseResult<'code, Option<&Token<'code>>> {
+        match self.tokens.peek() {
+            Some(Ok(t)) => Ok(Some(t)),
+            Some(Err(t)) => Err(t.clone().into()),
+            None => Ok(None),
+        }
     }
 
-    #[must_use]
-    fn peek_kind(&mut self) -> Option<&TokenType<'code>> {
-        self.peek().map(|token| &token.kind)
+    fn peek_kind(&mut self) -> ParseResult<'code, Option<&TokenType<'code>>> {
+        self.peek().map(|option| option.map(|token| &token.kind))
     }
 
     fn expect(&mut self, kind: TokenType<'code>) -> ParseResult<'code, Token> {
-        if let Some(token) = self.next() {
+        if let Some(token) = self.next()? {
             if token.kind == kind {
                 Ok(token)
             } else {
@@ -650,6 +687,14 @@ pub enum ParseErr<'code> {
     InvalidTokenPrimary(Token<'code>),
     EofExpecting(TokenType<'code>),
     Eof(&'static str),
+    LexError(LexError),
+}
+
+// todo: unify error handling
+impl From<LexError> for ParseErr<'_> {
+    fn from(err: LexError) -> Self {
+        Self::LexError(err)
+    }
 }
 
 impl CompilerError for ParseErr<'_> {
@@ -665,6 +710,7 @@ impl CompilerError for ParseErr<'_> {
             ParseErr::BreakOutsideLoop(span) => *span,
             ParseErr::ReturnOutsideFunction(span) => *span,
             ParseErr::MaxDepth(span) => *span,
+            ParseErr::LexError(err) => err.span,
         }
     }
 
@@ -685,10 +731,14 @@ impl CompilerError for ParseErr<'_> {
             ParseErr::BreakOutsideLoop(_) => "break used outside of loop".to_string(),
             ParseErr::ReturnOutsideFunction(_) => "return used outside of function".to_string(),
             ParseErr::MaxDepth(_) => "reached maximal nesting depth".to_string(),
+            ParseErr::LexError(err) => err.message(),
         }
     }
 
     fn note(&self) -> Option<String> {
-        None
+        match self {
+            ParseErr::LexError(err) => err.note(),
+            _ => None,
+        }
     }
 }

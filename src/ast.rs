@@ -3,74 +3,76 @@
 
 use crate::errors::Span;
 use crate::value::Symbol;
+use bumpalo::boxed::Box;
+use bumpalo::collections::Vec;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Ident {
     pub sym: Symbol,
     pub span: Span,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Program(pub Vec<Stmt>);
+#[derive(Debug, PartialEq)]
+pub struct Program<'ast>(pub Vec<'ast, Stmt<'ast>>);
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Block {
-    pub stmts: Vec<Stmt>,
+#[derive(Debug, PartialEq)]
+pub struct Block<'ast> {
+    pub stmts: Vec<'ast, Stmt<'ast>>,
     pub span: Span,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Stmt {
-    Declaration(Declaration),
-    Assignment(Assignment),
-    FnDecl(FnDecl),
-    If(IfStmt),
-    Loop(Block, Span),
-    While(WhileStmt),
+#[derive(Debug, PartialEq)]
+pub enum Stmt<'ast> {
+    Declaration(Declaration<'ast>),
+    Assignment(Assignment<'ast>),
+    FnDecl(FnDecl<'ast>),
+    If(IfStmt<'ast>),
+    Loop(Block<'ast>, Span),
+    While(WhileStmt<'ast>),
     Break(Span),
-    Return(Option<Expr>, Span),
-    Block(Block),
-    Expr(Expr),
-    Print(Expr, Span),
+    Return(Option<Expr<'ast>>, Span),
+    Block(Block<'ast>),
+    Expr(Expr<'ast>),
+    Print(Expr<'ast>, Span),
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Declaration {
+#[derive(Debug, PartialEq)]
+pub struct Declaration<'ast> {
     pub span: Span,
     pub name: Ident,
-    pub init: Expr,
+    pub init: Expr<'ast>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Assignment {
+#[derive(Debug, PartialEq)]
+pub struct Assignment<'ast> {
     pub span: Span,
-    pub lhs: Expr,
-    pub rhs: Expr,
+    pub lhs: Expr<'ast>,
+    pub rhs: Expr<'ast>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct FnDecl {
+#[derive(Debug, PartialEq)]
+pub struct FnDecl<'ast> {
     pub span: Span,
     pub name: Ident,
-    pub params: Vec<Ident>,
-    pub body: Block,
+    pub params: Vec<'ast, Ident>,
+    pub body: Block<'ast>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct IfStmt {
+#[derive(Debug, PartialEq)]
+pub struct IfStmt<'ast> {
     pub span: Span,
-    pub cond: Expr,
-    pub body: Block,
-    pub else_part: Option<Box<ElsePart>>,
+    pub cond: Expr<'ast>,
+    pub body: Block<'ast>,
+    pub else_part: Option<Box<'ast, ElsePart<'ast>>>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ElsePart {
-    Else(Block, Span),
-    ElseIf(IfStmt, Span),
+#[derive(Debug, PartialEq)]
+pub enum ElsePart<'ast> {
+    Else(Block<'ast>, Span),
+    ElseIf(IfStmt<'ast>, Span),
 }
 
-impl ElsePart {
+impl ElsePart<'_> {
     pub fn span(&self) -> Span {
         match self {
             ElsePart::Else(_, span) => *span,
@@ -79,23 +81,23 @@ impl ElsePart {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct WhileStmt {
+#[derive(Debug, PartialEq)]
+pub struct WhileStmt<'ast> {
     pub span: Span,
-    pub cond: Expr,
-    pub body: Block,
+    pub cond: Expr<'ast>,
+    pub body: Block<'ast>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Expr {
+#[derive(Debug, PartialEq)]
+pub enum Expr<'ast> {
     Ident(Ident),
-    Literal(Literal),
-    UnaryOp(Box<UnaryOp>),
-    BinaryOp(Box<BinaryOp>),
-    Call(Box<Call>),
+    Literal(Literal<'ast>),
+    UnaryOp(Box<'ast, UnaryOp<'ast>>),
+    BinaryOp(Box<'ast, BinaryOp<'ast>>),
+    Call(Box<'ast, Call<'ast>>),
 }
 
-impl Expr {
+impl Expr<'_> {
     pub fn span(&self) -> Span {
         match self {
             Expr::Literal(lit) => lit.span(),
@@ -107,17 +109,17 @@ impl Expr {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Literal {
+#[derive(Debug, PartialEq)]
+pub enum Literal<'ast> {
     String(String, Span),
     Number(f64, Span),
-    Array(Vec<Expr>, Span),
+    Array(Vec<'ast, Expr<'ast>>, Span),
     Object(Span),
     Boolean(bool, Span),
     Null(Span),
 }
 
-impl Literal {
+impl Literal<'_> {
     pub fn span(&self) -> Span {
         match self {
             Literal::String(_, span) => *span,
@@ -130,28 +132,28 @@ impl Literal {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct UnaryOp {
+#[derive(Debug, PartialEq)]
+pub struct UnaryOp<'ast> {
     pub span: Span,
-    pub expr: Expr,
+    pub expr: Expr<'ast>,
     pub kind: UnaryOpKind,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum UnaryOpKind {
     Not,
     Neg,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct BinaryOp {
+#[derive(Debug, PartialEq)]
+pub struct BinaryOp<'ast> {
     pub span: Span,
-    pub lhs: Expr,
-    pub rhs: Expr,
+    pub lhs: Expr<'ast>,
+    pub rhs: Expr<'ast>,
     pub kind: BinaryOpKind,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum BinaryOpKind {
     And,
     Or,
@@ -168,15 +170,15 @@ pub enum BinaryOpKind {
     Mod,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Call {
-    pub callee: Expr,
+#[derive(Debug, PartialEq)]
+pub struct Call<'ast> {
+    pub callee: Expr<'ast>,
     pub span: Span,
-    pub kind: CallKind,
+    pub kind: CallKind<'ast>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum CallKind {
+#[derive(Debug, PartialEq)]
+pub enum CallKind<'ast> {
     Field(Ident),
-    Fn(Vec<Expr>),
+    Fn(Vec<'ast, Expr<'ast>>),
 }

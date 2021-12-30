@@ -8,40 +8,33 @@ mod lex;
 mod parse;
 mod value;
 
+use crate::ast::Program;
+use bumpalo::Bump;
 pub use lex::*;
 pub use parse::*;
 
 pub fn run_program(program: &str) {
     let lexer = lex::Lexer::lex(program);
-    let (success, errors) = lexer.partition::<Vec<_>, _>(|result| result.is_ok());
 
-    if errors.is_empty() {
-        let tokens = success.into_iter().collect::<Result<Vec<_>, _>>().unwrap();
+    let ast_alloc = Bump::new();
 
-        println!(
-            "Tokens:\n{:?}\n",
-            tokens.iter().map(|token| &token.kind).collect::<Vec<_>>()
-        );
+    let ast = parse::parse(lexer, &ast_alloc);
 
-        let ast = parse::parse(tokens);
+    match ast {
+        Ok(ast) => process_ast(program, ast),
+        Err(err) => errors::display_error(program, err),
+    }
+}
 
-        match ast {
-            Ok(ast) => {
-                println!("AST:\n{:?}\n", ast);
+fn process_ast(program: &str, ast: Program) {
+    println!("AST:\n{:?}\n", ast);
 
-                let bytecode = compile::compile(&ast);
+    let bytecode_alloc = Bump::new();
 
-                match bytecode {
-                    Ok(code) => println!("Bytecode:\n{:#?}\n", code),
-                    Err(err) => errors::display_error(program, err),
-                }
-            }
-            Err(err) => errors::display_error(program, err),
-        }
-    } else {
-        errors
-            .into_iter()
-            .map(Result::unwrap_err)
-            .for_each(|err| errors::display_error(program, err));
+    let bytecode = compile::compile(&ast, &bytecode_alloc);
+
+    match bytecode {
+        Ok(code) => println!("Bytecode:\n{:#?}\n", code),
+        Err(err) => errors::display_error(program, err),
     }
 }

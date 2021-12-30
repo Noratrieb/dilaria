@@ -1,24 +1,26 @@
 use crate::errors::Span;
 use crate::value::{HashMap, Symbol};
+use bumpalo::boxed::Box;
+use bumpalo::collections::Vec;
 use std::rc::Rc;
 
-#[derive(Debug, Default)]
-pub struct FnBlock {
-    pub code: Vec<Instr>,
-    pub stack_sizes: Vec<usize>,
-    pub spans: Vec<Span>,
+#[derive(Debug)]
+pub struct FnBlock<'bc> {
+    pub code: Vec<'bc, Instr<'bc>>,
+    pub stack_sizes: Vec<'bc, usize>,
+    pub spans: Vec<'bc, Span>,
     pub arity: u8,
 }
 
 // todo: this should be copy in the end tbh
 #[derive(Debug)]
-pub enum Instr {
+pub enum Instr<'bc> {
     /// Store the current value on the stack to the stack location with the local offset `usize`
     Store(usize),
     /// Load the variable value from the local offset `usize` onto the stack
     Load(usize),
     /// Push a value onto the stack
-    PushVal(Box<Value>),
+    PushVal(Box<'bc, Value>),
     /// Negate the top value on the stack. Only works with numbers and booleans
     Neg,
     BinAdd,
@@ -45,6 +47,6 @@ pub enum Value {
     Bool(bool),
     Num(f64),
     String(Rc<str>),
-    Array(Vec<Value>),
+    Array,
     Object(HashMap<Symbol, Value>),
 }

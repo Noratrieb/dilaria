@@ -5,6 +5,9 @@ use crate::ast::{
 use crate::bytecode::{FnBlock, Instr, Value};
 use crate::errors::{CompilerError, Span};
 use crate::value::{HashMap, Symbol};
+use bumpalo::boxed::Box;
+use bumpalo::collections::Vec;
+use bumpalo::Bump;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -39,25 +42,39 @@ impl Env {
     }
 }
 
-#[derive(Debug, Default)]
-struct Compiler {
-    blocks: Vec<FnBlock>,
+#[derive(Debug)]
+struct Compiler<'bc> {
+    blocks: Vec<'bc, FnBlock<'bc>>,
     current_block: usize,
+    bump: &'bc Bump,
     /// the current local variables that are in scope, only needed for compiling
     env: Rc<RefCell<Env>>,
 }
 
-pub fn compile(ast: &Program) -> Result<Vec<FnBlock>, CompileError> {
-    let mut compiler = Compiler::default();
+pub fn compile<'bc>(
+    ast: &Program,
+    bytecode_bump: &'bc Bump,
+) -> Result<Vec<'bc, FnBlock<'bc>>, CompileError> {
+    let mut compiler = Compiler {
+        blocks: Vec::new_in(bytecode_bump),
+        current_block: 0,
+        bump: bytecode_bump,
+        env: Rc::new(RefCell::new(Default::default())),
+    };
 
     compiler.compile(ast)?;
 
     Ok(compiler.blocks)
 }
 
-impl Compiler {
+impl<'bc> Compiler<'bc> {
     fn compile(&mut self, ast: &Program) -> CResult<()> {
-        let global_block = FnBlock::default();
+        let global_block = FnBlock {
+            code: Vec::new_in(self.bump),
+            stack_sizes: Vec::new_in(self.bump),
+            spans: Vec::new_in(self.bump),
+            arity: 0,
+        };
         self.blocks.push(global_block);
         self.current_block = self.blocks.len() - 1;
         self.compile_stmts(&ast.0)?;
@@ -180,7 +197,7 @@ impl Compiler {
             Literal::Number(num, _) => Value::Num(*num),
             Literal::Array(vec, _) => {
                 if vec.is_empty() {
-                    Value::Array(Vec::new())
+                    Value::Array
                 } else {
                     todo!()
                 }
@@ -191,7 +208,7 @@ impl Compiler {
         };
 
         self.push_instr(
-            Instr::PushVal(Box::new(value)),
+            Instr::PushVal(Box::new_in(value, self.bump)),
             StackChange::Grow,
             lit.span(),
         );
@@ -244,7 +261,7 @@ impl Compiler {
         *block.stack_sizes.last().expect("empty stack") - 1
     }
 
-    fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) {
+    fn push_instr(&mut self, instr: Instr<'bc>, stack_change: StackChange, span: Span) {
         let block = &mut self.blocks[self.current_block];
         let stack_top = block.stack_sizes.last().copied().unwrap_or(0);
         let new_stack_top = stack_top as isize + stack_change as isize;
@@ -298,7 +315,6 @@ impl CompilerError for CompileError {
         self.note.clone()
     }
 }
-
 
 #[cfg(test)]
 mod test {}
