@@ -11,7 +11,7 @@ use bumpalo::Bump;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-type CResult<T> = Result<T, CompileError>;
+type CResult<T> = Result<T, CompilerError>;
 
 #[derive(Debug, Default)]
 struct Env {
@@ -30,8 +30,9 @@ impl Env {
             })
         }
 
-        lookup_inner(self, name)
-            .ok_or_else(|| CompileError::new(name.span, format!("variable {} not found", name.sym)))
+        lookup_inner(self, name).ok_or_else(|| {
+            CompilerError::new(name.span, format!("variable {} not found", name.sym))
+        })
     }
 
     fn new_inner(outer: Rc<RefCell<Self>>) -> Rc<RefCell<Self>> {
@@ -54,7 +55,7 @@ struct Compiler<'bc> {
 pub fn compile<'bc>(
     ast: &Program,
     bytecode_bump: &'bc Bump,
-) -> Result<Vec<'bc, FnBlock<'bc>>, CompileError> {
+) -> Result<Vec<'bc, FnBlock<'bc>>, CompilerError> {
     let mut compiler = Compiler {
         blocks: Vec::new_in(bytecode_bump),
         current_block: 0,
@@ -283,37 +284,6 @@ enum StackChange {
     Shrink = -1,
     None = 0,
     Grow = 1,
-}
-
-#[derive(Debug)]
-pub struct CompileError {
-    span: Span,
-    message: String,
-    note: Option<String>,
-}
-
-impl CompileError {
-    fn new(span: Span, message: String) -> Self {
-        Self {
-            span,
-            message,
-            note: None,
-        }
-    }
-}
-
-impl CompilerError for CompileError {
-    fn span(&self) -> Span {
-        self.span
-    }
-
-    fn message(&self) -> String {
-        self.message.clone()
-    }
-
-    fn note(&self) -> Option<String> {
-        self.note.clone()
-    }
 }
 
 #[cfg(test)]

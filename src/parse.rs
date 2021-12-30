@@ -26,7 +26,7 @@ where
 pub fn parse<'ast, 'code>(
     tokens: impl Iterator<Item = Result<Token<'code>, LexError>> + 'code,
     ast_bump: &'ast Bump,
-) -> Result<Program<'ast>, ParseErr<'code>> {
+) -> Result<Program<'ast>, CompilerError> {
     let mut parser = Parser {
         tokens: tokens.peekable(),
         depth: 0,
@@ -690,55 +690,51 @@ pub enum ParseErr<'code> {
     LexError(LexError),
 }
 
-// todo: unify error handling
 impl From<LexError> for ParseErr<'_> {
     fn from(err: LexError) -> Self {
         Self::LexError(err)
     }
 }
 
-impl CompilerError for ParseErr<'_> {
-    fn span(&self) -> Span {
-        match self {
-            ParseErr::MismatchedKind {
-                actual: Token { span, .. },
-                ..
-            } => *span,
-            ParseErr::InvalidTokenPrimary(Token { span, .. }) => *span,
-            ParseErr::EofExpecting(_) => Span::dummy(),
-            ParseErr::Eof(_) => Span::dummy(),
-            ParseErr::BreakOutsideLoop(span) => *span,
-            ParseErr::ReturnOutsideFunction(span) => *span,
-            ParseErr::MaxDepth(span) => *span,
-            ParseErr::LexError(err) => err.span,
-        }
-    }
-
-    fn message(&self) -> String {
-        match self {
-            ParseErr::MismatchedKind { expected, actual } => {
-                format!("expected `{:?}`, received `{:?}`", expected, actual.kind)
-            }
-            ParseErr::InvalidTokenPrimary(token) => {
-                format!("invalid token in expression: `{:?}`", token.kind)
-            }
-            ParseErr::EofExpecting(token) => {
-                format!("reached EOF searching for `{:?}`", token)
-            }
-            ParseErr::Eof(message) => {
-                format!("reached EOF while parsing `{}`", message)
-            }
-            ParseErr::BreakOutsideLoop(_) => "break used outside of loop".to_string(),
-            ParseErr::ReturnOutsideFunction(_) => "return used outside of function".to_string(),
-            ParseErr::MaxDepth(_) => "reached maximal nesting depth".to_string(),
-            ParseErr::LexError(err) => err.message(),
-        }
-    }
-
-    fn note(&self) -> Option<String> {
-        match self {
-            ParseErr::LexError(err) => err.note(),
-            _ => None,
+// todo: remove this and ParseErr
+impl From<ParseErr<'_>> for CompilerError {
+    fn from(error: ParseErr<'_>) -> Self {
+        Self {
+            span: match &error {
+                ParseErr::MismatchedKind {
+                    actual: Token { span, .. },
+                    ..
+                } => *span,
+                ParseErr::InvalidTokenPrimary(Token { span, .. }) => *span,
+                ParseErr::EofExpecting(_) => Span::dummy(),
+                ParseErr::Eof(_) => Span::dummy(),
+                ParseErr::BreakOutsideLoop(span) => *span,
+                ParseErr::ReturnOutsideFunction(span) => *span,
+                ParseErr::MaxDepth(span) => *span,
+                ParseErr::LexError(err) => err.span,
+            },
+            message: match &error {
+                ParseErr::MismatchedKind { expected, actual } => {
+                    format!("expected `{:?}`, received `{:?}`", expected, actual.kind)
+                }
+                ParseErr::InvalidTokenPrimary(token) => {
+                    format!("invalid token in expression: `{:?}`", token.kind)
+                }
+                ParseErr::EofExpecting(token) => {
+                    format!("reached EOF searching for `{:?}`", token)
+                }
+                ParseErr::Eof(message) => {
+                    format!("reached EOF while parsing `{}`", message)
+                }
+                ParseErr::BreakOutsideLoop(_) => "break used outside of loop".to_string(),
+                ParseErr::ReturnOutsideFunction(_) => "return used outside of function".to_string(),
+                ParseErr::MaxDepth(_) => "reached maximal nesting depth".to_string(),
+                ParseErr::LexError(err) => err.message(),
+            },
+            note: match error {
+                ParseErr::LexError(err) => err.note(),
+                _ => None,
+            },
         }
     }
 }

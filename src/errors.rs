@@ -62,23 +62,41 @@ mod span {
     }
 }
 
-pub trait CompilerError {
-    fn span(&self) -> Span;
-    fn message(&self) -> String;
-    fn note(&self) -> Option<String>;
+#[derive(Debug, Clone)]
+pub struct CompilerError {
+    pub span: Span,
+    pub message: String,
+    pub note: Option<String>,
 }
 
-pub fn display_error<E>(source: &str, error: E)
-where
-    E: CompilerError + Debug,
-{
+impl CompilerError {
+    pub fn new(span: Span, message: String) -> Self {
+        Self {
+            span,
+            message,
+            note: None,
+        }
+    }
+
+    pub fn with_note(span: Span, message: String, note: String) -> Self {
+        Self {
+            span,
+            message,
+            note: Some(note),
+        }
+    }
+}
+
+pub fn display_error(source: &str, error: CompilerError) {
+    let span = error.span;
+
     let mut chars = 0;
     let lines = source.split_inclusive('\n').enumerate();
     for (idx, line) in lines {
-        if chars + line.len() > error.span().start {
-            let offset_on_line = error.span().start - chars;
+        if chars + line.len() > span.start {
+            let offset_on_line = span.start - chars;
 
-            println!("{}error: {}{}", RED, error.message(), RESET);
+            println!("{}error: {}{}", RED, error.message, RESET);
             println!("      {}|{}", CYAN, RESET);
             println!("{}{:>5} |{} {}", CYAN, idx + 1, RESET, line);
             print!("      {}|{} ", CYAN, RESET);
@@ -86,10 +104,10 @@ where
                 "{}{}{}{}",
                 " ".repeat(offset_on_line),
                 RED,
-                "^".repeat(error.span().len()),
+                "^".repeat(span.len()),
                 RESET,
             );
-            if let Some(note) = error.note() {
+            if let Some(note) = error.note {
                 println!("      {}|{}", CYAN, RESET);
                 println!(
                     "      {}|{}   {}note: {}{}",

@@ -367,34 +367,37 @@ impl LexError {
     }
 }
 
-impl CompilerError for LexError {
-    fn span(&self) -> Span {
-        self.span
-    }
-
-    fn message(&self) -> String {
-        match &self.kind {
-            LexErrorKind::InvalidCharacter(char) => format!("Unexpected character: '{}'", char),
-            LexErrorKind::InvalidFloat(_) => "Invalid number".to_string(),
-            LexErrorKind::FloatInfiniteLiteral => "Number literal too long".to_string(),
-            LexErrorKind::UnclosedStringLiteral => "String literal not closed".to_string(),
-            LexErrorKind::SingleBang => "Expected '=' after '!'".to_string(),
-        }
-    }
-
-    fn note(&self) -> Option<String> {
-        match &self.kind {
-            LexErrorKind::InvalidCharacter(_) => {
-                Some("Character is not allowed outside of string literals and comments".to_string())
-            }
-            LexErrorKind::InvalidFloat(err) => Some(err.to_string()),
-            LexErrorKind::FloatInfiniteLiteral => Some(
-                "A number literal cannot be larger than a 64 bit float can represent".to_string(),
-            ),
-            LexErrorKind::UnclosedStringLiteral => Some("Close the literal using '\"'".to_string()),
-            LexErrorKind::SingleBang => {
-                Some("If you meant to use it for negation, use `not`".to_string())
-            }
+impl From<LexError> for CompilerError {
+    fn from(error: LexError) -> Self {
+        Self {
+            span: { error.span },
+            message: {
+                match &error.kind {
+                    LexErrorKind::InvalidCharacter(char) => {
+                        format!("Unexpected character: '{}'", char)
+                    }
+                    LexErrorKind::InvalidFloat(_) => "Invalid number".to_string(),
+                    LexErrorKind::FloatInfiniteLiteral => "Number literal too long".to_string(),
+                    LexErrorKind::UnclosedStringLiteral => "String literal not closed".to_string(),
+                    LexErrorKind::SingleBang => "Expected '=' after '!'".to_string(),
+                }
+            },
+            note: match &error.kind {
+                LexErrorKind::InvalidCharacter(_) => Some(
+                    "Character is not allowed outside of string literals and comments".to_string(),
+                ),
+                LexErrorKind::InvalidFloat(err) => Some(err.to_string()),
+                LexErrorKind::FloatInfiniteLiteral => Some(
+                    "A number literal cannot be larger than a 64 bit float can represent"
+                        .to_string(),
+                ),
+                LexErrorKind::UnclosedStringLiteral => {
+                    Some("Close the literal using '\"'".to_string())
+                }
+                LexErrorKind::SingleBang => {
+                    Some("If you meant to use it for negation, use `not`".to_string())
+                }
+            },
         }
     }
 }
