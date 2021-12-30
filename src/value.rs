@@ -6,7 +6,7 @@ use std::ops::Deref;
 use std::ptr::NonNull;
 
 /// imagine interning or something here
-pub type Symbol<'ast> = bumpalo::collections::String<'ast>;
+pub type AstSymbol<'ast> = &'ast str;
 
 /// here is the actual interning or something
 pub type NewSym = Gc<str>;

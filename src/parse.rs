@@ -527,7 +527,10 @@ where
 
         let next = self.next().ok_or_else(|| CompilerError::eof("primary"))?;
         let return_expr = match next.kind {
-            TokenKind::String(literal) => Ok(Expr::Literal(Literal::String(literal, next.span))),
+            TokenKind::String(literal) => Ok(Expr::Literal(Literal::String(
+                self.bump.alloc_str(&literal),
+                next.span,
+            ))),
             TokenKind::Number(literal) => Ok(Expr::Literal(Literal::Number(literal, next.span))),
             TokenKind::False => Ok(Expr::Literal(Literal::Boolean(false, next.span))),
             TokenKind::True => Ok(Expr::Literal(Literal::Boolean(true, next.span))),
@@ -539,13 +542,10 @@ where
                 let _ = self.expect(TokenKind::ParenC)?;
                 Ok(expr)
             }
-            TokenKind::Ident(name) => {
-                let name_owned = bumpalo::collections::String::from_str_in(name, self.bump);
-                Ok(Expr::Ident(Ident {
-                    sym: name_owned,
-                    span: next.span,
-                }))
-            }
+            TokenKind::Ident(name) => Ok(Expr::Ident(Ident {
+                sym: self.bump.alloc_str(name),
+                span: next.span,
+            })),
             TokenKind::Error(error) => Err(*error),
             _ => Err(CompilerError::new(
                 next.span,
@@ -563,13 +563,10 @@ where
             .next()
             .ok_or_else(|| CompilerError::eof("identifier"))?;
         let return_expr = match kind {
-            TokenKind::Ident(name) => {
-                let name_owned = bumpalo::collections::String::from_str_in(name, self.bump);
-                Ok(Ident {
-                    sym: name_owned,
-                    span,
-                })
-            }
+            TokenKind::Ident(name) => Ok(Ident {
+                sym: self.bump.alloc_str(name),
+                span,
+            }),
             TokenKind::Error(error) => Err(*error),
             _ => {
                 return Err(CompilerError::new(

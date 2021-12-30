@@ -7,7 +7,6 @@ use crate::ast::{
 use crate::bytecode::{FnBlock, Instr, Value};
 use crate::errors::{CompilerError, Span};
 use crate::value::HashMap;
-use bumpalo::boxed::Box;
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
 use std::cell::RefCell;
@@ -24,7 +23,7 @@ struct Env<'ast> {
 impl Env<'_> {
     fn lookup_local(&self, name: &Ident) -> CResult<usize> {
         fn lookup_inner(env: &Env, name: &Ident) -> Option<usize> {
-            env.locals.get(name.sym.as_str()).copied().or_else(|| {
+            env.locals.get(name.sym).copied().or_else(|| {
                 env.outer
                     .as_ref()
                     .map(|outer| lookup_inner(&outer.borrow(), name))
@@ -112,7 +111,7 @@ impl<'ast, 'bc> Compiler<'ast, 'bc> {
         self.env
             .borrow_mut()
             .locals
-            .insert(declaration.name.sym.as_str(), stack_pos);
+            .insert(declaration.name.sym, stack_pos);
         Ok(())
     }
 
@@ -196,7 +195,7 @@ impl<'ast, 'bc> Compiler<'ast, 'bc> {
 
     fn compile_expr_literal(&mut self, lit: &Literal) -> CResult<()> {
         let value = match lit {
-            Literal::String(str, _) => Value::String(str.clone().into()),
+            Literal::String(_str, _) => Value::String,
             Literal::Number(num, _) => Value::Num(*num),
             Literal::Array(vec, _) => {
                 if vec.is_empty() {
@@ -211,7 +210,7 @@ impl<'ast, 'bc> Compiler<'ast, 'bc> {
         };
 
         self.push_instr(
-            Instr::PushVal(Box::new_in(value, self.bump)),
+            Instr::PushVal(self.bump.alloc(value)),
             StackChange::Grow,
             lit.span(),
         );

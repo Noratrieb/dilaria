@@ -4,12 +4,12 @@
 //! All AST nodes are bump allocated into the lifetime `'ast`  
 
 use crate::errors::Span;
-use crate::value::Symbol;
+use crate::value::AstSymbol;
 use bumpalo::collections::Vec;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Ident<'ast> {
-    pub sym: Symbol<'ast>,
+    pub sym: AstSymbol<'ast>,
     pub span: Span,
 }
 
@@ -112,7 +112,7 @@ impl Expr<'_> {
 
 #[derive(Debug, PartialEq)]
 pub enum Literal<'ast> {
-    String(String, Span),
+    String(&'ast str, Span),
     Number(f64, Span),
     Array(Vec<'ast, Expr<'ast>>, Span),
     Object(Span),

@@ -2,9 +2,7 @@
 
 use crate::errors::Span;
 use crate::value::{HashMap, NewSym};
-use bumpalo::boxed::Box;
 use bumpalo::collections::Vec;
-use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct FnBlock<'bc> {
@@ -14,15 +12,14 @@ pub struct FnBlock<'bc> {
     pub arity: u8,
 }
 
-// todo: this should be copy in the end tbh
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Instr<'bc> {
     /// Store the current value on the stack to the stack location with the local offset `usize`
     Store(usize),
     /// Load the variable value from the local offset `usize` onto the stack
     Load(usize),
     /// Push a value onto the stack
-    PushVal(Box<'bc, Value>),
+    PushVal(&'bc Value),
     /// Negate the top value on the stack. Only works with numbers and booleans
     Neg,
     BinAdd,
@@ -48,7 +45,7 @@ pub enum Value {
     Null,
     Bool(bool),
     Num(f64),
-    String(Rc<str>),
+    String,
     Array,
     Object(HashMap<NewSym, Value>),
 }
