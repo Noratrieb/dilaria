@@ -2,6 +2,6 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: String| {
-    let lexer = script_lang::Lexer::lex(&data);
-    let _tokens = lexer.collect::<Vec<_>>();
+    let lexer = dilaria::Lexer::new(&data);
+    for _ in lexer {}
 });

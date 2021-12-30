@@ -546,7 +546,7 @@ where
                     span: next.span,
                 }))
             }
-            TokenKind::Error(error) => Err(error),
+            TokenKind::Error(error) => Err(*error),
             _ => Err(CompilerError::new(
                 next.span,
                 format!("invalid token in expression: `{:?}`", next.kind),
@@ -570,7 +570,7 @@ where
                     span,
                 })
             }
-            TokenKind::Error(error) => Err(error),
+            TokenKind::Error(error) => Err(*error),
             _ => {
                 return Err(CompilerError::new(
                     span,
@@ -665,7 +665,7 @@ where
             if token.kind == kind {
                 Ok(token)
             } else if let TokenKind::Error(err) = token.kind {
-                Err(err)
+                Err(*err)
             } else {
                 Err(CompilerError::new(
                     token.span,

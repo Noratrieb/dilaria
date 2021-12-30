@@ -1,9 +1,0 @@
-fn main() {
-    let x = 1 * 1 + 5;
-    print("hallo");
-    main();
-
-    fn dead_at_this_point(test) {
-        print("cool" + 5);
-    }
-}

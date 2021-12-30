@@ -9,10 +9,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "577b08a4acd7b99869f863c50011b01eb73424ccc798ecd996f2e24817adfca7"
 
 [[package]]
+name = "bumpalo"
+version = "3.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f1e260c3a9040a7c19a12468758f4c16f31a81a1fe087482be9570ec864bb6c"
+
+[[package]]
 name = "cc"
 version = "1.0.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79c2681d6594606957bbb8631c4b90a7fcaaa72cdb714743a437b156d6a7eedd"
+
+[[package]]
+name = "dilaria"
+version = "0.1.0"
+dependencies = [
+ "bumpalo",
+]
+
+[[package]]
+name = "dilaria-fuzz"
+version = "0.0.0"
+dependencies = [
+ "dilaria",
+ "libfuzzer-sys",
+]
 
 [[package]]
 name = "libfuzzer-sys"
@@ -30,15 +51,3 @@ name = "once_cell"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
-
-[[package]]
-name = "script_lang"
-version = "0.1.0"
-
-[[package]]
-name = "script_lang-fuzz"
-version = "0.0.0"
-dependencies = [
- "libfuzzer-sys",
- "script_lang",
-]

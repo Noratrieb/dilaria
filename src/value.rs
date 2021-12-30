@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::collections::LinkedList;
 use std::fmt::{Debug, Formatter};
 use std::ops::Deref;

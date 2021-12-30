@@ -9,8 +9,8 @@ mod parse;
 mod value;
 
 use crate::ast::Program;
-use bumpalo::Bump;
 
+pub use bumpalo::Bump;
 pub use lex::*;
 pub use parse::*;
 
