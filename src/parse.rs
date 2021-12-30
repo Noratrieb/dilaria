@@ -4,7 +4,6 @@ mod test;
 use crate::ast::*;
 use crate::errors::{CompilerError, Span};
 use crate::lex::{Token, TokenKind};
-use bumpalo::boxed::Box;
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
 use std::iter::Peekable;
@@ -43,15 +42,12 @@ macro_rules! parse_bin_op {
     ($self: ident, $lhs: ident, $kind: expr, $function: ident) => {{
         let _ = $self.next();
         let rhs = $self.$function()?;
-        Ok(Expr::BinaryOp(Box::new_in(
-            BinaryOp {
-                span: $lhs.span().extend(rhs.span()),
-                lhs: $lhs,
-                rhs,
-                kind: $kind,
-            },
-            $self.bump,
-        )))
+        Ok(Expr::BinaryOp($self.bump.alloc(BinaryOp {
+            span: $lhs.span().extend(rhs.span()),
+            lhs: $lhs,
+            rhs,
+            kind: $kind,
+        })))
     }};
 }
 
@@ -221,7 +217,7 @@ where
                 .option_extend(else_part.as_ref().map(|part| part.span())),
             cond,
             body,
-            else_part: else_part.map(|part| Box::new_in(part, self.bump)),
+            else_part: else_part.map(|part| &*self.bump.alloc(part)),
         })
     }
 
@@ -463,26 +459,20 @@ where
             Some(TokenKind::Not) => {
                 let unary_op_span = self.next().unwrap().span;
                 let expr = self.call()?;
-                Ok(Expr::UnaryOp(Box::new_in(
-                    UnaryOp {
-                        span: unary_op_span.extend(expr.span()),
-                        expr,
-                        kind: UnaryOpKind::Not,
-                    },
-                    self.bump,
-                )))
+                Ok(Expr::UnaryOp(self.bump.alloc(UnaryOp {
+                    span: unary_op_span.extend(expr.span()),
+                    expr,
+                    kind: UnaryOpKind::Not,
+                })))
             }
             Some(TokenKind::Minus) => {
                 let unary_op_span = self.next().unwrap().span;
                 let expr = self.call()?;
-                Ok(Expr::UnaryOp(Box::new_in(
-                    UnaryOp {
-                        span: unary_op_span.extend(expr.span()),
-                        expr,
-                        kind: UnaryOpKind::Neg,
-                    },
-                    self.bump,
-                )))
+                Ok(Expr::UnaryOp(self.bump.alloc(UnaryOp {
+                    span: unary_op_span.extend(expr.span()),
+                    expr,
+                    kind: UnaryOpKind::Neg,
+                })))
             }
             _ => self.call(),
         };
@@ -502,27 +492,21 @@ where
                     let args = self.parse_list(TokenKind::ParenC, Self::expression)?;
                     let close_span = self.expect(TokenKind::ParenC)?.span;
 
-                    Expr::Call(Box::new_in(
-                        Call {
-                            callee: expr,
-                            span: open_span.extend(close_span),
-                            kind: CallKind::Fn(args),
-                        },
-                        self.bump,
-                    ))
+                    Expr::Call(self.bump.alloc(Call {
+                        callee: expr,
+                        span: open_span.extend(close_span),
+                        kind: CallKind::Fn(args),
+                    }))
                 }
                 Some(TokenKind::Dot) => {
                     let dot_span = self.expect(TokenKind::Dot)?.span;
                     let field = self.ident()?;
 
-                    Expr::Call(Box::new_in(
-                        Call {
-                            callee: expr,
-                            span: dot_span.extend(field.span),
-                            kind: CallKind::Field(field),
-                        },
-                        self.bump,
-                    ))
+                    Expr::Call(self.bump.alloc(Call {
+                        callee: expr,
+                        span: dot_span.extend(field.span),
+                        kind: CallKind::Field(field),
+                    }))
                 }
                 _ => break,
             }

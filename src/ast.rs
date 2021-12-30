@@ -3,7 +3,6 @@
 
 use crate::errors::Span;
 use crate::value::Symbol;
-use bumpalo::boxed::Box;
 use bumpalo::collections::Vec;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -63,7 +62,7 @@ pub struct IfStmt<'ast> {
     pub span: Span,
     pub cond: Expr<'ast>,
     pub body: Block<'ast>,
-    pub else_part: Option<Box<'ast, ElsePart<'ast>>>,
+    pub else_part: Option<&'ast ElsePart<'ast>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -92,9 +91,9 @@ pub struct WhileStmt<'ast> {
 pub enum Expr<'ast> {
     Ident(Ident),
     Literal(Literal<'ast>),
-    UnaryOp(Box<'ast, UnaryOp<'ast>>),
-    BinaryOp(Box<'ast, BinaryOp<'ast>>),
-    Call(Box<'ast, Call<'ast>>),
+    UnaryOp(&'ast UnaryOp<'ast>),
+    BinaryOp(&'ast BinaryOp<'ast>),
+    Call(&'ast Call<'ast>),
 }
 
 impl Expr<'_> {
