@@ -1,0 +1,59 @@
+---
+source: src/parse/test.rs
+assertion_line: 148
+expression: ast
+
+---
+IfStmt {
+    span: Span {
+        start: 0,
+        end: 0,
+    },
+    cond: Literal(
+        Boolean(
+            true,
+            Span {
+                start: 0,
+                end: 0,
+            },
+        ),
+    ),
+    body: Block {
+        stmts: [],
+        span: Span {
+            start: 0,
+            end: 0,
+        },
+    },
+    else_part: Some(
+        ElseIf(
+            IfStmt {
+                span: Span {
+                    start: 0,
+                    end: 0,
+                },
+                cond: Literal(
+                    Boolean(
+                        true,
+                        Span {
+                            start: 0,
+                            end: 0,
+                        },
+                    ),
+                ),
+                body: Block {
+                    stmts: [],
+                    span: Span {
+                        start: 0,
+                        end: 0,
+                    },
+                },
+                else_part: None,
+            },
+            Span {
+                start: 0,
+                end: 0,
+            },
+        ),
+    ),
+}

@@ -1,0 +1,24 @@
+---
+source: src/parse/test.rs
+assertion_line: 501
+expression: ast
+
+---
+UnaryOp(
+    UnaryOp {
+        span: Span {
+            start: 0,
+            end: 0,
+        },
+        expr: Literal(
+            Number(
+                10.0,
+                Span {
+                    start: 0,
+                    end: 0,
+                },
+            ),
+        ),
+        kind: Neg,
+    },
+)

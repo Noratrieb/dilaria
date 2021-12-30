@@ -298,3 +298,7 @@ impl CompilerError for CompileError {
         self.note.clone()
     }
 }
+
+
+#[cfg(test)]
+mod test {}

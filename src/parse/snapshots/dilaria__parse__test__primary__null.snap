@@ -1,0 +1,14 @@
+---
+source: src/parse/test.rs
+assertion_line: 646
+expression: ast
+
+---
+Literal(
+    Null(
+        Span {
+            start: 0,
+            end: 0,
+        },
+    ),
+)

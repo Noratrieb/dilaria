@@ -1,8 +1,6 @@
-There is currently a tree-walking interpreter called `bird` in progress, but the plan is to have a bytecode vm in the end
+`dilaria` is a small embeddable scripting language
 
-language_name is a small embeddable scripting language
-
-language_name is inspired by Javascript, Lox, Lua, Python, Rust and more
+It's inspired by Javascript, Lox, Lua, Python, Rust and more
 
 # Reference
 
@@ -121,7 +119,7 @@ loop {
 }
 ```
 
-_ is dynamically and *strongly* typed
+`dilaria` is dynamically and *strongly* typed
 
 ## Detail
 
@@ -136,6 +134,7 @@ _ is dynamically and *strongly* typed
 `while`
 `for`
 `break`
+(`print` temporary)
 
 #### Values
 `true`

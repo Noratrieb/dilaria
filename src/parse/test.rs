@@ -1,10 +1,10 @@
+use crate::errors::Span;
 use crate::parse::Parser;
 use prelude::*;
 
 mod prelude {
     pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
     pub(super) use crate::ast::{Expr, Stmt};
-    pub(super) use crate::errors::Span;
     pub(super) use crate::lex::{
         Token,
         TokenType::{self, *},
@@ -28,15 +28,13 @@ fn parser(tokens: Vec<Token>) -> Parser {
 }
 
 fn test_literal_bin_op<F: FnOnce(Vec<Token<'_>>) -> Expr>(token_type: TokenType, parser: F) {
-    let tokens = [TokenType::Number(10.0), token_type, TokenType::Number(4.0)]
-        .map(token)
-        .into();
+    let tokens = [Number(10.0), token_type, Number(4.0)].map(token).into();
     let ast = parser(tokens);
     insta::assert_debug_snapshot!(ast);
 }
 
 fn test_number_literal<F: FnOnce(Vec<Token<'_>>) -> Expr>(parser: F) {
-    let tokens = [TokenType::Number(10.0)].map(token).into();
+    let tokens = [Number(10.0)].map(token).into();
     let ast = parser(tokens);
     insta::assert_debug_snapshot!(ast);
 }

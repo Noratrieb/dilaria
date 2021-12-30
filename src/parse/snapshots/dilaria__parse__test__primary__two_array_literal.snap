@@ -1,0 +1,34 @@
+---
+source: src/parse/test.rs
+assertion_line: 676
+expression: ast
+
+---
+Literal(
+    Array(
+        [
+            Literal(
+                Number(
+                    10.0,
+                    Span {
+                        start: 0,
+                        end: 0,
+                    },
+                ),
+            ),
+            Literal(
+                Number(
+                    10.0,
+                    Span {
+                        start: 0,
+                        end: 0,
+                    },
+                ),
+            ),
+        ],
+        Span {
+            start: 0,
+            end: 0,
+        },
+    ),
+)

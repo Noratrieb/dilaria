@@ -1,0 +1,13 @@
+---
+source: src/parse/test.rs
+assertion_line: 249
+expression: ast
+
+---
+Block {
+    stmts: [],
+    span: Span {
+        start: 0,
+        end: 0,
+    },
+}
