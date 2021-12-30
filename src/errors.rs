@@ -62,7 +62,7 @@ mod span {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CompilerError {
     pub span: Span,
     pub message: String,

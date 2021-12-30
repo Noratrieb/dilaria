@@ -95,6 +95,9 @@ pub enum TokenType<'code> {
     GreaterEqual,
     /// <=
     LessEqual,
+
+    /// An error occurred
+    Error(CompilerError),
 }
 
 #[derive(Debug, Clone)]
@@ -141,7 +144,7 @@ impl<'code> Lexer<'code> {
 }
 
 impl<'code> Iterator for Lexer<'code> {
-    type Item = Result<Token<'code>, CompilerError>;
+    type Item = Token<'code>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let token = loop {
@@ -190,18 +193,18 @@ impl<'code> Iterator for Lexer<'code> {
                     );
                 }
                 '!' => {
-                    if self.expect('=') {
+                    break if self.expect('=') {
                         let _ = self.code.next(); // consume =;
-                        break Token {
-                            span: Span::start_len(start, start + 2),
-                            kind: TokenType::BangEqual,
-                        };
+                        Token::new(Span::start_len(start, start + 2), TokenType::BangEqual)
                     } else {
-                        return Some(Err(CompilerError::with_note(
+                        Token::new(
                             Span::single(start),
-                            "Expected '=' after '!'".to_string(),
-                            "If you meant to use it for negation, use `not`".to_string(),
-                        )));
+                            TokenType::Error(CompilerError::with_note(
+                                Span::single(start),
+                                "Expected '=' after '!'".to_string(),
+                                "If you meant to use it for negation, use `not`".to_string(),
+                            )),
+                        )
                     };
                 }
                 '>' => {
@@ -227,11 +230,14 @@ impl<'code> Iterator for Lexer<'code> {
                                 buffer.push(char);
                             }
                             None => {
-                                return Some(Err(CompilerError::with_note(
-                                    Span::single(start), // no not show the whole literal, this does not make sense
-                                    "String literal not closed".to_string(),
-                                    "Close the literal using '\"'".to_string(),
-                                )));
+                                return Some(Token::new(
+                                    Span::single(start),
+                                    TokenType::Error(CompilerError::with_note(
+                                        Span::single(start), // no not show the whole literal, this does not make sense
+                                        "String literal not closed".to_string(),
+                                        "Close the literal using '\"'".to_string(),
+                                    )),
+                                ));
                             }
                         }
                     };
@@ -256,25 +262,23 @@ impl<'code> Iterator for Lexer<'code> {
                         };
                         let number_str = &self.src[start..end];
                         let span = Span::start_end(start, end);
-                        let number = number_str.parse::<f64>().map_err(|err| {
-                            CompilerError::with_note(
-                                span,
-                                "Invalid number".to_string(),
-                                err.to_string(),
-                            )
-                        });
-                        match number {
+                        let number = number_str.parse::<f64>();
+                        break match number {
                             Ok(number) if number.is_infinite() => {
-                                return Some(Err(CompilerError::with_note(
+                                Token::new(span, TokenType::Error(CompilerError::with_note(
                                     span,
                                     "Number literal too long".to_string(),
                                     "A number literal cannot be larger than a 64 bit float can represent"
                                         .to_string(),
                                 )))
                             }
-                            Ok(number) => break Token::new(span, TokenType::Number(number)),
-                            Err(err) => return Some(Err(err)),
-                        }
+                            Ok(number) => Token::new(span, TokenType::Number(number)),
+                            Err(err) => Token::new(span, TokenType::Error(CompilerError::with_note(
+                                span,
+                                "Invalid number".to_string(),
+                                err.to_string(),
+                            ))),
+                        };
                     } else if is_valid_ident_start(char) {
                         // it must be an identifier
                         let end = loop {
@@ -291,18 +295,21 @@ impl<'code> Iterator for Lexer<'code> {
                             keyword_or_ident(&self.src[start..end]),
                         );
                     } else {
-                        return Some(Err(CompilerError::with_note(
+                        break Token::new(
                             Span::single(start),
-                            format!("Unexpected character: '{}'", char),
-                            "Character is not allowed outside of string literals and comments"
-                                .to_string(),
-                        )));
+                            TokenType::Error(CompilerError::with_note(
+                                Span::single(start),
+                                format!("Unexpected character: '{}'", char),
+                                "Character is not allowed outside of string literals and comments"
+                                    .to_string(),
+                            )),
+                        );
                     }
                 }
             }
         };
 
-        Some(Ok(token))
+        Some(token)
     }
 }
 
@@ -345,7 +352,7 @@ mod test {
 
     fn lex_types(str: &str) -> Vec<TokenType> {
         let lexer = Lexer::new(str);
-        lexer.map(|token| token.unwrap().kind).collect::<Vec<_>>()
+        lexer.map(|token| token.kind).collect::<Vec<_>>()
     }
 
     fn lex_test(code: &str, expected: Vec<TokenType>) {
