@@ -1,6 +1,5 @@
-use crate::errors::Span;
+use crate::errors::{CompilerError, Span};
 use crate::parse::Parser;
-use crate::LexError;
 use bumpalo::Bump;
 use prelude::*;
 
@@ -23,12 +22,12 @@ fn token(kind: TokenType) -> Token {
 fn parser<'ast>(
     tokens: std::vec::Vec<Token>,
     alloc: &'ast Bump,
-) -> Parser<'static, 'ast, std::vec::IntoIter<Result<Token, LexError>>>
+) -> Parser<'static, 'ast, std::vec::IntoIter<Result<Token, CompilerError>>>
 where {
     let tokens = tokens
         .into_iter()
         .map(Ok)
-        .collect::<Vec<Result<Token, LexError>>>();
+        .collect::<Vec<Result<Token, CompilerError>>>();
 
     Parser {
         tokens: tokens.into_iter().peekable(),

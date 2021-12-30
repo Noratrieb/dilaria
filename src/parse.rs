@@ -4,7 +4,6 @@ mod test;
 use crate::ast::*;
 use crate::errors::{CompilerError, Span};
 use crate::lex::{Token, TokenType};
-use crate::LexError;
 use bumpalo::boxed::Box;
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
@@ -13,7 +12,7 @@ use std::iter::Peekable;
 #[derive(Debug)]
 struct Parser<'code, 'ast, I>
 where
-    I: Iterator<Item = Result<Token<'code>, LexError>>,
+    I: Iterator<Item = Result<Token<'code>, CompilerError>>,
     I: 'code,
 {
     tokens: Peekable<I>,
@@ -24,7 +23,7 @@ where
 }
 
 pub fn parse<'ast, 'code>(
-    tokens: impl Iterator<Item = Result<Token<'code>, LexError>> + 'code,
+    tokens: impl Iterator<Item = Result<Token<'code>, CompilerError>> + 'code,
     ast_bump: &'ast Bump,
 ) -> Result<Program<'ast>, CompilerError> {
     let mut parser = Parser {
@@ -74,7 +73,7 @@ macro_rules! enter_parse {
 
 impl<'code, 'ast, I> Parser<'code, 'ast, I>
 where
-    I: Iterator<Item = Result<Token<'code>, LexError>>,
+    I: Iterator<Item = Result<Token<'code>, CompilerError>>,
     I: 'code,
 {
     const MAX_DEPTH: usize = 100;
@@ -642,7 +641,7 @@ where
     fn next(&mut self) -> ParseResult<'code, Option<Token<'code>>> {
         match self.tokens.next() {
             Some(Ok(t)) => Ok(Some(t)),
-            Some(Err(t)) => Err(t.into()),
+            Some(Err(comp_err)) => Err(ParseErr::LexError(comp_err)),
             None => Ok(None),
         }
     }
@@ -650,7 +649,7 @@ where
     fn peek(&mut self) -> ParseResult<'code, Option<&Token<'code>>> {
         match self.tokens.peek() {
             Some(Ok(t)) => Ok(Some(t)),
-            Some(Err(t)) => Err(t.clone().into()),
+            Some(Err(comp_err)) => Err(ParseErr::LexError(comp_err.clone())),
             None => Ok(None),
         }
     }
@@ -687,13 +686,7 @@ pub enum ParseErr<'code> {
     InvalidTokenPrimary(Token<'code>),
     EofExpecting(TokenType<'code>),
     Eof(&'static str),
-    LexError(LexError),
-}
-
-impl From<LexError> for ParseErr<'_> {
-    fn from(err: LexError) -> Self {
-        Self::LexError(err)
-    }
+    LexError(CompilerError),
 }
 
 // todo: remove this and ParseErr
@@ -729,10 +722,10 @@ impl From<ParseErr<'_>> for CompilerError {
                 ParseErr::BreakOutsideLoop(_) => "break used outside of loop".to_string(),
                 ParseErr::ReturnOutsideFunction(_) => "return used outside of function".to_string(),
                 ParseErr::MaxDepth(_) => "reached maximal nesting depth".to_string(),
-                ParseErr::LexError(err) => err.message(),
+                ParseErr::LexError(err) => err.message.clone(),
             },
             note: match error {
-                ParseErr::LexError(err) => err.note(),
+                ParseErr::LexError(err) => err.note.clone(),
                 _ => None,
             },
         }

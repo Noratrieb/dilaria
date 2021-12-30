@@ -141,7 +141,7 @@ impl<'code> Lexer<'code> {
 }
 
 impl<'code> Iterator for Lexer<'code> {
-    type Item = Result<Token<'code>, LexError>;
+    type Item = Result<Token<'code>, CompilerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let token = loop {
@@ -197,9 +197,10 @@ impl<'code> Iterator for Lexer<'code> {
                             kind: TokenType::BangEqual,
                         };
                     } else {
-                        return Some(Err(LexError::new(
+                        return Some(Err(CompilerError::with_note(
                             Span::single(start),
-                            LexErrorKind::SingleBang,
+                            "Expected '=' after '!'".to_string(),
+                            "If you meant to use it for negation, use `not`".to_string(),
                         )));
                     };
                 }
@@ -226,9 +227,10 @@ impl<'code> Iterator for Lexer<'code> {
                                 buffer.push(char);
                             }
                             None => {
-                                return Some(Err(LexError::new(
+                                return Some(Err(CompilerError::with_note(
                                     Span::single(start), // no not show the whole literal, this does not make sense
-                                    LexErrorKind::UnclosedStringLiteral,
+                                    "String literal not closed".to_string(),
+                                    "Close the literal using '\"'".to_string(),
                                 )));
                             }
                         }
@@ -254,14 +256,20 @@ impl<'code> Iterator for Lexer<'code> {
                         };
                         let number_str = &self.src[start..end];
                         let span = Span::start_end(start, end);
-                        let number = number_str
-                            .parse::<f64>()
-                            .map_err(|err| LexError::new(span, LexErrorKind::InvalidFloat(err)));
+                        let number = number_str.parse::<f64>().map_err(|err| {
+                            CompilerError::with_note(
+                                span,
+                                "Invalid number".to_string(),
+                                err.to_string(),
+                            )
+                        });
                         match number {
                             Ok(number) if number.is_infinite() => {
-                                return Some(Err(LexError::new(
+                                return Some(Err(CompilerError::with_note(
                                     span,
-                                    LexErrorKind::FloatInfiniteLiteral,
+                                    "Number literal too long".to_string(),
+                                    "A number literal cannot be larger than a 64 bit float can represent"
+                                        .to_string(),
                                 )))
                             }
                             Ok(number) => break Token::new(span, TokenType::Number(number)),
@@ -283,9 +291,11 @@ impl<'code> Iterator for Lexer<'code> {
                             keyword_or_ident(&self.src[start..end]),
                         );
                     } else {
-                        return Some(Err(LexError::new(
+                        return Some(Err(CompilerError::with_note(
                             Span::single(start),
-                            LexErrorKind::InvalidCharacter(char),
+                            format!("Unexpected character: '{}'", char),
+                            "Character is not allowed outside of string literals and comments"
+                                .to_string(),
                         )));
                     }
                 }
@@ -353,62 +363,6 @@ fn is_valid_ident_part(char: char) -> bool {
 
 fn is_valid_ident_start(char: char) -> bool {
     char.is_alphabetic() || char == '_'
-}
-
-#[derive(Debug, Clone)]
-pub struct LexError {
-    pub span: Span,
-    pub kind: LexErrorKind,
-}
-
-impl LexError {
-    fn new(span: Span, kind: LexErrorKind) -> Self {
-        Self { span, kind }
-    }
-}
-
-impl From<LexError> for CompilerError {
-    fn from(error: LexError) -> Self {
-        Self {
-            span: { error.span },
-            message: {
-                match &error.kind {
-                    LexErrorKind::InvalidCharacter(char) => {
-                        format!("Unexpected character: '{}'", char)
-                    }
-                    LexErrorKind::InvalidFloat(_) => "Invalid number".to_string(),
-                    LexErrorKind::FloatInfiniteLiteral => "Number literal too long".to_string(),
-                    LexErrorKind::UnclosedStringLiteral => "String literal not closed".to_string(),
-                    LexErrorKind::SingleBang => "Expected '=' after '!'".to_string(),
-                }
-            },
-            note: match &error.kind {
-                LexErrorKind::InvalidCharacter(_) => Some(
-                    "Character is not allowed outside of string literals and comments".to_string(),
-                ),
-                LexErrorKind::InvalidFloat(err) => Some(err.to_string()),
-                LexErrorKind::FloatInfiniteLiteral => Some(
-                    "A number literal cannot be larger than a 64 bit float can represent"
-                        .to_string(),
-                ),
-                LexErrorKind::UnclosedStringLiteral => {
-                    Some("Close the literal using '\"'".to_string())
-                }
-                LexErrorKind::SingleBang => {
-                    Some("If you meant to use it for negation, use `not`".to_string())
-                }
-            },
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum LexErrorKind {
-    InvalidCharacter(char),
-    InvalidFloat(std::num::ParseFloatError),
-    FloatInfiniteLiteral,
-    UnclosedStringLiteral,
-    SingleBang,
 }
 
 #[cfg(test)]
