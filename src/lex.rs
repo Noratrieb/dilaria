@@ -307,52 +307,23 @@ impl<'code> Iterator for Lexer<'code> {
 }
 
 fn keyword_or_ident(name: &str) -> TokenType {
-    // make this efficient using the trie pattern
-    // ignore that unicode exists, because all keywords are in ascii
-    // we need to use bytes though instead of indexing into the string directly to avoid panics
-    let bs = name.as_bytes();
-    let len = bs.len();
-    // there are no single letter keywords
-    if len < 2 {
-        return TokenType::Ident(name);
-    }
-    match bs[0] {
-        // loop && let
-        b'l' => match bs[1] {
-            b'o' if len == 4 && bs[2..4] == *b"op" => TokenType::Loop,
-            b'e' if len == 3 && bs[2] == b't' => TokenType::Let,
-            _ => TokenType::Ident(name),
-        },
-        // for && fn && false
-        b'f' => match bs[1] {
-            b'n' if len == 2 => TokenType::Fn,
-            b'o' if len == 3 && bs[2] == b'r' => TokenType::For,
-            b'a' if len == 5 && bs[2..5] == *b"lse" => TokenType::False,
-            _ => TokenType::Ident(name),
-        },
-        // if
-        b'i' if len == 2 && bs[1] == b'f' => TokenType::If,
-        // else
-        b'e' if len == 4 && bs[1..4] == *b"lse" => TokenType::Else,
-        // while
-        b'w' if len == 5 && bs[1..5] == *b"hile" => TokenType::While,
-        // break
-        b'b' if len == 5 && bs[1..5] == *b"reak" => TokenType::Break,
-        // return
-        b'r' if len == 6 && bs[1..6] == *b"eturn" => TokenType::Return,
-        // true
-        b't' if len == 4 && bs[1..4] == *b"rue" => TokenType::True,
-        // null && not
-        b'n' => match bs[1] {
-            b'u' if len == 4 && bs[2..4] == *b"ll" => TokenType::Null,
-            b'o' if len == 3 && bs[2] == b't' => TokenType::Not,
-            _ => TokenType::Ident(name),
-        },
-        // and
-        b'a' if len == 3 && bs[1..3] == *b"nd" => TokenType::And,
-        // or
-        b'o' if len == 2 && bs[1] == b'r' => TokenType::Or,
-        b'p' if len == 5 && bs[1..5] == *b"rint" => TokenType::Print,
+    match name {
+        "loop" => TokenType::Loop,
+        "let" => TokenType::Let,
+        "fn" => TokenType::Fn,
+        "for" => TokenType::For,
+        "false" => TokenType::False,
+        "if" => TokenType::If,
+        "else" => TokenType::Else,
+        "while" => TokenType::While,
+        "break" => TokenType::Break,
+        "return" => TokenType::Return,
+        "true" => TokenType::True,
+        "null" => TokenType::Null,
+        "not" => TokenType::Not,
+        "and" => TokenType::And,
+        "or" => TokenType::Or,
+        "print" => TokenType::Print,
         _ => TokenType::Ident(name),
     }
 }
