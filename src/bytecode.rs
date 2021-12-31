@@ -1,26 +1,25 @@
 //! The bytecode that is executed in the vm
 
 use crate::errors::Span;
-use crate::gc::Symbol;
-use crate::HashMap;
+use crate::vm::Value;
 use bumpalo::collections::Vec;
 
 #[derive(Debug)]
 pub struct FnBlock<'bc> {
-    pub code: Vec<'bc, Instr<'bc>>,
+    pub code: Vec<'bc, Instr>,
     pub stack_sizes: Vec<'bc, usize>,
     pub spans: Vec<'bc, Span>,
     pub arity: u8,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum Instr<'bc> {
+pub enum Instr {
     /// Store the current value on the stack to the stack location with the local offset `usize`
     Store(usize),
     /// Load the variable value from the local offset `usize` onto the stack
     Load(usize),
     /// Push a value onto the stack
-    PushVal(&'bc Value),
+    PushVal(Value),
     /// Negate the top value on the stack. Only works with numbers and booleans
     Neg,
     BinAdd,
@@ -39,14 +38,4 @@ pub enum Instr<'bc> {
 
     /// Println the value on top of the stack
     Print,
-}
-
-#[derive(Debug)]
-pub enum Value {
-    Null,
-    Bool(bool),
-    Num(f64),
-    String,
-    Array,
-    Object(HashMap<Symbol, Value>),
 }

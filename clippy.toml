@@ -1,5 +1,4 @@
 disallowed-types = [
-    { path = "std::collections::HashMap", reason = "may be fxhash or siphash, depending on the feature, stay flexible" },
-    { path = "std::collections::HashSet", reason = "may be fxhash or siphash, depending on the feature, stay flexible" },
-    { path = "std::collections::Vec", reason = "we generally want to use bumpalos collections" },
+    "std::collections::HashMap",
+    "std::collections::HashSet",
 ]

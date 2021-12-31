@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
-use crate::HashSet;
+use crate::vm::Value;
+use crate::{HashMap, HashSet};
 use std::collections::LinkedList;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -41,10 +42,89 @@ impl<T: ?Sized> Clone for Gc<T> {
 
 impl<T: ?Sized> Copy for Gc<T> {}
 
-/// An interned String. Hashing and Equality are O(1) and just look at the pointer address
+/// An reference to an interned String. Hashing and Equality are O(1) and just look at the pointer address
 #[derive(Clone, Copy)]
 pub struct Symbol {
     gc: Gc<str>,
+}
+
+type ObjectMap = HashMap<Symbol, Value>;
+
+/// A reference to an Object on the heap.
+/// ```js
+/// let x = {};
+/// ```
+/// This is inside the local x now.
+#[derive(Clone, Copy)]
+pub struct Object {
+    gc: Gc<HeapObject>,
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct HeapObject {
+    kind: HeapObjectKind,
+}
+
+#[derive(Debug)]
+enum HeapObjectKind {
+    String(Gc<str>),
+    Object(ObjectMap),
+}
+
+#[derive(Debug)]
+pub struct RtAlloc {
+    symbols: HashSet<NonNull<str>>,
+    objects: LinkedList<HeapObject>,
+}
+
+impl RtAlloc {
+    /// # Safety
+    /// Promise to not forget to mark any roots and to not deref `Gc<T>` after you've dropped me 🥺
+    pub unsafe fn new() -> Self {
+        Self {
+            symbols: HashSet::default(),
+            objects: LinkedList::new(),
+        }
+    }
+
+    fn alloc_str(&mut self, str: &str) -> Gc<str> {
+        let ptr = Box::into_raw(str.to_owned().into_boxed_str());
+        // SAFETY: Box cannot be null
+        let new_nonnull = unsafe { NonNull::new_unchecked(ptr) };
+        let gc = Gc { ptr: new_nonnull };
+        let object = HeapObject {
+            kind: HeapObjectKind::String(gc),
+        };
+
+        self.objects.push_back(object);
+
+        gc
+    }
+
+    pub fn alloc_obj(&mut self, obj: ObjectMap) -> Object {
+        self.objects.push_back(HeapObject {
+            kind: HeapObjectKind::Object(obj),
+        });
+
+        let ptr = self.objects.back().unwrap();
+
+        Object {
+            gc: Gc {
+                ptr: NonNull::from(ptr),
+            },
+        }
+    }
+
+    pub fn intern_string(&mut self, str: &str) -> Symbol {
+        let original_nonnull = NonNull::from(str);
+
+        if let Some(interned) = self.symbols.get(&original_nonnull) {
+            Symbol::new(Gc { ptr: *interned })
+        } else {
+            Symbol::new(self.alloc_str(str))
+        }
+    }
 }
 
 impl Symbol {
@@ -89,53 +169,19 @@ impl Debug for Symbol {
     }
 }
 
-#[derive(Debug)]
-struct Object {
-    kind: ObjectKind,
-}
+impl Deref for Object {
+    type Target = ObjectMap;
 
-#[derive(Debug)]
-enum ObjectKind {
-    String(Gc<str>),
-}
-
-#[derive(Debug)]
-pub struct RtAlloc {
-    symbols: HashSet<NonNull<str>>,
-    objects: LinkedList<Object>,
-}
-
-impl RtAlloc {
-    /// # Safety
-    /// Promise to not forget to mark any roots and to not deref `Gc<T>` after you've dropped me 🥺
-    pub unsafe fn new() -> Self {
-        Self {
-            symbols: HashSet::default(),
-            objects: LinkedList::new(),
+    fn deref(&self) -> &Self::Target {
+        match self.gc.deref().kind {
+            HeapObjectKind::Object(ref map) => map,
+            _ => unreachable!(),
         }
     }
+}
 
-    fn alloc_str(&mut self, str: &str) -> Gc<str> {
-        let ptr = Box::into_raw(str.to_owned().into_boxed_str());
-        // SAFETY: Box cannot be null
-        let new_nonnull = unsafe { NonNull::new_unchecked(ptr) };
-        let gc = Gc { ptr: new_nonnull };
-        let object = Object {
-            kind: ObjectKind::String(gc.clone()),
-        };
-
-        self.objects.push_back(object);
-
-        gc
-    }
-
-    pub fn intern_string(&mut self, str: &str) -> Symbol {
-        let original_nonnull = NonNull::from(str);
-
-        if let Some(interned) = self.symbols.get(&original_nonnull) {
-            return Symbol::new(Gc { ptr: *interned });
-        }
-
-        Symbol::new(self.alloc_str(str))
+impl Debug for Object {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.gc.deref().fmt(f)
     }
 }

@@ -4,10 +4,11 @@ use crate::ast::{
     Assignment, BinaryOp, BinaryOpKind, Block, Call, Declaration, Expr, FnDecl, Ident, IfStmt,
     Literal, Program, Stmt, UnaryOp, WhileStmt,
 };
-use crate::bytecode::{FnBlock, Instr, Value};
+use crate::bytecode::{FnBlock, Instr};
 use crate::errors::{CompilerError, Span};
 use crate::gc::Symbol;
-use crate::HashMap;
+use crate::vm::Value;
+use crate::{HashMap, RtAlloc};
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
 use std::cell::RefCell;
@@ -49,23 +50,26 @@ impl Env<'_> {
 }
 
 #[derive(Debug)]
-struct Compiler<'ast, 'bc> {
+struct Compiler<'ast, 'bc, 'gc> {
     blocks: Vec<'bc, FnBlock<'bc>>,
     current_block: usize,
     bump: &'bc Bump,
     /// the current local variables that are in scope, only needed for compiling
     env: Rc<RefCell<Env<'ast>>>,
+    rt: &'gc mut RtAlloc,
 }
 
-pub fn compile<'bc>(
-    ast: &Program,
+pub fn compile<'ast, 'bc, 'gc>(
+    ast: &'ast Program,
     bytecode_bump: &'bc Bump,
+    rt: &'gc mut RtAlloc,
 ) -> Result<Vec<'bc, FnBlock<'bc>>, CompilerError> {
     let mut compiler = Compiler {
         blocks: Vec::new_in(bytecode_bump),
         current_block: 0,
         bump: bytecode_bump,
         env: Rc::new(RefCell::new(Default::default())),
+        rt,
     };
 
     compiler.compile(ast)?;
@@ -73,7 +77,7 @@ pub fn compile<'bc>(
     Ok(compiler.blocks)
 }
 
-impl<'ast, 'bc> Compiler<'ast, 'bc> {
+impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
     fn compile(&mut self, ast: &'ast Program<'ast>) -> CResult<()> {
         let global_block = FnBlock {
             code: Vec::new_in(self.bump),
@@ -199,7 +203,7 @@ impl<'ast, 'bc> Compiler<'ast, 'bc> {
 
     fn compile_expr_literal(&mut self, lit: &Literal) -> CResult<()> {
         let value = match lit {
-            Literal::String(_str, _) => Value::String,
+            Literal::String(str, _) => Value::String(*str),
             Literal::Number(num, _) => Value::Num(*num),
             Literal::Array(vec, _) => {
                 if vec.is_empty() {
@@ -208,16 +212,12 @@ impl<'ast, 'bc> Compiler<'ast, 'bc> {
                     todo!()
                 }
             }
-            Literal::Object(_) => Value::Object(HashMap::default()),
+            Literal::Object(_) => Value::Object(self.rt.alloc_obj(HashMap::default())),
             Literal::Boolean(bool, _) => Value::Bool(*bool),
             Literal::Null(_) => Value::Null,
         };
 
-        self.push_instr(
-            Instr::PushVal(self.bump.alloc(value)),
-            StackChange::Grow,
-            lit.span(),
-        );
+        self.push_instr(Instr::PushVal(value), StackChange::Grow, lit.span());
 
         Ok(())
     }
@@ -232,7 +232,6 @@ impl<'ast, 'bc> Compiler<'ast, 'bc> {
     }
 
     fn compile_expr_binary(&mut self, binary: &BinaryOp) -> CResult<()> {
-        // todo: is this the correct ordering?
         self.compile_expr(&binary.lhs)?;
         self.compile_expr(&binary.rhs)?;
 
@@ -267,7 +266,7 @@ impl<'ast, 'bc> Compiler<'ast, 'bc> {
         *block.stack_sizes.last().expect("empty stack") - 1
     }
 
-    fn push_instr(&mut self, instr: Instr<'bc>, stack_change: StackChange, span: Span) {
+    fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) {
         let block = &mut self.blocks[self.current_block];
         let stack_top = block.stack_sizes.last().copied().unwrap_or(0);
         let new_stack_top = stack_top as isize + stack_change as isize;

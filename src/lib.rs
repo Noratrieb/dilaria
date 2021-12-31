@@ -45,18 +45,21 @@ pub fn run_program(program: &str) {
     }
 }
 
-fn process_ast(program: &str, ast: Program, runtime: RtAlloc) {
+fn process_ast(program: &str, ast: Program, mut runtime: RtAlloc) {
     println!("AST:\n{:?}\n", ast);
 
     let bytecode_alloc = Bump::new();
 
-    let bytecode = compile::compile(&ast, &bytecode_alloc);
+    let bytecode = compile::compile(&ast, &bytecode_alloc, &mut runtime);
 
     match bytecode {
         Ok(code) => {
             println!("Bytecode:\n{:#?}\n", code);
 
-            let _result_lol = vm::execute(&code, runtime);
+            let result = vm::execute(&code, runtime);
+            if let Err(result) = result {
+                eprintln!("error: {}", result);
+            }
         }
         Err(err) => errors::display_error(program, err),
     }

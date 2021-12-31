@@ -525,10 +525,7 @@ where
 
         let next = self.next().ok_or_else(|| CompilerError::eof("primary"))?;
         let return_expr = match next.kind {
-            TokenKind::String(literal) => Ok(Expr::Literal(Literal::String(
-                self.bump.alloc_str(&literal),
-                next.span,
-            ))),
+            TokenKind::String(literal) => Ok(Expr::Literal(Literal::String(literal, next.span))),
             TokenKind::Number(literal) => Ok(Expr::Literal(Literal::Number(literal, next.span))),
             TokenKind::False => Ok(Expr::Literal(Literal::Boolean(false, next.span))),
             TokenKind::True => Ok(Expr::Literal(Literal::Boolean(true, next.span))),
@@ -612,13 +609,14 @@ where
         let expr = parser(self)?;
         elements.push(expr);
 
-        while self.peek_kind().ok_or_else(|| {
+        let reached_eof = || {
             CompilerError::new(
                 Span::dummy(),
                 format!("reached EOF expecting `{:?}`", close.clone()),
             )
-        })? != &close
-        {
+        };
+
+        while self.peek_kind().ok_or_else(reached_eof)? != &close {
             self.expect(TokenKind::Comma)?;
 
             // trailing comma support

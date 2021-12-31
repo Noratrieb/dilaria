@@ -112,7 +112,7 @@ impl Expr<'_> {
 
 #[derive(Debug, PartialEq)]
 pub enum Literal<'ast> {
-    String(&'ast str, Span),
+    String(Symbol, Span),
     Number(f64, Span),
     Array(Vec<'ast, Expr<'ast>>, Span),
     Object(Span),

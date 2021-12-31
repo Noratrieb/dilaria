@@ -128,7 +128,7 @@ impl<'code, 'gc> Lexer<'code, 'gc> {
             .unwrap_or(false)
     }
 
-    fn maybe_next_char<'a>(
+    fn maybe_next_char(
         &mut self,
         expect_char: char,
         true_type: TokenKind,
