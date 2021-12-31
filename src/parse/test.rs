@@ -1,14 +1,20 @@
+//! Test for the parser
+//!
+//! These tests are horrible and break all the time. Never do it like this again.
+//! That said it's too late to fix it.
+
 use crate::errors::Span;
 use crate::parse::Parser;
+use crate::RtAlloc;
 use bumpalo::Bump;
 use prelude::*;
 
 mod prelude {
-    pub(super) use super::{parser, test_literal_bin_op, test_number_literal, token};
+    pub(super) use super::{parser, rt, test_literal_bin_op, test_number_literal, token};
     pub(super) use crate::ast::{Expr, Stmt};
     pub(super) use crate::lex::TokenKind::*;
-    pub type Token = crate::lex::Token<'static>;
-    pub type TokenType = crate::lex::TokenKind<'static>;
+    pub type Token = crate::lex::Token;
+    pub type TokenType = crate::lex::TokenKind;
     pub(super) use bumpalo::Bump;
 }
 
@@ -19,10 +25,12 @@ fn token(kind: TokenType) -> Token {
     }
 }
 
-fn parser<'ast>(
-    tokens: std::vec::Vec<Token>,
-    alloc: &'ast Bump,
-) -> Parser<'static, 'ast, std::vec::IntoIter<Token>>
+fn rt() -> RtAlloc {
+    // SAFETY: this is just a test what could go wrong
+    unsafe { RtAlloc::new() }
+}
+
+fn parser(tokens: std::vec::Vec<Token>, alloc: &Bump) -> Parser<std::vec::IntoIter<Token>>
 where {
     Parser {
         tokens: tokens.into_iter().peekable(),
@@ -51,6 +59,7 @@ fn test_number_literal<F: FnOnce(Vec<Token>, &Bump) -> Expr>(parser: F) {
 
 mod assignment {
     use super::prelude::*;
+    use crate::parse::test::rt;
     use bumpalo::Bump;
 
     fn parse_assignment(tokens: Vec<Token>, alloc: &Bump) -> Stmt {
@@ -60,7 +69,10 @@ mod assignment {
 
     #[test]
     fn simple() {
-        let tokens = [Ident("hugo"), Equal, Number(10.0), Semi].map(token).into();
+        let mut rt = rt();
+        let tokens = [Ident(rt.intern_string("hugo")), Equal, Number(10.0), Semi]
+            .map(token)
+            .into();
 
         let alloc = Bump::new();
         let ast = parse_assignment(tokens, &alloc);
@@ -69,10 +81,11 @@ mod assignment {
 
     #[test]
     fn call_expr() {
+        let mut rt = rt();
         let tokens = [
-            Ident("hugo"),
+            Ident(rt.intern_string("hugo")),
             Dot,
-            Ident("age"),
+            Ident(rt.intern_string("age")),
             Equal,
             Number(2021.0),
             Minus,
@@ -98,9 +111,17 @@ mod r#fn {
 
     #[test]
     fn empty() {
-        let tokens = [Fn, Ident("empty"), ParenO, ParenC, BraceO, BraceC]
-            .map(token)
-            .into();
+        let mut rt = rt();
+        let tokens = [
+            Fn,
+            Ident(rt.intern_string("empty")),
+            ParenO,
+            ParenC,
+            BraceO,
+            BraceC,
+        ]
+        .map(token)
+        .into();
 
         let alloc = Bump::new();
         let ast = parse_fn(tokens, &alloc);
@@ -109,13 +130,14 @@ mod r#fn {
 
     #[test]
     fn params_body() {
+        let mut rt = rt();
         let tokens = [
             Fn,
-            Ident("empty"),
+            Ident(rt.intern_string("empty")),
             ParenO,
-            Ident("a"),
+            Ident(rt.intern_string("a")),
             Comma,
-            Ident("b"),
+            Ident(rt.intern_string("b")),
             ParenC,
             BraceO,
             Number(10.0),
@@ -550,7 +572,14 @@ mod call {
 
     #[test]
     fn field_simple() {
-        let tokens = [Ident("hugo"), Dot, Ident("name")].map(token).into();
+        let mut rt = rt();
+        let tokens = [
+            Ident(rt.intern_string("hugo")),
+            Dot,
+            Ident(rt.intern_string("name")),
+        ]
+        .map(token)
+        .into();
         let alloc = Bump::new();
         let ast = parse_call(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
@@ -558,7 +587,10 @@ mod call {
 
     #[test]
     fn simple() {
-        let tokens = [Ident("print"), ParenO, ParenC].map(token).into();
+        let mut rt = rt();
+        let tokens = [Ident(rt.intern_string("print")), ParenO, ParenC]
+            .map(token)
+            .into();
         let alloc = Bump::new();
         let ast = parse_call(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
@@ -566,8 +598,9 @@ mod call {
 
     #[test]
     fn fn_args() {
+        let mut rt = rt();
         let tokens = [
-            Ident("print"),
+            Ident(rt.intern_string("print")),
             ParenO,
             Number(10.0),
             Comma,
@@ -584,12 +617,13 @@ mod call {
 
     #[test]
     fn nested() {
+        let mut rt = rt();
         let tokens = [
-            Ident("hugo"),
+            Ident(rt.intern_string("hugo")),
             Dot,
-            Ident("name"),
+            Ident(rt.intern_string("name")),
             Dot,
-            Ident("print"),
+            Ident(rt.intern_string("print")),
             ParenO,
             ParenC,
         ]
@@ -602,9 +636,10 @@ mod call {
 
     #[test]
     fn with_exprs() {
+        let mut rt = rt();
         // print((10 + 5).abs())
         let tokens = [
-            Ident("print"),
+            Ident(rt.intern_string("print")),
             ParenO,
             ParenO,
             Number(10.0),
@@ -612,7 +647,7 @@ mod call {
             Number(5.0),
             ParenC,
             Dot,
-            Ident("abs"),
+            Ident(rt.intern_string("abs")),
             ParenO,
             ParenC,
             ParenC,
@@ -635,7 +670,8 @@ mod primary {
 
     #[test]
     fn ident_test() {
-        let tokens = [Ident("tokens")].map(token).into();
+        let mut rt = rt();
+        let tokens = [Ident(rt.intern_string("tokens"))].map(token).into();
         let alloc = Bump::new();
         let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
@@ -651,7 +687,8 @@ mod primary {
 
     #[test]
     fn number() {
-        let tokens = [String("uwu".to_string())].map(token).into();
+        let mut rt = rt();
+        let tokens = [String(rt.intern_string("uwu"))].map(token).into();
         let alloc = Bump::new();
         let ast = parse_primary(tokens, &alloc);
         insta::assert_debug_snapshot!(ast);
