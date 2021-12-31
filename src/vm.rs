@@ -34,6 +34,9 @@ const fn _check_val_size() {
     }
 }
 
+const TRUE: Value = Value::Bool(true);
+const FALSE: Value = Value::Bool(false);
+
 struct Vm<'bc> {
     _blocks: &'bc [FnBlock<'bc>],
     current: &'bc FnBlock<'bc>,
@@ -100,12 +103,42 @@ impl<'bc> Vm<'bc> {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a || b)),
                 _ => Err("bad type"),
             })?,
-            Instr::CmpGreater => todo!(),
-            Instr::CmpGreaterEq => todo!(),
-            Instr::CmpLess => todo!(),
-            Instr::CmpLessEq => todo!(),
-            Instr::CmpEq => todo!(),
-            Instr::CmpNotEq => todo!(),
+            Instr::CmpGreater => self.bin_op(|lhs, rhs| match (lhs, rhs) {
+                (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a > b)),
+                (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() > b.as_str())),
+                _ => Err("bad type"),
+            })?,
+            Instr::CmpGreaterEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
+                (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a >= b)),
+                (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() >= b.as_str())),
+                _ => Err("bad type"),
+            })?,
+            Instr::CmpLess => self.bin_op(|lhs, rhs| match (lhs, rhs) {
+                (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a < b)),
+                (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() < b.as_str())),
+                _ => Err("bad type"),
+            })?,
+            Instr::CmpLessEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
+                (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a <= b)),
+                (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() <= b.as_str())),
+                _ => Err("bad type"),
+            })?,
+            Instr::CmpEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
+                (Value::Null, Value::Null) => Ok(TRUE),
+                (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a == b)),
+                (Value::String(a), Value::String(b)) => Ok(Value::Bool(a == b)),
+                (Value::Object(_a), Value::Object(_b)) => todo!(),
+                (Value::Array, Value::Array) => Ok(TRUE),
+                _ => Err("bad type"),
+            })?,
+            Instr::CmpNotEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
+                (Value::Null, Value::Null) => Ok(FALSE),
+                (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a != b)),
+                (Value::String(a), Value::String(b)) => Ok(Value::Bool(a != b)),
+                (Value::Object(_a), Value::Object(_b)) => todo!(),
+                (Value::Array, Value::Array) => Ok(FALSE),
+                _ => Err("bad type"),
+            })?,
             Instr::Print => {
                 let val = self.stack.pop().unwrap();
                 println!("{}", val);

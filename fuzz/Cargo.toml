@@ -19,13 +19,19 @@ path = ".."
 members = ["."]
 
 [[bin]]
-name = "lex"
-path = "fuzz_targets/lex.rs"
+name = "lexer"
+path = "fuzz_targets/lexer.rs"
 test = false
 doc = false
 
 [[bin]]
-name = "lex_parse"
-path = "fuzz_targets/lex_parse.rs"
+name = "parser"
+path = "fuzz_targets/parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "compiler"
+path = "fuzz_targets/compiler.rs"
 test = false
 doc = false

@@ -64,3 +64,38 @@ fn process_ast(program: &str, ast: Program, mut runtime: RtAlloc) {
         Err(err) => errors::display_error(program, err),
     }
 }
+
+// have the code here and not in the fuzzer, it's easier to find when it breaks like this
+
+#[doc(hidden)]
+pub fn _fuzz_compile(program: &str) {
+    // SAFETY: Just this scope
+    let mut runtime = unsafe { RtAlloc::new() };
+    let ast_alloc = Bump::new();
+
+    let lexer = lex::Lexer::new(program, &mut runtime);
+    let ast = parse::parse(lexer, &ast_alloc);
+
+    if let Ok(ast) = ast {
+        let bytecode_alloc = Bump::new();
+        let _bytecode = compile::compile(&ast, &bytecode_alloc, &mut runtime);
+    }
+}
+
+#[doc(hidden)]
+pub fn _fuzz_parse(program: &str) {
+    // SAFETY: Just this scope
+    let mut runtime = unsafe { RtAlloc::new() };
+    let ast_alloc = Bump::new();
+
+    let lexer = lex::Lexer::new(program, &mut runtime);
+    let _ast = parse::parse(lexer, &ast_alloc);
+}
+
+#[doc(hidden)]
+pub fn _fuzz_lex(program: &str) {
+    // SAFETY: Just this scope
+    let mut runtime = unsafe { RtAlloc::new() };
+    let lexer = lex::Lexer::new(program, &mut runtime);
+    for _ in lexer {}
+}
