@@ -46,7 +46,7 @@ pub fn run_program(program: &str) {
 }
 
 fn process_ast(program: &str, ast: Program, mut runtime: RtAlloc) {
-    println!("AST:\n{:?}\n", ast);
+    // println!("AST:\n{:?}\n", ast);
 
     let bytecode_alloc = Bump::new();
 
@@ -54,7 +54,7 @@ fn process_ast(program: &str, ast: Program, mut runtime: RtAlloc) {
 
     match bytecode {
         Ok(code) => {
-            println!("Bytecode:\n{:#?}\n", code);
+            // println!("Bytecode:\n{:#?}\n", code);
 
             let result = vm::execute(&code, runtime);
             if let Err(result) = result {

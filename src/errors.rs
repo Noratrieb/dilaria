@@ -1,10 +1,10 @@
 //!
 //! This modules handles error reporting in the interpreter
-//! 
+//!
 //! The `span` submodule handles Spans, which are used for tracking locations in the source code.
-//! 
-//! There is a single type `CompilerError` that can be created from anywhere, and reported using 
-//! functions from here. 
+//!
+//! There is a single type `CompilerError` that can be created from anywhere, and reported using
+//! functions from here.
 
 use std::fmt::Debug;
 
@@ -101,11 +101,11 @@ pub fn display_error(source: &str, error: CompilerError) {
         if chars + line.len() > span.start {
             let offset_on_line = span.start - chars;
 
-            println!("{}error: {}{}", RED, error.message, RESET);
-            println!("      {}|{}", CYAN, RESET);
-            println!("{}{:>5} |{} {}", CYAN, idx + 1, RESET, line);
-            print!("      {}|{} ", CYAN, RESET);
-            println!(
+            eprintln!("{}error: {}{}", RED, error.message, RESET);
+            eprintln!("      {}|{}", CYAN, RESET);
+            eprintln!("{}{:>5} |{} {}", CYAN, idx + 1, RESET, line);
+            eprint!("      {}|{} ", CYAN, RESET);
+            eprintln!(
                 "{}{}{}{}",
                 " ".repeat(offset_on_line),
                 RED,
@@ -113,8 +113,8 @@ pub fn display_error(source: &str, error: CompilerError) {
                 RESET,
             );
             if let Some(note) = error.note {
-                println!("      {}|{}", CYAN, RESET);
-                println!(
+                eprintln!("      {}|{}", CYAN, RESET);
+                eprintln!(
                     "      {}|{}   {}note: {}{}",
                     CYAN, RESET, GREEN, note, RESET
                 );

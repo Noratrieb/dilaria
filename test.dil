@@ -1,9 +1,1 @@
-let x = 5;
-print x + 4;
-
-let test = x + 6 * 159353.004;
-print test;
-
-if x > test {
-    print "lmao";
-}
+print "hi brit";
