@@ -1,7 +1,8 @@
 //! The bytecode that is executed in the vm
 
 use crate::errors::Span;
-use crate::value::{HashMap, NewSym};
+use crate::gc::Symbol;
+use crate::HashMap;
 use bumpalo::collections::Vec;
 
 #[derive(Debug)]
@@ -47,5 +48,5 @@ pub enum Value {
     Num(f64),
     String,
     Array,
-    Object(HashMap<NewSym, Value>),
+    Object(HashMap<Symbol, Value>),
 }

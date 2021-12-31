@@ -4,12 +4,12 @@
 //! All AST nodes are bump allocated into the lifetime `'ast`  
 
 use crate::errors::Span;
-use crate::value::AstSymbol;
+use crate::gc::Symbol;
 use bumpalo::collections::Vec;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Ident<'ast> {
-    pub sym: AstSymbol<'ast>,
+pub struct Ident {
+    pub sym: Symbol,
     pub span: Span,
 }
 
@@ -40,7 +40,7 @@ pub enum Stmt<'ast> {
 #[derive(Debug, PartialEq)]
 pub struct Declaration<'ast> {
     pub span: Span,
-    pub name: Ident<'ast>,
+    pub name: Ident,
     pub init: Expr<'ast>,
 }
 
@@ -54,8 +54,8 @@ pub struct Assignment<'ast> {
 #[derive(Debug, PartialEq)]
 pub struct FnDecl<'ast> {
     pub span: Span,
-    pub name: Ident<'ast>,
-    pub params: Vec<'ast, Ident<'ast>>,
+    pub name: Ident,
+    pub params: Vec<'ast, Ident>,
     pub body: Block<'ast>,
 }
 
@@ -91,7 +91,7 @@ pub struct WhileStmt<'ast> {
 
 #[derive(Debug, PartialEq)]
 pub enum Expr<'ast> {
-    Ident(Ident<'ast>),
+    Ident(Ident),
     Literal(Literal<'ast>),
     UnaryOp(&'ast UnaryOp<'ast>),
     BinaryOp(&'ast BinaryOp<'ast>),
@@ -180,6 +180,6 @@ pub struct Call<'ast> {
 
 #[derive(Debug, PartialEq)]
 pub enum CallKind<'ast> {
-    Field(Ident<'ast>),
+    Field(Ident),
     Fn(Vec<'ast, Expr<'ast>>),
 }

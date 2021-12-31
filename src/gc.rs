@@ -1,29 +1,11 @@
 #![allow(dead_code)]
 
+use crate::HashSet;
 use std::collections::LinkedList;
 use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::ptr::NonNull;
-
-/// imagine interning or something here
-pub type AstSymbol<'ast> = &'ast str;
-
-/// here is the actual interning or something
-pub type NewSym = Gc<str>;
-
-#[cfg(not(feature = "fxhash"))]
-#[allow(clippy::disallowed_type)]
-pub type HashMap<K, V> = std::collections::HashMap<K, V>;
-
-#[cfg(feature = "fxhash")]
-pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
-
-#[cfg(not(feature = "fxhash"))]
-#[allow(clippy::disallowed_type)]
-pub type HashSet<T> = std::collections::HashSet<T>;
-
-#[cfg(feature = "fxhash")]
-pub type HashSet<T> = rustc_hash::FxHashSet<T>;
 
 /// A pointer to a garbage collected value. This pointer *must* always be valid, and a value
 /// is only allowed to be freed once no Gc is pointing at it anymore. This is achieved through
@@ -59,35 +41,95 @@ impl<T: ?Sized> Clone for Gc<T> {
 
 impl<T: ?Sized> Copy for Gc<T> {}
 
-enum Object {
+/// An interned String. Hashing and Equality are O(1) and just look at the pointer address
+#[derive(Debug, Clone, Copy)]
+pub struct Symbol {
+    gc: Gc<str>,
+}
+
+impl Symbol {
+    pub fn new(gc: Gc<str>) -> Self {
+        Self { gc }
+    }
+
+    fn address(&self) -> usize {
+        self.gc.ptr.as_ptr() as *mut u8 as usize
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.gc.deref()
+    }
+}
+
+impl Hash for Symbol {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.address().hash(state);
+    }
+}
+
+impl PartialEq for Symbol {
+    fn eq(&self, other: &Self) -> bool {
+        self.address() == other.address()
+    }
+}
+
+impl Eq for Symbol {}
+
+impl Deref for Symbol {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
+#[derive(Debug)]
+struct Object {
+    kind: ObjectKind,
+}
+
+#[derive(Debug)]
+enum ObjectKind {
     String(Gc<str>),
 }
 
+#[derive(Debug)]
 pub struct RtAlloc {
     symbols: HashSet<NonNull<str>>,
     objects: LinkedList<Object>,
 }
 
 impl RtAlloc {
-    pub fn alloc_str(&mut self, str: &str) -> Gc<str> {
+    /// # Safety
+    /// Promise to not forget to mark any roots and to not deref `Gc<T>` after you've dropped me 🥺
+    pub unsafe fn new() -> Self {
+        Self {
+            symbols: HashSet::default(),
+            objects: LinkedList::new(),
+        }
+    }
+
+    fn alloc_str(&mut self, str: &str) -> Gc<str> {
         let ptr = Box::into_raw(str.to_owned().into_boxed_str());
         // SAFETY: Box cannot be null
         let new_nonnull = unsafe { NonNull::new_unchecked(ptr) };
         let gc = Gc { ptr: new_nonnull };
-        let object = Object::String(gc.clone());
+        let object = Object {
+            kind: ObjectKind::String(gc.clone()),
+        };
 
         self.objects.push_back(object);
 
         gc
     }
 
-    pub fn intern_string(&mut self, str: &str) -> NewSym {
+    pub fn intern_string(&mut self, str: &str) -> Symbol {
         let original_nonnull = NonNull::from(str);
 
         if let Some(interned) = self.symbols.get(&original_nonnull) {
-            return Gc { ptr: *interned };
+            return Symbol::new(Gc { ptr: *interned });
         }
 
-        self.alloc_str(str)
+        Symbol::new(self.alloc_str(str))
     }
 }

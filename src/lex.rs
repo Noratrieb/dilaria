@@ -5,6 +5,8 @@
 //! is an iterator, and can therefore be used without any allocations
 
 use crate::errors::{CompilerError, Span};
+use crate::gc::Symbol;
+use crate::RtAlloc;
 use std::iter::Peekable;
 use std::str::CharIndices;
 
@@ -13,26 +15,26 @@ use std::str::CharIndices;
 ///
 /// For example `for`, `"hello"`, `main` or `.`
 #[derive(Debug, Clone)]
-pub struct Token<'code> {
+pub struct Token {
     pub span: Span,
-    pub kind: TokenKind<'code>,
+    pub kind: TokenKind,
 }
 
-impl<'code> Token<'code> {
-    fn single_span(start: usize, kind: TokenKind<'code>) -> Token<'code> {
+impl Token {
+    fn single_span(start: usize, kind: TokenKind) -> Token {
         Self {
             span: Span::single(start),
             kind,
         }
     }
 
-    fn new(span: Span, kind: TokenKind<'code>) -> Token<'code> {
+    fn new(span: Span, kind: TokenKind) -> Token {
         Self { span, kind }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenKind<'code> {
+pub enum TokenKind {
     // keywords
     Let,
     Print,
@@ -51,10 +53,10 @@ pub enum TokenKind<'code> {
     Or,
     Not,
     // literals
-    String(String),
+    String(Symbol),
     Number(f64),
     // ident
-    Ident(&'code str),
+    Ident(Symbol),
     // punctuation
     /// ;
     Semi,
@@ -103,17 +105,19 @@ pub enum TokenKind<'code> {
     Error(Box<CompilerError>),
 }
 
-#[derive(Debug, Clone)]
-pub struct Lexer<'code> {
+#[derive(Debug)]
+pub struct Lexer<'code, 'gc> {
     code: Peekable<CharIndices<'code>>,
     src: &'code str,
+    rt_alloc: &'gc mut RtAlloc,
 }
 
-impl<'code> Lexer<'code> {
-    pub fn new(code: &'code str) -> Self {
+impl<'code, 'gc> Lexer<'code, 'gc> {
+    pub fn new(code: &'code str, rt_alloc: &'gc mut RtAlloc) -> Self {
         Self {
             code: code.char_indices().peekable(),
             src: code,
+            rt_alloc,
         }
     }
 
@@ -127,10 +131,10 @@ impl<'code> Lexer<'code> {
     fn maybe_next_char<'a>(
         &mut self,
         expect_char: char,
-        true_type: TokenKind<'a>,
-        false_type: TokenKind<'a>,
+        true_type: TokenKind,
+        false_type: TokenKind,
         start: usize,
-    ) -> Token<'a> {
+    ) -> Token {
         if self.expect(expect_char) {
             let _ = self.code.next(); // consume first one
             Token {
@@ -144,10 +148,32 @@ impl<'code> Lexer<'code> {
             }
         }
     }
+
+    fn keyword_or_ident(&mut self, name: &str) -> TokenKind {
+        match name {
+            "loop" => TokenKind::Loop,
+            "let" => TokenKind::Let,
+            "fn" => TokenKind::Fn,
+            "for" => TokenKind::For,
+            "false" => TokenKind::False,
+            "if" => TokenKind::If,
+            "else" => TokenKind::Else,
+            "while" => TokenKind::While,
+            "break" => TokenKind::Break,
+            "return" => TokenKind::Return,
+            "true" => TokenKind::True,
+            "null" => TokenKind::Null,
+            "not" => TokenKind::Not,
+            "and" => TokenKind::And,
+            "or" => TokenKind::Or,
+            "print" => TokenKind::Print,
+            _ => TokenKind::Ident(self.rt_alloc.intern_string(name)),
+        }
+    }
 }
 
-impl<'code> Iterator for Lexer<'code> {
-    type Item = Token<'code>;
+impl<'code, 'gc> Iterator for Lexer<'code, 'gc> {
+    type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
         let token = loop {
@@ -244,7 +270,10 @@ impl<'code> Iterator for Lexer<'code> {
                             }
                         }
                     };
-                    break Token::new(Span::start_end(start, end), TokenKind::String(buffer));
+                    break Token::new(
+                        Span::start_end(start, end),
+                        TokenKind::String(self.rt_alloc.intern_string(&buffer)),
+                    );
                 }
                 char => {
                     if char.is_ascii_digit() {
@@ -295,7 +324,7 @@ impl<'code> Iterator for Lexer<'code> {
                         };
                         break Token::new(
                             Span::start_end(start, end),
-                            keyword_or_ident(&self.src[start..end]),
+                            self.keyword_or_ident(&self.src[start..end]),
                         );
                     } else {
                         break Token::new(
@@ -316,28 +345,6 @@ impl<'code> Iterator for Lexer<'code> {
     }
 }
 
-fn keyword_or_ident(name: &str) -> TokenKind {
-    match name {
-        "loop" => TokenKind::Loop,
-        "let" => TokenKind::Let,
-        "fn" => TokenKind::Fn,
-        "for" => TokenKind::For,
-        "false" => TokenKind::False,
-        "if" => TokenKind::If,
-        "else" => TokenKind::Else,
-        "while" => TokenKind::While,
-        "break" => TokenKind::Break,
-        "return" => TokenKind::Return,
-        "true" => TokenKind::True,
-        "null" => TokenKind::Null,
-        "not" => TokenKind::Not,
-        "and" => TokenKind::And,
-        "or" => TokenKind::Or,
-        "print" => TokenKind::Print,
-        _ => TokenKind::Ident(name),
-    }
-}
-
 fn is_valid_ident_part(char: char) -> bool {
     char.is_alphanumeric() || char == '_'
 }
@@ -346,7 +353,7 @@ fn is_valid_ident_start(char: char) -> bool {
     char.is_alphabetic() || char == '_'
 }
 
-#[cfg(test)]
+#[cfg(test_ignore)]
 mod test {
     use crate::lex::Lexer;
     use crate::lex::TokenKind::{self, *};

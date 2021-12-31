@@ -6,7 +6,8 @@ use crate::ast::{
 };
 use crate::bytecode::{FnBlock, Instr, Value};
 use crate::errors::{CompilerError, Span};
-use crate::value::HashMap;
+use crate::gc::Symbol;
+use crate::HashMap;
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
 use std::cell::RefCell;
@@ -16,14 +17,14 @@ type CResult<T> = Result<T, CompilerError>;
 
 #[derive(Debug, Default)]
 struct Env<'ast> {
-    locals: HashMap<&'ast str, usize>,
+    locals: HashMap<Symbol, usize>,
     outer: Option<Rc<RefCell<Env<'ast>>>>,
 }
 
 impl Env<'_> {
     fn lookup_local(&self, name: &Ident) -> CResult<usize> {
         fn lookup_inner(env: &Env, name: &Ident) -> Option<usize> {
-            env.locals.get(name.sym).copied().or_else(|| {
+            env.locals.get(&name.sym).copied().or_else(|| {
                 env.outer
                     .as_ref()
                     .map(|outer| lookup_inner(&outer.borrow(), name))
@@ -32,7 +33,10 @@ impl Env<'_> {
         }
 
         lookup_inner(self, name).ok_or_else(|| {
-            CompilerError::new(name.span, format!("variable {} not found", name.sym))
+            CompilerError::new(
+                name.span,
+                format!("variable {} not found", name.sym.as_str()),
+            )
         })
     }
 

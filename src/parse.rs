@@ -14,10 +14,9 @@ use bumpalo::Bump;
 use std::iter::Peekable;
 
 #[derive(Debug)]
-struct Parser<'code, 'ast, I>
+struct Parser<'ast, I>
 where
-    I: Iterator<Item = Token<'code>>,
-    I: 'code,
+    I: Iterator<Item = Token>,
 {
     tokens: Peekable<I>,
     depth: usize,
@@ -26,8 +25,8 @@ where
     bump: &'ast Bump,
 }
 
-pub fn parse<'ast, 'code>(
-    tokens: impl Iterator<Item = Token<'code>> + 'code,
+pub fn parse<'lexer, 'ast>(
+    tokens: impl Iterator<Item = Token> + 'lexer,
     ast_bump: &'ast Bump,
 ) -> Result<Program<'ast>, CompilerError> {
     let mut parser = Parser {
@@ -72,10 +71,9 @@ macro_rules! enter_parse {
     };
 }
 
-impl<'code, 'ast, I> Parser<'code, 'ast, I>
+impl<'ast, I> Parser<'ast, I>
 where
-    I: Iterator<Item = Token<'code>>,
-    I: 'code,
+    I: Iterator<Item = Token>,
 {
     const MAX_DEPTH: usize = 100;
 
@@ -189,7 +187,7 @@ where
         }))
     }
 
-    fn fn_args(&mut self) -> ParseResult<Vec<'ast, Ident<'ast>>> {
+    fn fn_args(&mut self) -> ParseResult<Vec<'ast, Ident>> {
         enter_parse!(self);
 
         self.expect(TokenKind::ParenO)?;
@@ -542,8 +540,8 @@ where
                 let _ = self.expect(TokenKind::ParenC)?;
                 Ok(expr)
             }
-            TokenKind::Ident(name) => Ok(Expr::Ident(Ident {
-                sym: self.bump.alloc_str(name),
+            TokenKind::Ident(sym) => Ok(Expr::Ident(Ident {
+                sym,
                 span: next.span,
             })),
             TokenKind::Error(error) => Err(*error),
@@ -556,17 +554,14 @@ where
         return_expr
     }
 
-    fn ident(&mut self) -> ParseResult<Ident<'ast>> {
+    fn ident(&mut self) -> ParseResult<Ident> {
         enter_parse!(self);
 
         let Token { kind, span } = self
             .next()
             .ok_or_else(|| CompilerError::eof("identifier"))?;
         let return_expr = match kind {
-            TokenKind::Ident(name) => Ok(Ident {
-                sym: self.bump.alloc_str(name),
-                span,
-            }),
+            TokenKind::Ident(sym) => Ok(Ident { sym, span }),
             TokenKind::Error(error) => Err(*error),
             _ => {
                 return Err(CompilerError::new(
@@ -602,11 +597,7 @@ where
         return_expr
     }
 
-    fn parse_list<T, F>(
-        &mut self,
-        close: TokenKind<'code>,
-        mut parser: F,
-    ) -> ParseResult<Vec<'ast, T>>
+    fn parse_list<T, F>(&mut self, close: TokenKind, mut parser: F) -> ParseResult<Vec<'ast, T>>
     where
         F: FnMut(&mut Self) -> ParseResult<T>,
     {
@@ -645,19 +636,19 @@ where
 
     // token helpers
 
-    fn next(&mut self) -> Option<Token<'code>> {
+    fn next(&mut self) -> Option<Token> {
         self.tokens.next()
     }
 
-    fn peek(&mut self) -> Option<&Token<'code>> {
+    fn peek(&mut self) -> Option<&Token> {
         self.tokens.peek()
     }
 
-    fn peek_kind(&mut self) -> Option<&TokenKind<'code>> {
+    fn peek_kind(&mut self) -> Option<&TokenKind> {
         self.peek().map(|token| &token.kind)
     }
 
-    fn expect(&mut self, kind: TokenKind<'code>) -> ParseResult<Token> {
+    fn expect(&mut self, kind: TokenKind) -> ParseResult<Token> {
         if let Some(token) = self.next() {
             if token.kind == kind {
                 Ok(token)
