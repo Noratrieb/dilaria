@@ -74,9 +74,28 @@ enum HeapObjectKind {
 
 #[derive(Debug)]
 pub struct RtAlloc {
-    symbols: HashSet<NonNull<str>>,
+    symbols: HashSet<NonNullStrWrapper>,
     objects: LinkedList<HeapObject>,
 }
+
+#[derive(Debug)]
+struct NonNullStrWrapper(NonNull<str>);
+
+impl Hash for NonNullStrWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // SAFETY: Assume the ptr is valid, same rules as `Gc<T>`
+        unsafe { self.0.as_ref().hash(state) }
+    }
+}
+
+impl PartialEq for NonNullStrWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        // SAFETY: Assume the ptr is valid, same rules as `Gc<T>`
+        unsafe { self.0.as_ref().eq(other.0.as_ref()) }
+    }
+}
+
+impl Eq for NonNullStrWrapper {}
 
 impl RtAlloc {
     /// # Safety
@@ -119,10 +138,12 @@ impl RtAlloc {
     pub fn intern_string(&mut self, str: &str) -> Symbol {
         let original_nonnull = NonNull::from(str);
 
-        if let Some(interned) = self.symbols.get(&original_nonnull) {
-            Symbol::new(Gc { ptr: *interned })
+        if let Some(interned) = self.symbols.get(&NonNullStrWrapper(original_nonnull)) {
+            Symbol::new(Gc { ptr: interned.0 })
         } else {
-            Symbol::new(self.alloc_str(str))
+            let allocated = self.alloc_str(str);
+            self.symbols.insert(NonNullStrWrapper(allocated.ptr));
+            Symbol::new(allocated)
         }
     }
 }
