@@ -42,7 +42,7 @@ impl<T: ?Sized> Clone for Gc<T> {
 impl<T: ?Sized> Copy for Gc<T> {}
 
 /// An interned String. Hashing and Equality are O(1) and just look at the pointer address
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Symbol {
     gc: Gc<str>,
 }
@@ -80,6 +80,12 @@ impl Deref for Symbol {
 
     fn deref(&self) -> &Self::Target {
         self.as_str()
+    }
+}
+
+impl Debug for Symbol {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.as_str().fmt(f)
     }
 }
 

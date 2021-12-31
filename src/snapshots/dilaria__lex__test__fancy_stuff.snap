@@ -1,0 +1,15 @@
+---
+source: src/lex.rs
+assertion_line: 370
+expression: tokens
+
+---
+[
+    Dot,
+    Comma,
+    Minus,
+    Asterisk,
+    Minus,
+    Comma,
+    Dot,
+]

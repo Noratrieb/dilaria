@@ -1,0 +1,23 @@
+---
+source: src/lex.rs
+assertion_line: 370
+expression: tokens
+
+---
+[
+    Let,
+    Fn,
+    If,
+    Else,
+    Loop,
+    While,
+    Break,
+    For,
+    True,
+    False,
+    Null,
+    And,
+    Not,
+    Or,
+    Print,
+]

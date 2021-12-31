@@ -353,92 +353,75 @@ fn is_valid_ident_start(char: char) -> bool {
     char.is_alphabetic() || char == '_'
 }
 
-#[cfg(test_ignore)]
+#[cfg(test)]
 mod test {
     use crate::lex::Lexer;
-    use crate::lex::TokenKind::{self, *};
+    use crate::RtAlloc;
 
     type StdString = std::string::String;
 
-    fn lex_types(str: &str) -> Vec<TokenKind> {
-        let lexer = Lexer::new(str);
-        lexer.map(|token| token.kind).collect::<Vec<_>>()
-    }
+    fn lex_test(code: &str) {
+        // SAFETY: we only work in this tiny scope
+        let mut runtime = unsafe { RtAlloc::new() };
 
-    fn lex_test(code: &str, expected: Vec<TokenKind>) {
-        assert_eq!(lex_types(code), expected)
+        let lexer = Lexer::new(code, &mut runtime);
+        let tokens = lexer.map(|token| token.kind).collect::<Vec<_>>();
+
+        insta::assert_debug_snapshot!(tokens);
     }
 
     #[test]
     fn smiley_face() {
-        lex_test(">>.<<", vec![Greater, Greater, Dot, Less, Less])
+        lex_test(">>.<<")
     }
 
     #[test]
     fn greater_than_less_than_equal() {
-        lex_test(
-            ">= <= == < < >=",
-            vec![
-                GreaterEqual,
-                LessEqual,
-                EqualEqual,
-                Less,
-                Less,
-                GreaterEqual,
-            ],
-        )
+        lex_test(">= <= == < < >=")
     }
 
     #[test]
     fn no_no_no() {
-        lex_test("!= != = !=", vec![BangEqual, BangEqual, Equal, BangEqual])
+        lex_test("!= != = !=")
     }
 
     #[test]
     fn braces_brackets_parens() {
-        lex_test(
-            "{([]]}",
-            vec![BraceO, ParenO, BracketO, BracketC, BracketC, BraceC],
-        );
+        lex_test("{([]]}");
     }
 
     #[test]
     fn braces_brackets_parens_whitespace() {
         lex_test(
             "{     (   [      ]         ]   
-            
-            }",
-            vec![BraceO, ParenO, BracketO, BracketC, BracketC, BraceC],
+        
+        }",
         );
     }
 
     #[test]
     fn fancy_stuff() {
-        lex_test(
-            ". ,- * -, .",
-            vec![Dot, Comma, Minus, Asterisk, Minus, Comma, Dot],
-        )
+        lex_test(". ,- * -, .")
     }
 
     #[test]
     fn comments() {
-        lex_test("fn # fn", vec![Fn]);
+        lex_test("fn # fn");
     }
 
     #[test]
     fn long_multiline_comment() {
         lex_test(
             "fn ## hello i am something
-         
-         i span multiple lines
-
-        will you love me? 🥺🥺🥺🥺🥺
-
-    pls :) o(*￣▽￣*)ブ
      
-       i like the indentation here ngl |     sneak for -> ## for ## <- sneak for
-         ## and",
-            vec![Fn, For, And],
+     i span multiple lines
+
+    will you love me? 🥺🥺🥺🥺🥺
+
+pls :) o(*￣▽￣*)ブ
+ 
+   i like the indentation here ngl |     sneak for -> ## for ## <- sneak for
+     ## and",
         )
     }
 
@@ -446,102 +429,50 @@ mod test {
     fn terminate_multiline_comment_correctly() {
         lex_test(
             "fn ## # no not here :( ## let # ## <- this is commented out 
-            # so no multiline comment
-            ## 
-            
-            here it starts
-            # let #
-            # # and
-            ## or
-            ",
-            vec![Fn, Let, Or],
+        # so no multiline comment
+        ## 
+        
+        here it starts
+        # let #
+        # # and
+        ## or
+        ",
         )
     }
 
     #[test]
     fn greeting() {
-        lex_test("-.- /%", vec![Minus, Dot, Minus, Slash, Percent])
+        lex_test("-.- /%")
     }
 
     #[test]
     fn countdown() {
-        lex_test(
-            "3 . . 2 . . 1 . . 0",
-            vec![
-                Number(3.0),
-                Dot,
-                Dot,
-                Number(2.0),
-                Dot,
-                Dot,
-                Number(1.0),
-                Dot,
-                Dot,
-                Number(0.0),
-            ],
-        )
+        lex_test("3 . . 2 . . 1 . . 0")
     }
 
     #[test]
     fn larger_numbers() {
-        lex_test(
-            "123456789, 123456789.1234, 64785903",
-            vec![
-                Number(123456789.0),
-                Comma,
-                Number(123456789.1234),
-                Comma,
-                Number(64785903.0),
-            ],
-        )
+        lex_test("123456789, 123456789.1234, 64785903")
     }
 
     #[test]
     fn string() {
-        lex_test(r#""uwu""#, vec![String("uwu".to_string())])
+        lex_test(r#""uwu""#)
     }
 
     #[test]
     fn strings() {
-        lex_test(
-            r#"(  "hi" "uwu" "\"uwu\""  "no \\ u" )"#,
-            vec![
-                ParenO,
-                String("hi".to_string()),
-                String("uwu".to_string()),
-                String("\"uwu\"".to_string()),
-                String("no \\ u".to_string()),
-                ParenC,
-            ],
-        )
+        lex_test(r#"(  "hi" "uwu" "\"uwu\""  "no \\ u" )"#)
     }
 
     #[test]
     fn keywords() {
-        lex_test(
-            "let fn if else loop while break for true false null and not or print",
-            vec![
-                Let, Fn, If, Else, Loop, While, Break, For, True, False, Null, And, Not, Or, Print,
-            ],
-        )
+        lex_test("let fn if else loop while break for true false null and not or print")
     }
 
     #[test]
     fn keyword_and_ident() {
-        lex_test(
-            "let variable be a loop if false is true",
-            vec![
-                Let,
-                Ident("variable"),
-                Ident("be"),
-                Ident("a"),
-                Loop,
-                If,
-                False,
-                Ident("is"),
-                True,
-            ],
-        )
+        lex_test("let variable be a loop if false is true")
     }
 
     #[test]
@@ -569,61 +500,21 @@ mod test {
             .iter()
             .map(|word| format!("{} ", word))
             .collect::<StdString>();
-        let expected = words.map(TokenKind::Ident).to_vec();
 
-        lex_test(&sentences, expected)
+        lex_test(&sentences)
     }
 
     #[test]
     fn serious_program() {
         lex_test(
             r#"let string = "hallol"
-        let number = 5
-        let me out ._.
-        fn world() {
-            if number == 5 or true == false and not false {
-                println("Hello \\ World!")
-            }
-        }"#,
-            vec![
-                Let,
-                Ident("string"),
-                Equal,
-                String("hallol".to_string()),
-                Let,
-                Ident("number"),
-                Equal,
-                Number(5.0),
-                Let,
-                Ident("me"),
-                Ident("out"),
-                Dot,
-                Ident("_"),
-                Dot,
-                Fn,
-                Ident("world"),
-                ParenO,
-                ParenC,
-                BraceO,
-                If,
-                Ident("number"),
-                EqualEqual,
-                Number(5.0),
-                Or,
-                True,
-                EqualEqual,
-                False,
-                And,
-                Not,
-                False,
-                BraceO,
-                Ident("println"),
-                ParenO,
-                String("Hello \\ World!".to_string()),
-                ParenC,
-                BraceC,
-                BraceC,
-            ],
+    let number = 5
+    let me out ._.
+    fn world() {
+        if number == 5 or true == false and not false {
+            println("Hello \\ World!")
+        }
+    }"#,
         )
     }
 }

@@ -1,0 +1,14 @@
+---
+source: src/lex.rs
+assertion_line: 370
+expression: tokens
+
+---
+[
+    BraceO,
+    ParenO,
+    BracketO,
+    BracketC,
+    BracketC,
+    BraceC,
+]

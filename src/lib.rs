@@ -10,8 +10,8 @@ mod parse;
 mod vm;
 
 use crate::ast::Program;
-
 use crate::gc::RtAlloc;
+
 pub use bumpalo::Bump;
 pub use lex::*;
 pub use parse::*;

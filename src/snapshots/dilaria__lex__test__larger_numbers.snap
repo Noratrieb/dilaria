@@ -1,0 +1,19 @@
+---
+source: src/lex.rs
+assertion_line: 370
+expression: tokens
+
+---
+[
+    Number(
+        123456789.0,
+    ),
+    Comma,
+    Number(
+        123456789.1234,
+    ),
+    Comma,
+    Number(
+        64785903.0,
+    ),
+]

@@ -3,7 +3,7 @@
 //! It's a handwritten recursive descent parser. It has an internal peekable iterator from where
 //! it gets its next tokens. Only a lookahead of one is required.
 
-#[cfg(test)]
+#[cfg(test_ignore_lol)]
 mod test;
 
 use crate::ast::*;
