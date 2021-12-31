@@ -148,6 +148,17 @@ impl RtAlloc {
     }
 }
 
+impl Drop for RtAlloc {
+    fn drop(&mut self) {
+        // free all interned strings
+        for str in &self.symbols {
+            let raw = str.0.as_ptr();
+            // SAFETY: No one has free these, see `Gc<T>`
+            let _ = unsafe { Box::from_raw(raw) };
+        }
+    }
+}
+
 impl Symbol {
     pub fn new(gc: Gc<str>) -> Self {
         Self { gc }
