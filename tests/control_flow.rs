@@ -51,3 +51,30 @@ if false {
 }
 "#
 );
+
+run_test!(
+    if_else_long_comparison_chain,
+    r#"
+let string = "hi ._./";
+
+if string == "no" {
+    print "WRONG";
+} else if string == "no as well" {
+    print "WRONG";
+} else if string == "wrong" {
+    print "WRONG";
+} else if string == "not the correct one" {
+    print "WRONG";
+} else if string == "hi ._. (wrong)" {
+    print "WRONG";
+} else if string == "" {
+    print "WRONG";
+} else if string == "how wrong should it be?" {
+    print "WRONG";
+} else if string == "hi ._./" {
+    print "true!";
+} else {
+    print "WRONG";
+}
+"#
+);
