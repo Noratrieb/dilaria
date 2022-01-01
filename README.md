@@ -119,6 +119,12 @@ loop {
 }
 ```
 
+Pattern matching!
+
+```py
+# design is still wip
+```
+
 `dilaria` is dynamically and *strongly* typed
 
 ## Detail
