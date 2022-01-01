@@ -1,4 +1,6 @@
-#![allow(dead_code)]
+//! The garbage collector for the language
+//!
+//! The structure of the GC might change, but for now it's simply a `LinkedList` of `Object`s.
 
 use crate::vm::Value;
 use crate::{HashMap, HashSet};
