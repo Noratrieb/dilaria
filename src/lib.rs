@@ -1,4 +1,3 @@
-#![doc = include_str!("../README.md")]
 #![deny(clippy::disallowed_type)]
 
 mod ast;
