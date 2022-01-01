@@ -121,8 +121,19 @@ loop {
 
 Pattern matching!
 
-```py
+```rust
 # design is still wip
+
+let obj = {};
+obj.x = 5;
+obj.y = "hey";
+
+match obj {
+    { no } => print "our thing didn't match here",
+    { x, y } => print "we got it! " + x,
+    "test" => print "string 'test'",
+    other => print "something else: " + other,
+}
 ```
 
 `dilaria` is dynamically and *strongly* typed
