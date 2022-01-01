@@ -1,8 +1,8 @@
 //! The compiler that compiles the AST down to bytecode
 
 use crate::ast::{
-    Assignment, BinaryOp, BinaryOpKind, Block, Call, Declaration, Expr, FnDecl, Ident, IfStmt,
-    Literal, Program, Stmt, UnaryOp, WhileStmt,
+    Assignment, BinaryOp, BinaryOpKind, Block, Call, Declaration, ElsePart, Expr, FnDecl, Ident,
+    IfStmt, Literal, Program, Stmt, UnaryOp, WhileStmt,
 };
 use crate::bytecode::{FnBlock, Instr};
 use crate::errors::{CompilerError, Span};
@@ -146,8 +146,52 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         todo!()
     }
 
-    fn compile_if(&mut self, _: &IfStmt) -> CResult<()> {
-        todo!()
+    fn compile_if(&mut self, if_stmt: &'ast IfStmt) -> CResult<()> {
+        /*
+           0 PushVal (true)
+         ╭─1 JumpCond (2)
+         │ 2 // it is true
+        ╭│─4 Jmp (1)                   │this is optional only for else
+        │╰>5 // it it false            │
+        ╰─>7 // continue here
+          */
+
+        self.compile_expr(&if_stmt.cond)?;
+
+        // the offset will be fixed later
+        let jmp_idx = self.push_instr(Instr::JumpFalse(0), StackChange::Shrink, if_stmt.span);
+
+        self.compile_block(&if_stmt.body)?;
+
+        if let Some(else_part) = if_stmt.else_part {
+            let else_skip_jmp_idx = self.push_instr(Instr::Jmp(0), StackChange::None, if_stmt.span);
+
+            let block = &mut self.blocks[self.current_block];
+            let next_index = block.code.len();
+            let jmp_pos = (next_index - 1) - jmp_idx;
+            block.code[jmp_idx] = Instr::JumpFalse(jmp_pos);
+
+            match else_part {
+                ElsePart::Else(block, _) => {
+                    self.compile_block(block)?;
+                }
+                ElsePart::ElseIf(if_stmt, _) => {
+                    self.compile_if(if_stmt)?;
+                }
+            }
+
+            let block = &mut self.blocks[self.current_block];
+            let next_index = block.code.len();
+            let jmp_pos = (next_index - else_skip_jmp_idx) - 1;
+            block.code[else_skip_jmp_idx] = Instr::Jmp(jmp_pos);
+        } else {
+            let block = &mut self.blocks[self.current_block];
+            let next_index = block.code.len();
+            let jmp_pos = (next_index - 1) - jmp_idx;
+            block.code[jmp_idx] = Instr::JumpFalse(jmp_pos);
+        }
+
+        Ok(())
     }
 
     fn compile_loop(&mut self, _: &Block, _: Span) -> CResult<()> {
@@ -266,7 +310,8 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         *block.stack_sizes.last().expect("empty stack") - 1
     }
 
-    fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) {
+    /// Pushes an instruction and returns the index of the new instruction
+    fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) -> usize {
         let block = &mut self.blocks[self.current_block];
         let stack_top = block.stack_sizes.last().copied().unwrap_or(0);
         let new_stack_top = stack_top as isize + stack_change as isize;
@@ -279,6 +324,8 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
 
         debug_assert_eq!(block.code.len(), block.stack_sizes.len());
         debug_assert_eq!(block.code.len(), block.spans.len());
+
+        block.code.len() - 1
     }
 }
 

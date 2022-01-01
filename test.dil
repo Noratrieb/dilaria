@@ -1,5 +1,11 @@
-print "hi";
+let x = 5;
 
-let is_bigger = "hallo" > "a";
+let y = 0;
 
-print (not is_bigger) or true;
+if x < 0 {
+    y = x;
+} else {
+    y = "hello it is smaller";
+}
+
+print y;

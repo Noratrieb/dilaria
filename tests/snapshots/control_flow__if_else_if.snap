@@ -1,0 +1,7 @@
+---
+source: tests/control_flow.rs
+assertion_line: 34
+expression: output
+
+---
+"true!\ntrue!\n"

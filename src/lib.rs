@@ -11,6 +11,7 @@ mod vm;
 
 use crate::ast::Program;
 use crate::gc::RtAlloc;
+use std::io::Write;
 
 pub use bumpalo::Bump;
 pub use lex::*;
@@ -30,7 +31,12 @@ type HashSet<T> = std::collections::HashSet<T>;
 #[cfg(feature = "fxhash")]
 type HashSet<T> = rustc_hash::FxHashSet<T>;
 
-pub fn run_program(program: &str) {
+pub struct Config<'io> {
+    pub debug: bool,
+    pub stdout: &'io mut dyn Write,
+}
+
+pub fn run_program(program: &str, cfg: &mut Config) {
     let ast_alloc = Bump::new();
 
     // SAFETY: I will try to 🥺
@@ -40,13 +46,15 @@ pub fn run_program(program: &str) {
     let ast = parse::parse(lexer, &ast_alloc);
 
     match ast {
-        Ok(ast) => process_ast(program, ast, runtime),
+        Ok(ast) => process_ast(program, ast, runtime, cfg),
         Err(err) => errors::display_error(program, err),
     }
 }
 
-fn process_ast(program: &str, ast: Program, mut runtime: RtAlloc) {
-    // println!("AST:\n{:?}\n", ast);
+fn process_ast(program: &str, ast: Program, mut runtime: RtAlloc, cfg: &mut Config<'_>) {
+    if cfg.debug {
+        println!("AST:\n{:?}\n", ast);
+    }
 
     let bytecode_alloc = Bump::new();
 
@@ -54,9 +62,11 @@ fn process_ast(program: &str, ast: Program, mut runtime: RtAlloc) {
 
     match bytecode {
         Ok(code) => {
-            // println!("Bytecode:\n{:#?}\n", code);
+            if cfg.debug {
+                println!("Bytecode:\n{:#?}\n", code);
+            }
 
-            let result = vm::execute(&code, runtime);
+            let result = vm::execute(&code, runtime, cfg.stdout);
             if let Err(result) = result {
                 eprintln!("error: {}", result);
             }

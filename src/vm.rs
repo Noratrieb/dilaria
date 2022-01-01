@@ -1,17 +1,23 @@
 use crate::bytecode::{FnBlock, Instr};
 use crate::gc::{Object, RtAlloc, Symbol};
 use std::fmt::{Debug, Display, Formatter};
+use std::io::Write;
 
 type VmError = &'static str;
 type VmResult = Result<(), VmError>;
 
-pub fn execute<'bc>(bytecode: &'bc [FnBlock<'bc>], alloc: RtAlloc) -> Result<(), VmError> {
+pub fn execute<'bc>(
+    bytecode: &'bc [FnBlock<'bc>],
+    alloc: RtAlloc,
+    stdout: &mut dyn Write,
+) -> Result<(), VmError> {
     let mut vm = Vm {
         _blocks: bytecode,
         current: bytecode.first().ok_or("no bytecode found")?,
         pc: 0,
         stack: Vec::with_capacity(1024 << 5),
         _alloc: alloc,
+        stdout,
     };
 
     vm.execute_function()
@@ -37,15 +43,16 @@ const fn _check_val_size() {
 const TRUE: Value = Value::Bool(true);
 const FALSE: Value = Value::Bool(false);
 
-struct Vm<'bc> {
+struct Vm<'bc, 'io> {
     _blocks: &'bc [FnBlock<'bc>],
     current: &'bc FnBlock<'bc>,
     _alloc: RtAlloc,
     pc: usize,
     stack: Vec<Value>,
+    stdout: &'io mut dyn Write,
 }
 
-impl<'bc> Vm<'bc> {
+impl<'bc> Vm<'bc, '_> {
     fn execute_function(&mut self) -> VmResult {
         let code = &self.current.code;
 
@@ -141,8 +148,17 @@ impl<'bc> Vm<'bc> {
             })?,
             Instr::Print => {
                 let val = self.stack.pop().unwrap();
-                println!("{}", val);
+                writeln!(self.stdout, "{}", val).map_err(|_| "failed to write to stdout")?;
             }
+            Instr::JumpFalse(pos) => {
+                let val = self.stack.pop().unwrap();
+                match val {
+                    Value::Bool(false) => self.pc += pos,
+                    Value::Bool(true) => {}
+                    _ => return Err("bad type"),
+                }
+            }
+            Instr::Jmp(pos) => self.pc += pos,
         }
 
         Ok(())

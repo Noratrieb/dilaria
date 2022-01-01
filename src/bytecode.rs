@@ -38,4 +38,9 @@ pub enum Instr {
 
     /// Println the value on top of the stack
     Print,
+
+    /// If the current stack value is true, skip `usize` instructions.
+    JumpFalse(usize),
+    /// Same as `JumpCond`, but unconditional
+    Jmp(usize),
 }
