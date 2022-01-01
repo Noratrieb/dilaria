@@ -356,6 +356,3 @@ enum StackChange {
     None = 0,
     Grow = 1,
 }
-
-#[cfg(test)]
-mod test {}
