@@ -14,6 +14,8 @@ pub struct FnBlock<'bc> {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Instr {
+    Nop,
+
     /// Store the current value on the stack to the stack location with the local offset `usize`
     Store(usize),
     /// Load the variable value from the local offset `usize` onto the stack
@@ -39,8 +41,8 @@ pub enum Instr {
     /// Println the value on top of the stack
     Print,
 
-    /// If the current stack value is true, skip `usize` instructions.
-    JumpFalse(usize),
+    /// If the current stack value is true, skip `usize` instructions. When jumping backwards
+    JumpFalse(isize),
     /// Same as `JumpCond`, but unconditional
-    Jmp(usize),
+    Jmp(isize),
 }

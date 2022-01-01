@@ -68,6 +68,7 @@ impl<'bc> Vm<'bc, '_> {
 
     fn dispatch_instr(&mut self, instr: Instr) -> VmResult {
         match instr {
+            Instr::Nop => {}
             Instr::Store(index) => {
                 let val = self.stack.pop().unwrap();
                 self.stack.insert(index, val);
@@ -153,12 +154,12 @@ impl<'bc> Vm<'bc, '_> {
             Instr::JumpFalse(pos) => {
                 let val = self.stack.pop().unwrap();
                 match val {
-                    Value::Bool(false) => self.pc += pos,
+                    Value::Bool(false) => self.pc = (self.pc as isize + pos) as usize,
                     Value::Bool(true) => {}
                     _ => return Err("bad type"),
                 }
             }
-            Instr::Jmp(pos) => self.pc += pos,
+            Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
         }
 
         Ok(())

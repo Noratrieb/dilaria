@@ -87,6 +87,10 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         };
         self.blocks.push(global_block);
         self.current_block = self.blocks.len() - 1;
+
+        // padding for backwards jumps
+        self.push_instr(Instr::Nop, StackChange::None, Span::dummy());
+
         self.compile_stmts(&ast.0)?;
         Ok(())
     }
@@ -169,7 +173,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
             let block = &mut self.blocks[self.current_block];
             let next_index = block.code.len();
             let jmp_pos = (next_index - 1) - jmp_idx;
-            block.code[jmp_idx] = Instr::JumpFalse(jmp_pos);
+            block.code[jmp_idx] = Instr::JumpFalse(jmp_pos as isize);
 
             match else_part {
                 ElsePart::Else(block, _) => {
@@ -183,19 +187,35 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
             let block = &mut self.blocks[self.current_block];
             let next_index = block.code.len();
             let jmp_pos = (next_index - else_skip_jmp_idx) - 1;
-            block.code[else_skip_jmp_idx] = Instr::Jmp(jmp_pos);
+            block.code[else_skip_jmp_idx] = Instr::Jmp(jmp_pos as isize);
         } else {
             let block = &mut self.blocks[self.current_block];
             let next_index = block.code.len();
             let jmp_pos = (next_index - 1) - jmp_idx;
-            block.code[jmp_idx] = Instr::JumpFalse(jmp_pos);
+            block.code[jmp_idx] = Instr::JumpFalse(jmp_pos as isize);
         }
 
         Ok(())
     }
 
-    fn compile_loop(&mut self, _: &Block, _: Span) -> CResult<()> {
-        todo!()
+    fn compile_loop(&mut self, ast_block: &'ast Block, span: Span) -> CResult<()> {
+        /*
+        ╭>0 // do things
+        ╰─1 JMP (-2),
+          */
+
+        let block = &self.blocks[self.current_block];
+        let first_stmt_idx = block.code.len() as isize;
+        self.compile_block(ast_block)?;
+
+        let block = &self.blocks[self.current_block];
+        let jmp_index = block.code.len() as isize;
+
+        let jmp_offset = -(jmp_index - first_stmt_idx + 1);
+
+        self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, span);
+
+        Ok(())
     }
 
     fn compile_while(&mut self, _: &WhileStmt) -> CResult<()> {

@@ -1,11 +1,3 @@
-let x = 5;
-
-let y = 0;
-
-if x < 0 {
-    y = x;
-} else {
-    y = "hello it is smaller";
+if 54 > 53 {
+    print "hallo conny";
 }
-
-print y;
