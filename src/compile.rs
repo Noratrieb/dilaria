@@ -17,12 +17,12 @@ use std::rc::Rc;
 type CResult<T> = Result<T, CompilerError>;
 
 #[derive(Debug, Default)]
-struct Env<'ast> {
+struct Env {
     locals: HashMap<Symbol, usize>,
-    outer: Option<Rc<RefCell<Env<'ast>>>>,
+    outer: Option<Rc<RefCell<Env>>>,
 }
 
-impl Env<'_> {
+impl Env {
     fn lookup_local(&self, name: &Ident) -> CResult<usize> {
         fn lookup_inner(env: &Env, name: &Ident) -> Option<usize> {
             env.locals.get(&name.sym).copied().or_else(|| {
@@ -50,12 +50,12 @@ impl Env<'_> {
 }
 
 #[derive(Debug)]
-struct Compiler<'ast, 'bc, 'gc> {
+struct Compiler<'bc, 'gc> {
     blocks: Vec<'bc, FnBlock<'bc>>,
     current_block: usize,
     bump: &'bc Bump,
     /// the current local variables that are in scope, only needed for compiling
-    env: Rc<RefCell<Env<'ast>>>,
+    env: Rc<RefCell<Env>>,
     rt: &'gc mut RtAlloc,
 }
 
@@ -77,7 +77,7 @@ pub fn compile<'ast, 'bc, 'gc>(
     Ok(compiler.blocks)
 }
 
-impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
+impl<'ast, 'bc, 'gc> Compiler<'bc, 'gc> {
     fn compile(&mut self, ast: &'ast Program<'ast>) -> CResult<()> {
         let global_block = FnBlock {
             code: Vec::new_in(self.bump),
