@@ -29,6 +29,6 @@ fn main() {
             }
         }
     } else {
-        eprintln!("Usage: <filename>")
+        eprintln!("Usage: <filename>");
     }
 }

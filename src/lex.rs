@@ -124,8 +124,7 @@ impl<'code, 'gc> Lexer<'code, 'gc> {
     fn expect(&mut self, expected: char) -> bool {
         self.code
             .peek()
-            .map(|(_, char)| *char == expected)
-            .unwrap_or(false)
+            .map_or(false, |(_, char)| *char == expected)
     }
 
     fn maybe_next_char(
@@ -372,17 +371,17 @@ mod test {
 
     #[test]
     fn smiley_face() {
-        lex_test(">>.<<")
+        lex_test(">>.<<");
     }
 
     #[test]
     fn greater_than_less_than_equal() {
-        lex_test(">= <= == < < >=")
+        lex_test(">= <= == < < >=");
     }
 
     #[test]
     fn no_no_no() {
-        lex_test("!= != = !=")
+        lex_test("!= != = !=");
     }
 
     #[test]
@@ -401,7 +400,7 @@ mod test {
 
     #[test]
     fn fancy_stuff() {
-        lex_test(". ,- * -, .")
+        lex_test(". ,- * -, .");
     }
 
     #[test]
@@ -422,7 +421,7 @@ pls :) o(*￣▽￣*)ブ
  
    i like the indentation here ngl |     sneak for -> ## for ## <- sneak for
      ## and",
-        )
+        );
     }
 
     #[test]
@@ -437,42 +436,42 @@ pls :) o(*￣▽￣*)ブ
         # # and
         ## or
         ",
-        )
+        );
     }
 
     #[test]
     fn greeting() {
-        lex_test("-.- /%")
+        lex_test("-.- /%");
     }
 
     #[test]
     fn countdown() {
-        lex_test("3 . . 2 . . 1 . . 0")
+        lex_test("3 . . 2 . . 1 . . 0");
     }
 
     #[test]
     fn larger_numbers() {
-        lex_test("123456789, 123456789.1234, 64785903")
+        lex_test("123456789, 123456789.1234, 64785903");
     }
 
     #[test]
     fn string() {
-        lex_test(r#""uwu""#)
+        lex_test(r#""uwu""#);
     }
 
     #[test]
     fn strings() {
-        lex_test(r#"(  "hi" "uwu" "\"uwu\""  "no \\ u" )"#)
+        lex_test(r#"(  "hi" "uwu" "\"uwu\""  "no \\ u" )"#);
     }
 
     #[test]
     fn keywords() {
-        lex_test("let fn if else loop while break for true false null and not or print")
+        lex_test("let fn if else loop while break for true false null and not or print");
     }
 
     #[test]
     fn keyword_and_ident() {
-        lex_test("let variable be a loop if false is true")
+        lex_test("let variable be a loop if false is true");
     }
 
     #[test]
@@ -501,7 +500,7 @@ pls :) o(*￣▽￣*)ブ
             .map(|word| format!("{} ", word))
             .collect::<StdString>();
 
-        lex_test(&sentences)
+        lex_test(&sentences);
     }
 
     #[test]
@@ -515,6 +514,6 @@ pls :) o(*￣▽￣*)ブ
             println("Hello \\ World!")
         }
     }"#,
-        )
+        );
     }
 }

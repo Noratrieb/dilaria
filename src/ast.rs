@@ -76,8 +76,7 @@ pub enum ElsePart<'ast> {
 impl ElsePart<'_> {
     pub fn span(&self) -> Span {
         match self {
-            ElsePart::Else(_, span) => *span,
-            ElsePart::ElseIf(_, span) => *span,
+            ElsePart::Else(_, span) | ElsePart::ElseIf(_, span) => *span,
         }
     }
 }
@@ -123,12 +122,12 @@ pub enum Literal<'ast> {
 impl Literal<'_> {
     pub fn span(&self) -> Span {
         match self {
-            Literal::String(_, span) => *span,
-            Literal::Number(_, span) => *span,
-            Literal::Array(_, span) => *span,
-            Literal::Object(span) => *span,
-            Literal::Boolean(_, span) => *span,
-            Literal::Null(span) => *span,
+            Literal::String(_, span)
+            | Literal::Number(_, span)
+            | Literal::Array(_, span)
+            | Literal::Object(span)
+            | Literal::Boolean(_, span)
+            | Literal::Null(span) => *span,
         }
     }
 }

@@ -46,19 +46,19 @@ pub fn run_program(program: &str, cfg: &mut Config) {
     let ast = parse::parse(lexer, &ast_alloc);
 
     match ast {
-        Ok(ast) => process_ast(program, ast, runtime, cfg),
+        Ok(ast) => process_ast(program, &ast, runtime, cfg),
         Err(err) => errors::display_error(program, err),
     }
 }
 
-fn process_ast(program: &str, ast: Program, mut runtime: RtAlloc, cfg: &mut Config<'_>) {
+fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Config<'_>) {
     if cfg.debug {
         println!("AST:\n{:?}\n", ast);
     }
 
     let bytecode_alloc = Bump::new();
 
-    let bytecode = compile::compile(&ast, &bytecode_alloc, &mut runtime);
+    let bytecode = compile::compile(ast, &bytecode_alloc, &mut runtime);
 
     match bytecode {
         Ok(code) => {
@@ -107,5 +107,5 @@ pub fn _fuzz_lex(program: &str) {
     // SAFETY: Just this scope
     let mut runtime = unsafe { RtAlloc::new() };
     let lexer = lex::Lexer::new(program, &mut runtime);
-    for _ in lexer {}
+    for _token in lexer {}
 }

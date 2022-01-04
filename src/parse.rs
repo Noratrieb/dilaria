@@ -217,7 +217,7 @@ where
         Ok(IfStmt {
             span: keyword_span
                 .extend(body.span)
-                .option_extend(else_part.as_ref().map(|part| part.span())),
+                .option_extend(else_part.as_ref().map(ElsePart::span)),
             cond,
             body,
             else_part: else_part.map(|part| &*self.bump.alloc(part)),

@@ -28,8 +28,7 @@ impl Env<'_> {
             env.locals.get(&name.sym).copied().or_else(|| {
                 env.outer
                     .as_ref()
-                    .map(|outer| lookup_inner(&outer.borrow(), name))
-                    .flatten()
+                    .and_then(|outer| lookup_inner(&outer.borrow(), name))
             })
         }
 
@@ -68,7 +67,7 @@ pub fn compile<'ast, 'bc, 'gc>(
         blocks: Vec::new_in(bytecode_bump),
         current_block: 0,
         bump: bytecode_bump,
-        env: Rc::new(RefCell::new(Default::default())),
+        env: Rc::new(RefCell::new(Env::default())),
         rt,
     };
 
