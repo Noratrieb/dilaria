@@ -151,7 +151,7 @@ impl<'bc> Vm<'bc, '_> {
                 let val = self.stack.pop().unwrap();
                 writeln!(self.stdout, "{}", val).map_err(|_| "failed to write to stdout")?;
             }
-            Instr::JumpFalse(pos) => {
+            Instr::JmpFalse(pos) => {
                 let val = self.stack.pop().unwrap();
                 match val {
                     Value::Bool(false) => self.pc = (self.pc as isize + pos) as usize,

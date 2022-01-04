@@ -67,8 +67,8 @@ pub enum Instr {
     /// Println the value on top of the stack
     Print,
 
-    /// If the current stack value is true, skip `usize` instructions. When jumping backwards
-    JumpFalse(isize),
-    /// Same as `JumpCond`, but unconditional
+    /// If the current stack value is false, skip `usize` instructions.
+    JmpFalse(isize),
+    /// Same as `JmpFalse`, but unconditional
     Jmp(isize),
 }

@@ -78,3 +78,45 @@ if string == "no" {
 }
 "#
 );
+
+run_test!(
+    while_single_loop,
+    r#"
+let x = true;
+while x {
+    x = false;
+    print "iter";
+}
+print "done";
+"#
+);
+
+run_test!(
+    while_count_to_100,
+    r#"
+let i = 0;
+
+while i < 100 {
+    print i;
+    i = i + 1;
+}
+
+print "done";
+    "#
+);
+
+run_test!(
+    while_run_never,
+    r#"
+let not_run = true;
+
+while false {
+    print "WRONG";
+    not_run = false;
+}
+
+if not_run {
+    print "good.";
+}
+"#
+);

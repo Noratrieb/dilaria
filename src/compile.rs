@@ -163,7 +163,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         self.compile_expr(&if_stmt.cond)?;
 
         // the offset will be fixed later
-        let jmp_idx = self.push_instr(Instr::JumpFalse(0), StackChange::Shrink, if_stmt.span);
+        let jmp_idx = self.push_instr(Instr::JmpFalse(0), StackChange::Shrink, if_stmt.span);
 
         self.compile_block(&if_stmt.body)?;
 
@@ -172,7 +172,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
 
             let jmp_pos = self.forward_jmp_offset(jmp_idx as isize);
 
-            self.change_instr(jmp_idx, Instr::JumpFalse(jmp_pos));
+            self.change_instr(jmp_idx, Instr::JmpFalse(jmp_pos));
 
             match else_part {
                 ElsePart::Else(block, _) => {
@@ -188,7 +188,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
             self.change_instr(else_skip_jmp_idx, Instr::Jmp(jmp_pos));
         } else {
             let jmp_pos = self.forward_jmp_offset(jmp_idx as isize);
-            self.change_instr(jmp_idx, Instr::JumpFalse(jmp_pos));
+            self.change_instr(jmp_idx, Instr::JmpFalse(jmp_pos));
         }
 
         Ok(())
@@ -222,17 +222,18 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         let cond_index = self.code_len();
         self.compile_expr(&while_stmt.cond)?;
 
-        let cond_jmp_index = self.push_instr(Instr::Jmp(0), StackChange::Shrink, while_stmt.span);
+        let jmp_false_idx =
+            self.push_instr(Instr::JmpFalse(0), StackChange::Shrink, while_stmt.span);
 
         self.compile_block(&while_stmt.body)?;
 
-        let index_of_jmp = self.code_len();
-        let jmp_offset = -(index_of_jmp - (cond_index as isize) + 1);
+        let jmp_offset = self.back_jmp_offset(cond_index);
         self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, while_stmt.span);
 
-        let skip_amount = self.back_jmp_offset(cond_jmp_index as isize);
-        self.change_instr(cond_jmp_index, Instr::Jmp(skip_amount));
-        todo!()
+        let jmp_offset = self.forward_jmp_offset(jmp_false_idx as isize);
+        self.change_instr(jmp_false_idx, Instr::JmpFalse(jmp_offset));
+
+        Ok(())
     }
 
     fn compile_break(&mut self, _: Span) -> CResult {
