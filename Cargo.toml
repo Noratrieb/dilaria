@@ -7,11 +7,16 @@ edition = "2021"
 
 [dependencies]
 bumpalo = { version = "3.8.0", features = ["collections", "boxed"] }
+debug2 = { version = "0.1.0", optional = true }
 rustc-hash = { version = "1.1.0", optional = true }
 
 
 [features]
 fxhash = ["rustc-hash"]
+pretty = ["debug2"]
+
+# todo: we don't actually want this as a default feature
+default = ["pretty"]
 
 [dev-dependencies]
 insta = "1.9.0"

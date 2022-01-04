@@ -62,7 +62,7 @@ pub fn compile<'ast, 'bc, 'gc>(
     ast: &'ast Program,
     bytecode_bump: &'bc Bump,
     rt: &'gc mut RtAlloc,
-) -> Result<Vec<'bc, FnBlock<'bc>>, CompilerError> {
+) -> Result<&'bc [FnBlock<'bc>], CompilerError> {
     let mut compiler = Compiler {
         blocks: Vec::new_in(bytecode_bump),
         current_block: 0,
@@ -73,7 +73,7 @@ pub fn compile<'ast, 'bc, 'gc>(
 
     compiler.compile(ast)?;
 
-    Ok(compiler.blocks)
+    Ok(compiler.blocks.into_bump_slice())
 }
 
 impl<'bc, 'gc> Compiler<'bc, 'gc> {

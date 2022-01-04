@@ -24,6 +24,7 @@ pub fn execute<'bc>(
 }
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "pretty", derive(debug2::Debug))]
 pub enum Value {
     Null,
     Bool(bool),
@@ -63,6 +64,8 @@ impl<'bc> Vm<'bc, '_> {
                 None => return Ok(()),
             }
             self.pc += 1;
+            // debug stack size assertion
+            todo!()
         }
     }
 

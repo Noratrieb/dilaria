@@ -63,7 +63,14 @@ fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Con
     match bytecode {
         Ok(code) => {
             if cfg.debug {
-                println!("Bytecode:\n{:#?}\n", code);
+                #[cfg(feature = "pretty")]
+                {
+                    println!("Bytecode:\n{}\n", debug2::pprint(code));
+                }
+                #[cfg(not(feature = "pretty"))]
+                {
+                    println!("Bytecode:\n{:#?}\n", code);
+                }
             }
 
             let result = vm::execute(&code, runtime, cfg.stdout);

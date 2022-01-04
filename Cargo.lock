@@ -28,10 +28,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "debug2"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e70062ea3df6318129246273f4b1748900752293d47e7610b5e8a84bc14c44c"
+dependencies = [
+ "debug2-derive",
+]
+
+[[package]]
+name = "debug2-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77b37e8941dd632993cf5b4ea33a630faa132fdc42481a8c2621dede631e871a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "synstructure",
+]
+
+[[package]]
 name = "dilaria"
 version = "0.1.0"
 dependencies = [
  "bumpalo",
+ "debug2",
  "insta",
  "rustc-hash",
 ]
@@ -184,6 +206,18 @@ checksum = "ecb2e6da8ee5eb9a61068762a32fa9619cc591ceb055b3687f4cd4051ec2e06b"
 dependencies = [
  "proc-macro2",
  "quote",
+ "unicode-xid",
+]
+
+[[package]]
+name = "synstructure"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
  "unicode-xid",
 ]
 

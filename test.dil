@@ -1,7 +1,6 @@
 let i = 0;
 
-while i < 100 {
-    print i;
+while i < 100000 {
     i = i + 1;
 }
 

@@ -18,6 +18,7 @@
 use crate::errors::Span;
 use crate::vm::Value;
 use bumpalo::collections::Vec;
+use debug2::Formatter;
 
 /// This struct contains all data for a function.
 #[derive(Debug)]
@@ -34,8 +35,21 @@ pub struct FnBlock<'bc> {
     pub arity: u8,
 }
 
+#[cfg(feature = "pretty")]
+impl debug2::Debug for FnBlock<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FnBlock")
+            .field("code", &self.code.as_slice())
+            .field("stack_sizes", &self.stack_sizes.as_slice())
+            .field("spans", &self.spans.as_slice())
+            .field("arity", &self.arity)
+            .finish()
+    }
+}
+
 /// A bytecode instruction. For more details on the structure of the bytecode, read the module level docs [`bytecode`](`self`)
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "pretty", derive(debug2::Debug))]
 pub enum Instr {
     /// An operation that does nothing.
     Nop,
