@@ -14,7 +14,7 @@ use bumpalo::Bump;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-type CResult<T> = Result<T, CompilerError>;
+type CResult<T = ()> = Result<T, CompilerError>;
 
 #[derive(Debug, Default)]
 struct Env<'ast> {
@@ -78,7 +78,7 @@ pub fn compile<'ast, 'bc, 'gc>(
 }
 
 impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
-    fn compile(&mut self, ast: &'ast Program<'ast>) -> CResult<()> {
+    fn compile(&mut self, ast: &'ast Program<'ast>) -> CResult {
         let global_block = FnBlock {
             code: Vec::new_in(self.bump),
             stack_sizes: Vec::new_in(self.bump),
@@ -95,7 +95,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_stmts(&mut self, stmts: &'ast [Stmt]) -> CResult<()> {
+    fn compile_stmts(&mut self, stmts: &'ast [Stmt]) -> CResult {
         for stmt in stmts {
             match stmt {
                 Stmt::Declaration(inner) => self.compile_declaration(inner),
@@ -115,7 +115,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_declaration(&mut self, declaration: &'ast Declaration<'ast>) -> CResult<()> {
+    fn compile_declaration(&mut self, declaration: &'ast Declaration<'ast>) -> CResult {
         // Compile the expression, the result of the expression will be the last thing left on the stack
         self.compile_expr(&declaration.init)?;
         // Now just remember that the value at this stack location is this variable name
@@ -127,7 +127,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_assignment(&mut self, assignment: &Assignment) -> CResult<()> {
+    fn compile_assignment(&mut self, assignment: &Assignment) -> CResult {
         let local = match &assignment.lhs {
             Expr::Ident(ident) => ident,
             _ => todo!(),
@@ -146,17 +146,17 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_fn_decl(&mut self, _: &FnDecl) -> CResult<()> {
+    fn compile_fn_decl(&mut self, _: &FnDecl) -> CResult {
         todo!()
     }
 
-    fn compile_if(&mut self, if_stmt: &'ast IfStmt) -> CResult<()> {
+    fn compile_if(&mut self, if_stmt: &'ast IfStmt) -> CResult {
         /*
            0 PushVal (true)
          ╭─1 JumpCond (2)
          │ 2 // it is true
-        ╭│─4 Jmp (1)                   │this is optional only for else
-        │╰>5 // it it false            │
+        ╭│─4 Jmp (1)           │ this is optional only for else
+        │╰>5 // it it false    │
         ╰─>7 // continue here
           */
 
@@ -170,10 +170,9 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         if let Some(else_part) = if_stmt.else_part {
             let else_skip_jmp_idx = self.push_instr(Instr::Jmp(0), StackChange::None, if_stmt.span);
 
-            let block = &mut self.blocks[self.current_block];
-            let next_index = block.code.len();
-            let jmp_pos = (next_index - 1) - jmp_idx;
-            block.code[jmp_idx] = Instr::JumpFalse(jmp_pos as isize);
+            let jmp_pos = self.forward_jmp_offset(jmp_idx as isize);
+
+            self.change_instr(jmp_idx, Instr::JumpFalse(jmp_pos));
 
             match else_part {
                 ElsePart::Else(block, _) => {
@@ -184,53 +183,67 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
                 }
             }
 
-            let block = &mut self.blocks[self.current_block];
-            let next_index = block.code.len();
-            let jmp_pos = (next_index - else_skip_jmp_idx) - 1;
-            block.code[else_skip_jmp_idx] = Instr::Jmp(jmp_pos as isize);
+            let jmp_pos = self.forward_jmp_offset(else_skip_jmp_idx as isize);
+
+            self.change_instr(else_skip_jmp_idx, Instr::Jmp(jmp_pos));
         } else {
-            let block = &mut self.blocks[self.current_block];
-            let next_index = block.code.len();
-            let jmp_pos = (next_index - 1) - jmp_idx;
-            block.code[jmp_idx] = Instr::JumpFalse(jmp_pos as isize);
+            let jmp_pos = self.forward_jmp_offset(jmp_idx as isize);
+            self.change_instr(jmp_idx, Instr::JumpFalse(jmp_pos));
         }
 
         Ok(())
     }
 
-    fn compile_loop(&mut self, ast_block: &'ast Block, span: Span) -> CResult<()> {
+    fn compile_loop(&mut self, ast_block: &'ast Block, span: Span) -> CResult {
         /*
         ╭>0 // do things
         ╰─1 JMP (-2),
           */
 
-        let block = &self.blocks[self.current_block];
-        let first_stmt_idx = block.code.len() as isize;
+        let first_stmt_idx = self.code_len();
         self.compile_block(ast_block)?;
 
-        let block = &self.blocks[self.current_block];
-        let jmp_index = block.code.len() as isize;
-
-        let jmp_offset = -(jmp_index - first_stmt_idx + 1);
+        let jmp_offset = self.back_jmp_offset(first_stmt_idx);
 
         self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, span);
 
         Ok(())
     }
 
-    fn compile_while(&mut self, _: &WhileStmt) -> CResult<()> {
+    fn compile_while(&mut self, while_stmt: &'ast WhileStmt) -> CResult {
+        /*
+        ╭─>0 PushVal (true)
+        │╭─1 JmpFalse (2)
+        ││ 2 // body
+        ╰│─3 Jmp (-3)
+         ╰>4 // continue here
+          */
+
+        let cond_index = self.code_len();
+        self.compile_expr(&while_stmt.cond)?;
+
+        let cond_jmp_index = self.push_instr(Instr::Jmp(0), StackChange::Shrink, while_stmt.span);
+
+        self.compile_block(&while_stmt.body)?;
+
+        let index_of_jmp = self.code_len();
+        let jmp_offset = -(index_of_jmp - (cond_index as isize) + 1);
+        self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, while_stmt.span);
+
+        let skip_amount = self.back_jmp_offset(cond_jmp_index as isize);
+        self.change_instr(cond_jmp_index, Instr::Jmp(skip_amount));
         todo!()
     }
 
-    fn compile_break(&mut self, _: Span) -> CResult<()> {
+    fn compile_break(&mut self, _: Span) -> CResult {
         todo!()
     }
 
-    fn compile_return(&mut self, _: &Option<Expr>, _: Span) -> CResult<()> {
+    fn compile_return(&mut self, _: &Option<Expr>, _: Span) -> CResult {
         todo!()
     }
 
-    fn compile_print(&mut self, expr: &Expr, span: Span) -> CResult<()> {
+    fn compile_print(&mut self, expr: &Expr, span: Span) -> CResult {
         self.compile_expr(expr)?;
 
         self.push_instr(Instr::Print, StackChange::Shrink, span);
@@ -238,7 +251,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_block(&mut self, block: &'ast Block) -> CResult<()> {
+    fn compile_block(&mut self, block: &'ast Block) -> CResult {
         let next_env = Env::new_inner(self.env.clone());
         self.env = next_env;
 
@@ -249,7 +262,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_expr(&mut self, expr: &Expr) -> CResult<()> {
+    fn compile_expr(&mut self, expr: &Expr) -> CResult {
         match expr {
             Expr::Ident(inner) => self.compile_expr_ident(inner),
             Expr::Literal(inner) => self.compile_expr_literal(inner),
@@ -259,13 +272,13 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         }
     }
 
-    fn compile_expr_ident(&mut self, name: &Ident) -> CResult<()> {
+    fn compile_expr_ident(&mut self, name: &Ident) -> CResult {
         let offset = self.env.borrow().lookup_local(name)?;
         self.push_instr(Instr::Load(offset), StackChange::Grow, name.span);
         Ok(())
     }
 
-    fn compile_expr_literal(&mut self, lit: &Literal) -> CResult<()> {
+    fn compile_expr_literal(&mut self, lit: &Literal) -> CResult {
         let value = match lit {
             Literal::String(str, _) => Value::String(*str),
             Literal::Number(num, _) => Value::Num(*num),
@@ -286,7 +299,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_expr_unary(&mut self, unary: &UnaryOp) -> CResult<()> {
+    fn compile_expr_unary(&mut self, unary: &UnaryOp) -> CResult {
         self.compile_expr(&unary.expr)?;
 
         // not and neg compile to the same instruction
@@ -295,7 +308,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_expr_binary(&mut self, binary: &BinaryOp) -> CResult<()> {
+    fn compile_expr_binary(&mut self, binary: &BinaryOp) -> CResult {
         self.compile_expr(&binary.lhs)?;
         self.compile_expr(&binary.rhs)?;
 
@@ -320,7 +333,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_expr_call(&mut self, _: &Call) -> CResult<()> {
+    fn compile_expr_call(&mut self, _: &Call) -> CResult {
         todo!()
     }
 
@@ -328,6 +341,28 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         let block = &self.blocks[self.current_block];
         // we want the stack position, not the size, so the `- 1`
         *block.stack_sizes.last().expect("empty stack") - 1
+    }
+
+    /// source is implicitly: self.code_len()
+    fn back_jmp_offset(&self, target: isize) -> isize {
+        let source = self.code_len();
+        -(source - target + 1)
+    }
+
+    /// target is implicitly: self.code_len()
+    fn forward_jmp_offset(&self, source: isize) -> isize {
+        let target = self.code_len();
+        target - (source) - 1
+    }
+
+    fn code_len(&self) -> isize {
+        let block = &self.blocks[self.current_block];
+        block.code.len() as isize
+    }
+
+    fn change_instr(&mut self, index: usize, instr: Instr) {
+        let block = &mut self.blocks[self.current_block];
+        block.code[index] = instr;
     }
 
     /// Pushes an instruction and returns the index of the new instruction
