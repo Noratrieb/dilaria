@@ -17,12 +17,12 @@ use std::rc::Rc;
 type CResult<T = ()> = Result<T, CompilerError>;
 
 #[derive(Debug, Default)]
-struct Env<'ast> {
+struct Env {
     locals: HashMap<Symbol, usize>,
-    outer: Option<Rc<RefCell<Env<'ast>>>>,
+    outer: Option<Rc<RefCell<Env>>>,
 }
 
-impl Env<'_> {
+impl Env {
     fn lookup_local(&self, name: &Ident) -> CResult<usize> {
         fn lookup_inner(env: &Env, name: &Ident) -> Option<usize> {
             env.locals.get(&name.sym).copied().or_else(|| {
@@ -49,12 +49,12 @@ impl Env<'_> {
 }
 
 #[derive(Debug)]
-struct Compiler<'ast, 'bc, 'gc> {
+struct Compiler<'bc, 'gc> {
     blocks: Vec<'bc, FnBlock<'bc>>,
     current_block: usize,
     bump: &'bc Bump,
     /// the current local variables that are in scope, only needed for compiling
-    env: Rc<RefCell<Env<'ast>>>,
+    env: Rc<RefCell<Env>>,
     rt: &'gc mut RtAlloc,
 }
 
@@ -76,8 +76,8 @@ pub fn compile<'ast, 'bc, 'gc>(
     Ok(compiler.blocks)
 }
 
-impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
-    fn compile(&mut self, ast: &'ast Program<'ast>) -> CResult {
+impl<'bc, 'gc> Compiler<'bc, 'gc> {
+    fn compile(&mut self, ast: &Program) -> CResult {
         let global_block = FnBlock {
             code: Vec::new_in(self.bump),
             stack_sizes: Vec::new_in(self.bump),
@@ -94,7 +94,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_stmts(&mut self, stmts: &'ast [Stmt]) -> CResult {
+    fn compile_stmts(&mut self, stmts: &[Stmt]) -> CResult {
         for stmt in stmts {
             match stmt {
                 Stmt::Declaration(inner) => self.compile_declaration(inner),
@@ -114,7 +114,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_declaration(&mut self, declaration: &'ast Declaration<'ast>) -> CResult {
+    fn compile_declaration(&mut self, declaration: &Declaration) -> CResult {
         // Compile the expression, the result of the expression will be the last thing left on the stack
         self.compile_expr(&declaration.init)?;
         // Now just remember that the value at this stack location is this variable name
@@ -149,7 +149,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         todo!()
     }
 
-    fn compile_if(&mut self, if_stmt: &'ast IfStmt) -> CResult {
+    fn compile_if(&mut self, if_stmt: &IfStmt) -> CResult {
         /*
            0 PushVal (true)
          ╭─1 JumpCond (2)
@@ -193,7 +193,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_loop(&mut self, ast_block: &'ast Block, span: Span) -> CResult {
+    fn compile_loop(&mut self, ast_block: &Block, span: Span) -> CResult {
         /*
         ╭>0 // do things
         ╰─1 JMP (-2),
@@ -209,7 +209,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_while(&mut self, while_stmt: &'ast WhileStmt) -> CResult {
+    fn compile_while(&mut self, while_stmt: &WhileStmt) -> CResult {
         /*
         ╭─>0 PushVal (true)
         │╭─1 JmpFalse (2)
@@ -251,7 +251,7 @@ impl<'ast, 'bc, 'gc> Compiler<'ast, 'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_block(&mut self, block: &'ast Block) -> CResult {
+    fn compile_block(&mut self, block: &Block) -> CResult {
         let next_env = Env::new_inner(self.env.clone());
         self.env = next_env;
 
