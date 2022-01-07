@@ -85,4 +85,7 @@ pub enum Instr {
     JmpFalse(isize),
     /// Same as `JmpFalse`, but unconditional
     Jmp(isize),
+
+    /// Shrinks the stack by `usize` elements, should always be emitted before backwards jumps
+    ShrinkStack(usize),
 }

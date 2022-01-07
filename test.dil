@@ -1,5 +1,9 @@
-loop {
-break;
+let i = 0;
+
+while i < 1000 {
+    print "lol";
+    i = i + 1;
 }
+
 
 print "hi";

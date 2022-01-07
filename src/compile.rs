@@ -207,13 +207,19 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
           */
 
         let first_stmt_idx = self.code_len();
+        let pre_loop_stack_size = self.current_stack_size();
 
         self.loop_nesting += 1;
 
         self.compile_block(ast_block)?;
 
-        let jmp_offset = self.back_jmp_offset(first_stmt_idx);
+        self.push_instr(
+            Instr::ShrinkStack(self.current_stack_size() - pre_loop_stack_size),
+            StackChange::None,
+            span,
+        );
 
+        let jmp_offset = self.back_jmp_offset(first_stmt_idx);
         self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, span);
 
         self.end_loop();
@@ -231,7 +237,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
           */
 
         let cond_index = self.code_len();
-
+        let pre_loop_stack_size = self.current_stack_size();
         self.loop_nesting += 1;
 
         self.compile_expr(&while_stmt.cond)?;
@@ -241,6 +247,11 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
 
         self.compile_block(&while_stmt.body)?;
 
+        self.push_instr(
+            Instr::ShrinkStack(self.current_stack_size() - pre_loop_stack_size),
+            StackChange::None,
+            while_stmt.span,
+        );
         let jmp_offset = self.back_jmp_offset(cond_index);
         self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, while_stmt.span);
 
@@ -391,6 +402,11 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
     fn code_len(&self) -> isize {
         let block = &self.blocks[self.current_block];
         block.code.len() as isize
+    }
+
+    fn current_stack_size(&self) -> usize {
+        let block = &self.blocks[self.current_block];
+        block.stack_sizes.last().copied().unwrap_or(0)
     }
 
     fn change_instr(&mut self, index: usize, instr: Instr) {

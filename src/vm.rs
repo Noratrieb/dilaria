@@ -63,9 +63,8 @@ impl<'bc> Vm<'bc, '_> {
                 Some(&instr) => self.dispatch_instr(instr)?,
                 None => return Ok(()),
             }
+            debug_assert_eq!(self.current.stack_sizes[self.pc], self.stack.len());
             self.pc += 1;
-            // debug stack size assertion
-            // todo!()
         }
     }
 
@@ -163,6 +162,12 @@ impl<'bc> Vm<'bc, '_> {
                 }
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
+            Instr::ShrinkStack(size) => {
+                assert!(self.stack.len() > size);
+                let new_len = self.stack.len() - size;
+                // SAFETY: We only ever shrink the vec, and we don't overflow. Value is copy so no leaks as a bonus
+                unsafe { self.stack.set_len(new_len) }
+            }
         }
 
         Ok(())
