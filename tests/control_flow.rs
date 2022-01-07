@@ -140,3 +140,74 @@ while i < 100 {
 }
 "#
 );
+
+run_test!(
+    break_out_loop,
+    r#"
+print "Start";
+
+loop {
+    break;
+    print "WRONG";
+}  
+
+print "Good end";
+"#
+);
+
+run_test!(
+    break_out_while,
+    r#"
+print "Start";
+
+while true {
+    break;
+    print "WRONG";
+}  
+
+print "Good end";
+"#
+);
+
+run_test!(
+    fizzbuzz_with_loop,
+    r#"
+let i = 1;
+
+loop {
+    if i % 15 == 0 {
+        print "FizzBuzz";
+    } else if i % 5 == 0 {
+        print "Buzz";
+    } else if i % 3 == 0 {
+        print "Fizz";
+    } else {
+        print i;
+    }
+    i = i + 1;
+    
+    if i >= 100 {
+        break;
+    }
+}
+"#
+);
+
+run_test!(
+    nested_loop_break,
+    r#"
+print "Start";
+loop {
+    print "Start inner";
+    loop {
+        print "inside inner";
+        break;
+        print "WRONG";
+    }
+    print "Outside inner";
+    break;
+    print "WRONG";
+}
+print "End";
+"#
+);

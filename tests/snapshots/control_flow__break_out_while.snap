@@ -1,0 +1,7 @@
+---
+source: tests/control_flow.rs
+assertion_line: 158
+expression: output
+
+---
+"Start\nGood end\n"

@@ -56,6 +56,11 @@ struct Compiler<'bc, 'gc> {
     /// the current local variables that are in scope, only needed for compiling
     env: Rc<RefCell<Env>>,
     rt: &'gc mut RtAlloc,
+
+    /// How nested the current loop is, required for break offsets
+    loop_nesting: usize,
+    /// All break instructions currently in need of an offset. K=loop_nesting, V=break_indices
+    breaks: HashMap<usize, std::vec::Vec<usize>>,
 }
 
 pub fn compile<'ast, 'bc, 'gc>(
@@ -69,6 +74,8 @@ pub fn compile<'ast, 'bc, 'gc>(
         bump: bytecode_bump,
         env: Rc::new(RefCell::new(Env::default())),
         rt,
+        loop_nesting: 0,
+        breaks: HashMap::default(),
     };
 
     compiler.compile(ast)?;
@@ -200,11 +207,16 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
           */
 
         let first_stmt_idx = self.code_len();
+
+        self.loop_nesting += 1;
+
         self.compile_block(ast_block)?;
 
         let jmp_offset = self.back_jmp_offset(first_stmt_idx);
 
         self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, span);
+
+        self.end_loop();
 
         Ok(())
     }
@@ -219,6 +231,9 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
           */
 
         let cond_index = self.code_len();
+
+        self.loop_nesting += 1;
+
         self.compile_expr(&while_stmt.cond)?;
 
         let jmp_false_idx =
@@ -232,11 +247,18 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         let jmp_offset = self.forward_jmp_offset(jmp_false_idx as isize);
         self.change_instr(jmp_false_idx, Instr::JmpFalse(jmp_offset));
 
+        self.end_loop();
+
         Ok(())
     }
 
-    fn compile_break(&mut self, _: Span) -> CResult {
-        todo!()
+    fn compile_break(&mut self, span: Span) -> CResult {
+        let break_idx = self.push_instr(Instr::Jmp(0), StackChange::None, span);
+        self.breaks
+            .entry(self.loop_nesting)
+            .or_default()
+            .push(break_idx);
+        Ok(())
     }
 
     fn compile_return(&mut self, _: &Option<Expr>, _: Span) -> CResult {
@@ -335,6 +357,17 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
 
     fn compile_expr_call(&mut self, _: &Call) -> CResult {
         todo!()
+    }
+
+    fn end_loop(&mut self) {
+        let breaks = self.breaks.remove(&self.loop_nesting);
+        if let Some(breaks) = breaks {
+            for brk in breaks {
+                let offset = self.forward_jmp_offset(brk as isize);
+                self.change_instr(brk, Instr::Jmp(offset));
+            }
+        }
+        self.loop_nesting -= 1;
     }
 
     fn current_stack_top(&self) -> usize {

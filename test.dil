@@ -1,7 +1,5 @@
-let i = 0;
-
-while i < 100000 {
-    i = i + 1;
+loop {
+break;
 }
 
-print "done";
+print "hi";

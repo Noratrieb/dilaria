@@ -65,7 +65,7 @@ impl<'bc> Vm<'bc, '_> {
             }
             self.pc += 1;
             // debug stack size assertion
-            todo!()
+            // todo!()
         }
     }
 
