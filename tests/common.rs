@@ -15,6 +15,7 @@ pub fn _run_test(code: &str) -> String {
     let mut stdout = Vec::<u8>::new();
     let mut cfg = dilaria::Config {
         debug: false,
+        step: false,
         stdout: &mut stdout,
     };
 

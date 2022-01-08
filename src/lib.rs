@@ -33,10 +33,15 @@ type HashSet<T> = rustc_hash::FxHashSet<T>;
 
 pub struct Config<'io> {
     pub debug: bool,
+    pub step: bool,
     pub stdout: &'io mut dyn Write,
 }
 
 pub fn run_program(program: &str, cfg: &mut Config) {
+    if cfg.debug {
+        eprintln!("Config: debug: {}, step: {}", cfg.debug, cfg.step);
+    }
+
     let ast_alloc = Bump::new();
 
     // SAFETY: I will try to 🥺
@@ -73,7 +78,7 @@ fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Con
                 }
             }
 
-            let result = vm::execute(&code, runtime, cfg.stdout);
+            let result = vm::execute(code, runtime, cfg);
             if let Err(result) = result {
                 eprintln!("error: {}", result);
             }

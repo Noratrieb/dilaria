@@ -1,7 +1,8 @@
 use crate::bytecode::{FnBlock, Instr};
 use crate::gc::{Object, RtAlloc, Symbol};
+use crate::Config;
 use std::fmt::{Debug, Display, Formatter};
-use std::io::Write;
+use std::io::{Read, Write};
 
 type VmError = &'static str;
 type VmResult = Result<(), VmError>;
@@ -9,7 +10,7 @@ type VmResult = Result<(), VmError>;
 pub fn execute<'bc>(
     bytecode: &'bc [FnBlock<'bc>],
     alloc: RtAlloc,
-    stdout: &mut dyn Write,
+    cfg: &mut Config,
 ) -> Result<(), VmError> {
     let mut vm = Vm {
         _blocks: bytecode,
@@ -17,7 +18,8 @@ pub fn execute<'bc>(
         pc: 0,
         stack: Vec::with_capacity(1024 << 5),
         _alloc: alloc,
-        stdout,
+        stdout: cfg.stdout,
+        step: cfg.step,
     };
 
     vm.execute_function()
@@ -48,9 +50,11 @@ struct Vm<'bc, 'io> {
     _blocks: &'bc [FnBlock<'bc>],
     current: &'bc FnBlock<'bc>,
     _alloc: RtAlloc,
+    /// Index of the instruction currently being executed
     pc: usize,
     stack: Vec<Value>,
     stdout: &'io mut dyn Write,
+    step: bool,
 }
 
 impl<'bc> Vm<'bc, '_> {
@@ -69,11 +73,15 @@ impl<'bc> Vm<'bc, '_> {
     }
 
     fn dispatch_instr(&mut self, instr: Instr) -> VmResult {
+        if self.step {
+            self.step_debug();
+        }
+
         match instr {
             Instr::Nop => {}
             Instr::Store(index) => {
                 let val = self.stack.pop().unwrap();
-                self.stack.insert(index, val);
+                self.stack[index] = val;
             }
             Instr::Load(index) => self.stack.push(self.stack[index]),
             Instr::PushVal(value) => self.stack.push(value),
@@ -163,7 +171,7 @@ impl<'bc> Vm<'bc, '_> {
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
             Instr::ShrinkStack(size) => {
-                assert!(self.stack.len() > size);
+                assert!(self.stack.len() >= size);
                 let new_len = self.stack.len() - size;
                 // SAFETY: We only ever shrink the vec, and we don't overflow. Value is copy so no leaks as a bonus
                 unsafe { self.stack.set_len(new_len) }
@@ -187,6 +195,22 @@ impl<'bc> Vm<'bc, '_> {
 
     fn type_error(&self) -> VmError {
         "bad type"
+    }
+
+    fn step_debug(&self) {
+        let current_instr = &self.current.code[self.pc];
+        let curr_stack_size = self.stack.len();
+        let expected_stack_size = &self.current.stack_sizes[self.pc];
+
+        eprintln!(
+            "Current Instruction: {:?}
+Current Stack size: {}
+Expected Stack size after instruction: {}",
+            current_instr, curr_stack_size, expected_stack_size
+        );
+
+        let mut buf = [0; 64];
+        let _ = std::io::stdin().read(&mut buf);
     }
 }
 

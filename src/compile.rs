@@ -213,11 +213,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
 
         self.compile_block(ast_block)?;
 
-        self.push_instr(
-            Instr::ShrinkStack(self.current_stack_size() - pre_loop_stack_size),
-            StackChange::None,
-            span,
-        );
+        self.shrink_stack(pre_loop_stack_size, span);
 
         let jmp_offset = self.back_jmp_offset(first_stmt_idx);
         self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, span);
@@ -247,11 +243,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
 
         self.compile_block(&while_stmt.body)?;
 
-        self.push_instr(
-            Instr::ShrinkStack(self.current_stack_size() - pre_loop_stack_size),
-            StackChange::None,
-            while_stmt.span,
-        );
+        self.shrink_stack(pre_loop_stack_size, while_stmt.span);
         let jmp_offset = self.back_jmp_offset(cond_index);
         self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, while_stmt.span);
 
@@ -370,6 +362,20 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         todo!()
     }
 
+    fn shrink_stack(&mut self, jmp_target_stack_size: usize, span: Span) {
+        let amount = self.current_stack_size() - jmp_target_stack_size;
+
+        if amount == 0 {
+            return;
+        }
+
+        self.push_instr(
+            Instr::ShrinkStack(amount),
+            StackChange::ShrinkN(amount),
+            span,
+        );
+    }
+
     fn end_loop(&mut self) {
         let breaks = self.breaks.remove(&self.loop_nesting);
         if let Some(breaks) = breaks {
@@ -418,7 +424,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
     fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) -> usize {
         let block = &mut self.blocks[self.current_block];
         let stack_top = block.stack_sizes.last().copied().unwrap_or(0);
-        let new_stack_top = stack_top as isize + stack_change as isize;
+        let new_stack_top = stack_top as isize + stack_change.as_isize();
         assert!(new_stack_top >= 0, "instruction popped stack below 0");
         let new_stack_top = new_stack_top as usize;
 
@@ -434,9 +440,20 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
 }
 
 #[derive(Debug, Copy, Clone)]
-#[repr(i8)]
 enum StackChange {
-    Shrink = -1,
-    None = 0,
-    Grow = 1,
+    Shrink,
+    None,
+    Grow,
+    ShrinkN(usize),
+}
+
+impl StackChange {
+    fn as_isize(&self) -> isize {
+        match self {
+            StackChange::Shrink => -1,
+            StackChange::None => 0,
+            StackChange::Grow => 1,
+            StackChange::ShrinkN(n) => -(*n as isize),
+        }
+    }
 }

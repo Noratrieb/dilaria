@@ -9,13 +9,14 @@ fn main() {
 
         let mut cfg = Config {
             debug: false,
+            step: false,
             stdout: &mut stdout,
         };
 
         for arg in args {
             match &*arg {
                 "--debug" => cfg.debug = true,
-                "--shut-up-clippy" => println!("yeah shut up pls"), // please do
+                "--step" => cfg.step = true,
                 _ => {}
             }
         }

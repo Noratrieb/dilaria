@@ -276,22 +276,28 @@ impl<'code, 'gc> Iterator for Lexer<'code, 'gc> {
                 }
                 char => {
                     if char.is_ascii_digit() {
+                        let mut num_buffer = String::from(char); // we need to ignore `_`
                         let mut had_dot = false;
                         let end = loop {
                             // peek here because the character signaling the end should not be consumed
-                            match self.code.peek() {
+                            match self.code.peek().copied() {
                                 Some((_, '.')) if !had_dot => {
                                     let _ = self.code.next();
+                                    num_buffer.push('.');
                                     had_dot = true;
+                                }
+                                Some((_, '_')) => {
+                                    let _ = self.code.next();
                                 }
                                 Some((_, next_char)) if next_char.is_ascii_digit() => {
                                     let _ = self.code.next();
+                                    num_buffer.push(next_char);
                                 }
-                                Some((end, _)) => break *end,
+                                Some((end, _)) => break end,
                                 None => break self.src.len(), // reached EOF, so parse this number
                             }
                         };
-                        let number_str = &self.src[start..end];
+                        let number_str = &num_buffer;
                         let span = Span::start_end(start, end);
                         let number = number_str.parse::<f64>();
                         break match number {
@@ -447,6 +453,16 @@ pls :) o(*￣▽￣*)ブ
     #[test]
     fn countdown() {
         lex_test("3 . . 2 . . 1 . . 0");
+    }
+
+    #[test]
+    fn underscore_number() {
+        lex_test("1_000_000");
+    }
+
+    #[test]
+    fn trailing_underscore_number() {
+        lex_test("1_00_");
     }
 
     #[test]

@@ -25,7 +25,7 @@ use debug2::Formatter;
 pub struct FnBlock<'bc> {
     /// The bytecode of the function
     pub code: Vec<'bc, Instr>,
-    /// The sizes of the stack required by the function at each instruction. This is only used
+    /// The sizes of the stack required by the function after the instruction at the same index. This is only used
     /// during compilation to calculate local variable offsets.
     pub stack_sizes: Vec<'bc, usize>,
     /// The corresponding source code location of each instruction. This is debuginfo and only
