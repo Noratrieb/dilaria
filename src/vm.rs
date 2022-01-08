@@ -28,12 +28,20 @@ pub fn execute<'bc>(
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "pretty", derive(debug2::Debug))]
 pub enum Value {
+    /// `null`
     Null,
+    /// A boolean value
     Bool(bool),
+    /// A floating point number
     Num(f64),
+    /// An interned string
     String(Symbol),
+    /// An array of values
     Array,
+    /// A map from string to value
     Object(Object),
+    /// A value that is stored by the vm for bookkeeping and should never be accessed for anythign else
+    Native(usize),
 }
 
 const _: () = _check_val_size();
@@ -170,6 +178,7 @@ impl<'bc> Vm<'bc, '_> {
                 }
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
+            Instr::Call(_) => todo!(),
             Instr::ShrinkStack(size) => {
                 assert!(self.stack.len() >= size);
                 let new_len = self.stack.len() - size;
@@ -223,6 +232,7 @@ impl Display for Value {
             Value::String(str) => f.write_str(str.as_str()),
             Value::Array => todo!(),
             Value::Object(_) => todo!(),
+            Value::Native(_) => panic!("Called display on native value!"),
         }
     }
 }
