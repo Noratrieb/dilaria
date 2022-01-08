@@ -20,10 +20,14 @@
 //! to the length before the call. This means the interpreter has to do some bookkeeping, but it has
 //! to do that anyways.
 //!
+//! It is the compilers job to generate the correct loading of the arguments and assure that the aritiy
+//! is correct before the `Call` instruction.
+//!
+//!
 //! # ABI
 //! Function arguments are passed on the stack and can be loaded just like local variables. They belong
 //! to the stack frame of the new function and are cleaned up after returning, leaving the return value where
-//! the stack frame was.
+//! the stack frame was
 //!
 //! When a call happens, the current stack offset is pushed onto the stack as a `Value::Native` and
 //! the element before it is stored as the new offset.
@@ -37,14 +41,14 @@
 //! returned value.
 //!
 //! ```text
-//!  old stack offset ╮     ╭ Parameters ╮       ╭ local
-//!                   v     v            v       v
-//! ───────┬────────────┬───────────┬──────────┬─────────╮
-//! Num(6) │ Native(20) │   Num(5)  │  Num(6)  │  Num(5) │
-//! ───────┴────────────┴───────────┴──────────┴─────────╯
-//!        ╰────────────────────────────────────────────────── current stack frame
-//!  ^                  ^
-//!  ╰─ old local       ╰╮      
+//!  old stack offset ╮     old *mut FnBlock ╮     ╭ Parameters ╮       ╭ local
+//!                   v                      v     v            v       v
+//! ───────┬─────────────┬────────────┬──────────┬─────────┬──────────┬─────────╮
+//! Num(6) │ NativeU(20) │ NativeU(4) │  Ptr     │ Num(5)  │  Num(6)  │  Num(5) │
+//! ───────┴─────────────┴────────────┴──────────┴─────────┴──────────┴─────────╯
+//!  ^     ╰──────────────────────────────────────────────────────────────────── current stack frame
+//!  │                  ^      ^
+//!  ╰─ old local       ╰╮     ╰─ old PC
 //!                      │
 //!                      │
 //! Vm                   │

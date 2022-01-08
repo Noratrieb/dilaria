@@ -152,7 +152,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_fn_decl(&mut self, _: &FnDecl) -> CResult {
+    fn compile_fn_decl(&mut self, decl: &FnDecl) -> CResult {
         todo!()
     }
 
@@ -415,13 +415,13 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         block.stack_sizes.last().copied().unwrap_or(0)
     }
 
-    fn change_instr(&mut self, index: usize, instr: Instr) {
+    fn change_instr(&mut self, index: usize, instr: Instr<'bc>) {
         let block = &mut self.blocks[self.current_block];
         block.code[index] = instr;
     }
 
     /// Pushes an instruction and returns the index of the new instruction
-    fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) -> usize {
+    fn push_instr(&mut self, instr: Instr<'bc>, stack_change: StackChange, span: Span) -> usize {
         let block = &mut self.blocks[self.current_block];
         let stack_top = block.stack_sizes.last().copied().unwrap_or(0);
         let new_stack_top = stack_top as isize + stack_change.as_isize();

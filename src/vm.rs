@@ -3,6 +3,7 @@ use crate::gc::{Object, RtAlloc, Symbol};
 use crate::Config;
 use std::fmt::{Debug, Display, Formatter};
 use std::io::{Read, Write};
+use std::ptr::NonNull;
 
 type VmError = &'static str;
 type VmResult = Result<(), VmError>;
@@ -13,7 +14,6 @@ pub fn execute<'bc>(
     cfg: &mut Config,
 ) -> Result<(), VmError> {
     let mut vm = Vm {
-        _blocks: bytecode,
         current: bytecode.first().ok_or("no bytecode found")?,
         pc: 0,
         stack: Vec::with_capacity(1024 << 5),
@@ -40,9 +40,14 @@ pub enum Value {
     Array,
     /// A map from string to value
     Object(Object),
-    /// A value that is stored by the vm for bookkeeping and should never be accessed for anythign else
-    Native(usize),
+    /// A value that is stored by the vm for bookkeeping and should never be accessed for anything else
+    NativeU(usize),
+    /// A function
+    Fn(Ptr),
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct Ptr(NonNull<()>);
 
 const _: () = _check_val_size();
 const fn _check_val_size() {
@@ -55,14 +60,16 @@ const TRUE: Value = Value::Bool(true);
 const FALSE: Value = Value::Bool(false);
 
 struct Vm<'bc, 'io> {
-    _blocks: &'bc [FnBlock<'bc>],
-    current: &'bc FnBlock<'bc>,
+    // -- global
     _alloc: RtAlloc,
-    /// Index of the instruction currently being executed
-    pc: usize,
     stack: Vec<Value>,
     stdout: &'io mut dyn Write,
     step: bool,
+
+    // -- local to the current function
+    current: &'bc FnBlock<'bc>,
+    /// Index of the instruction currently being executed
+    pc: usize,
 }
 
 impl<'bc> Vm<'bc, '_> {
@@ -179,6 +186,7 @@ impl<'bc> Vm<'bc, '_> {
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
             Instr::Call(_) => todo!(),
+            Instr::Return => todo!(),
             Instr::ShrinkStack(size) => {
                 assert!(self.stack.len() >= size);
                 let new_len = self.stack.len() - size;
@@ -232,7 +240,15 @@ impl Display for Value {
             Value::String(str) => f.write_str(str.as_str()),
             Value::Array => todo!(),
             Value::Object(_) => todo!(),
-            Value::Native(_) => panic!("Called display on native value!"),
+            Value::NativeU(_) => panic!("Called display on native value!"),
+            Value::Fn(_) => f.write_str("[function]"),
         }
+    }
+}
+
+#[cfg(feature = "pretty")]
+impl debug2::Debug for Ptr {
+    fn fmt(&self, f: &mut debug2::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Ptr").finish()
     }
 }
