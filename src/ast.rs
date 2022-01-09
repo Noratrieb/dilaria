@@ -7,7 +7,7 @@ use crate::errors::Span;
 use crate::gc::Symbol;
 use bumpalo::collections::Vec;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Ident {
     pub sym: Symbol,
     pub span: Span,

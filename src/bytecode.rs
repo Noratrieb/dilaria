@@ -20,7 +20,7 @@
 //! to the length before the call. This means the interpreter has to do some bookkeeping, but it has
 //! to do that anyways.
 //!
-//! It is the compilers job to generate the correct loading of the arguments and assure that the aritiy
+//! It is the compilers job to generate the correct loading of the arguments and assure that the arity
 //! is correct before the `Call` instruction.
 //!
 //!
@@ -31,7 +31,7 @@
 //!
 //! When a call happens, the current stack offset is pushed onto the stack as a `Value::Native` and
 //! the element before it is stored as the new offset.
-//! Then all parameters are pushed onto the stack, from last to first.
+//! Then all parameters are pushed onto the stack, from first to last
 //! Afterwards, execution of the code is started. A function always has to return, and compiler
 //! inserts `return null` at the end of every function implicitly.
 //!
@@ -41,12 +41,12 @@
 //! returned value.
 //!
 //! ```text
-//!                 old stack offset─╮
-//!         ╭─Parameters─╮           │       old FnBlock index─╮     local─╮
-//!         v            v           v                         v           v  
-//! ───────┬─────────┬──────────┬─────────────┬────────────┬────────────┬─────────╮
-//! Num(6) │ Num(5)  │  Num(6)  │ NativeU(20) │ NativeU(4) │ NativeU(1) │  Num(5) │
-//! ───────┴─────────┴──────────┴─────────────┴────────────┴────────────┴─────────╯
+//!                   old stack offset─╮
+//!         ╭─Parameters─╮             │           old Function─╮     local─╮
+//!         v            v             v                        v           v  
+//! ───────┬─────────┬──────────┬─────────────┬────────────┬──────────┬─────────╮
+//! Num(6) │ Num(5)  │  Num(6)  │ NativeU(20) │ NativeU(4) │ Function │  Num(5) │
+//! ───────┴─────────┴──────────┴─────────────┴────────────┴──────────┴─────────╯
 //!  ^     ╰────────────────────────────────────────────────────────────────── current stack frame
 //!  │                                             ^
 //!  ╰─ old local                                  ╰─old PC
@@ -67,7 +67,7 @@ use debug2::Formatter;
 #[derive(Debug)]
 pub struct FnBlock<'bc> {
     /// The bytecode of the function
-    pub code: Vec<'bc, Instr<'bc>>,
+    pub code: Vec<'bc, Instr>,
     /// The sizes of the stack required by the function after the instruction at the same index. This is only used
     /// during compilation to calculate local variable offsets.
     pub stack_sizes: Vec<'bc, usize>,
@@ -90,10 +90,12 @@ impl debug2::Debug for FnBlock<'_> {
     }
 }
 
+pub type Function = usize;
+
 /// A bytecode instruction. For more details on the structure of the bytecode, read the module level docs [`bytecode`](`self`)
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "pretty", derive(debug2::Debug))]
-pub enum Instr<'bc> {
+pub enum Instr {
     /// An operation that does nothing.
     Nop,
 
@@ -129,7 +131,8 @@ pub enum Instr<'bc> {
     /// Same as `JmpFalse`, but unconditional
     Jmp(isize),
 
-    Call(&'bc FnBlock<'bc>),
+    /// Calls the function at the top of the stack, after the parameters
+    Call,
 
     Return,
 

@@ -1,5 +1,14 @@
-let i = 0;
+let x = 5;
 
-while i < 1000 {
-    i = i + 1;
-}
+x(5, 6, 7);
+
+fn hi(a, b,c,ds,gds,fdsa,fds,fd,sf,ds,fd,fd,fd,d,fd,fd,f,df,df,d,fd
+,fd,f,fd,fd,fd,fd,fd,f,a, b,c,ds,gds,fdsa,fds,fd,sf,ds,fd,fd,fd,d,fd,
+fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,fd,f,a, b,c,ds,gds,fdsa,fds,fd,sf,ds,
+fd,fd,fd,d,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,fd,f,a, b,c,ds,gds,fdsa,
+fds,fd,sf,ds,fd,fd,fd,d,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,fd,f,a, b,c,ds,
+gds,fdsa,fds,fd,sf,ds,fd,fd,fd,d,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,fd,f,df,
+df,d,fd,fd,f,fd,fd,fd,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,f,df,df,d,fd,fd,f,
+fd,fd,fd,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,
+fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,fd,f,df,df,d,
+fd,fd,f,fd,fd,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd,fd,fd,f,df,df,d,fd,fd,f,fd,fd,fd) {}

@@ -1,4 +1,4 @@
-use crate::bytecode::{FnBlock, Instr};
+use crate::bytecode::{FnBlock, Function, Instr};
 use crate::gc::{Object, RtAlloc, Symbol};
 use crate::Config;
 use std::fmt::{Debug, Display, Formatter};
@@ -16,6 +16,8 @@ pub fn execute<'bc>(
     let mut vm = Vm {
         blocks: bytecode,
         current: bytecode.first().ok_or("no bytecode found")?,
+        current_block_index: 0,
+        stack_offset: 0,
         pc: 0,
         stack: Vec::with_capacity(1024 << 5),
         _alloc: alloc,
@@ -41,19 +43,17 @@ pub enum Value {
     Array,
     /// A map from string to value
     Object(Object),
+    /// A first-class function object
+    Function(Function),
     /// A value that is stored by the vm for bookkeeping and should never be accessed for anything else
     NativeU(usize),
 }
 
+#[cfg(target_pointer_width = "64")]
+const _: [(); 24] = [(); std::mem::size_of::<Value>()];
+
 #[derive(Debug, Clone, Copy)]
 pub struct Ptr(NonNull<()>);
-
-const _: () = _check_val_size();
-const fn _check_val_size() {
-    if std::mem::size_of::<Value>() != 24 {
-        panic!("value got bigger!");
-    }
-}
 
 const TRUE: Value = Value::Bool(true);
 const FALSE: Value = Value::Bool(false);
@@ -67,7 +67,11 @@ struct Vm<'bc, 'io> {
     step: bool,
 
     // -- local to the current function
+    /// The current function
     current: &'bc FnBlock<'bc>,
+    current_block_index: usize,
+    /// The offset of the first parameter of the current function
+    stack_offset: usize,
     /// Index of the instruction currently being executed
     pc: usize,
 }
@@ -96,9 +100,9 @@ impl<'bc> Vm<'bc, '_> {
             Instr::Nop => {}
             Instr::Store(index) => {
                 let val = self.stack.pop().unwrap();
-                self.stack[index] = val;
+                self.stack[self.stack_offset + index] = val;
             }
-            Instr::Load(index) => self.stack.push(self.stack[index]),
+            Instr::Load(index) => self.stack.push(self.stack[self.stack_offset + index]),
             Instr::PushVal(value) => self.stack.push(value),
             Instr::Neg => {
                 let val = self.stack.pop().unwrap();
@@ -185,7 +189,7 @@ impl<'bc> Vm<'bc, '_> {
                 }
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
-            Instr::Call(_) => todo!(),
+            Instr::Call => self.call()?,
             Instr::Return => todo!(),
             Instr::ShrinkStack(size) => {
                 assert!(self.stack.len() >= size);
@@ -207,6 +211,34 @@ impl<'bc> Vm<'bc, '_> {
 
         let result = f(lhs, rhs)?;
         self.stack.push(result);
+        Ok(())
+    }
+
+    fn call(&mut self) -> VmResult {
+        let old_offset = self.stack_offset;
+        let old_idx = self.current_block_index;
+        let function = self.stack.pop().unwrap();
+        if let Value::Function(func) = function {
+            let fn_block = &self.blocks[func];
+
+            let new_stack_frame_start = self.stack.len() - fn_block.arity as usize;
+            self.stack_offset = new_stack_frame_start;
+
+            self.stack.push(Value::NativeU(old_offset));
+            self.stack.push(Value::NativeU(self.pc));
+            self.stack.push(Value::Function(old_idx));
+
+            self.current_block_index = func;
+            self.current = fn_block;
+
+            self.pc = 0;
+
+            // TODO don't be recursive like this
+            self.execute_function()?;
+        } else {
+            return Err("not a function");
+        }
+
         Ok(())
     }
 
@@ -240,6 +272,7 @@ impl Display for Value {
             Value::String(str) => f.write_str(str.as_str()),
             Value::Array => todo!(),
             Value::Object(_) => todo!(),
+            Value::Function(_) => f.write_str("[function]"),
             Value::NativeU(_) => panic!("Called display on native value!"),
         }
     }

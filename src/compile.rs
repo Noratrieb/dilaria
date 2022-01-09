@@ -1,8 +1,8 @@
 //! The compiler that compiles the AST down to bytecode
 
 use crate::ast::{
-    Assignment, BinaryOp, BinaryOpKind, Block, Call, Declaration, ElsePart, Expr, FnDecl, Ident,
-    IfStmt, Literal, Program, Stmt, UnaryOp, WhileStmt,
+    Assignment, BinaryOp, BinaryOpKind, Block, Call, CallKind, Declaration, ElsePart, Expr, FnDecl,
+    Ident, IfStmt, Literal, Program, Stmt, UnaryOp, WhileStmt,
 };
 use crate::bytecode::{FnBlock, Instr};
 use crate::errors::{CompilerError, Span};
@@ -11,6 +11,7 @@ use crate::vm::Value;
 use crate::{HashMap, RtAlloc};
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
+use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -152,8 +153,25 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_fn_decl(&mut self, _: &FnDecl) -> CResult {
-        todo!()
+    fn compile_fn_decl(&mut self, decl: &FnDecl) -> CResult {
+        let block = FnBlock {
+            code: Vec::new_in(self.bump),
+            stack_sizes: Vec::new_in(self.bump),
+            spans: Vec::new_in(self.bump),
+            arity: decl.params.len().try_into().map_err(|_| {
+                CompilerError::new(
+                    decl.params[u8::MAX as usize]
+                        .span
+                        .extend(decl.params.last().unwrap().span),
+                    "Too many parameters".to_string(),
+                )
+            })?,
+        };
+
+        self.blocks.push(block);
+        self.current_block = self.blocks.len() - 1;
+
+        Ok(())
     }
 
     fn compile_if(&mut self, if_stmt: &IfStmt) -> CResult {
@@ -214,7 +232,6 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         self.compile_block(ast_block)?;
 
         self.shrink_stack(pre_loop_stack_size, span);
-
         let jmp_offset = self.back_jmp_offset(first_stmt_idx);
         self.push_instr(Instr::Jmp(jmp_offset), StackChange::None, span);
 
@@ -358,8 +375,27 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_expr_call(&mut self, _: &Call) -> CResult {
-        todo!()
+    fn compile_expr_call(&mut self, call: &Call) -> CResult {
+        let params = match &call.kind {
+            CallKind::Fn(params) => params,
+            _ => todo!(),
+        };
+
+        let name = match &call.callee {
+            Expr::Ident(ident) => ident,
+            _ => todo!(),
+        };
+
+        let offset = self.env.borrow().lookup_local(name)?;
+
+        for param in params {
+            self.compile_expr(param)?;
+        }
+
+        self.push_instr(Instr::Load(offset), StackChange::Grow, call.span);
+        self.push_instr(Instr::Call, StackChange::Grow, call.span);
+
+        Ok(())
     }
 
     fn shrink_stack(&mut self, jmp_target_stack_size: usize, span: Span) {
@@ -415,13 +451,13 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         block.stack_sizes.last().copied().unwrap_or(0)
     }
 
-    fn change_instr(&mut self, index: usize, instr: Instr<'bc>) {
+    fn change_instr(&mut self, index: usize, instr: Instr) {
         let block = &mut self.blocks[self.current_block];
         block.code[index] = instr;
     }
 
     /// Pushes an instruction and returns the index of the new instruction
-    fn push_instr(&mut self, instr: Instr<'bc>, stack_change: StackChange, span: Span) -> usize {
+    fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) -> usize {
         let block = &mut self.blocks[self.current_block];
         let stack_top = block.stack_sizes.last().copied().unwrap_or(0);
         let new_stack_top = stack_top as isize + stack_change.as_isize();
