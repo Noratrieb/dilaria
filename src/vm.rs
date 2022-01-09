@@ -14,6 +14,7 @@ pub fn execute<'bc>(
     cfg: &mut Config,
 ) -> Result<(), VmError> {
     let mut vm = Vm {
+        blocks: bytecode,
         current: bytecode.first().ok_or("no bytecode found")?,
         pc: 0,
         stack: Vec::with_capacity(1024 << 5),
@@ -42,8 +43,6 @@ pub enum Value {
     Object(Object),
     /// A value that is stored by the vm for bookkeeping and should never be accessed for anything else
     NativeU(usize),
-    /// A function
-    Fn(Ptr),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -61,6 +60,7 @@ const FALSE: Value = Value::Bool(false);
 
 struct Vm<'bc, 'io> {
     // -- global
+    blocks: &'bc [FnBlock<'bc>],
     _alloc: RtAlloc,
     stack: Vec<Value>,
     stdout: &'io mut dyn Write,
@@ -241,7 +241,6 @@ impl Display for Value {
             Value::Array => todo!(),
             Value::Object(_) => todo!(),
             Value::NativeU(_) => panic!("Called display on native value!"),
-            Value::Fn(_) => f.write_str("[function]"),
         }
     }
 }

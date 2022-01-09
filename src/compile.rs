@@ -152,7 +152,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_fn_decl(&mut self, decl: &FnDecl) -> CResult {
+    fn compile_fn_decl(&mut self, _: &FnDecl) -> CResult {
         todo!()
     }
 
