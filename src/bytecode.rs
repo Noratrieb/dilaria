@@ -78,7 +78,7 @@ pub struct FnBlock<'bc> {
     pub arity: u8,
 }
 
-#[cfg(feature = "pretty")]
+#[cfg(feature = "_debug")]
 impl debug2::Debug for FnBlock<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FnBlock")
@@ -94,7 +94,7 @@ pub type Function = usize;
 
 /// A bytecode instruction. For more details on the structure of the bytecode, read the module level docs [`bytecode`](`self`)
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "pretty", derive(debug2::Debug))]
+#[cfg_attr(feature = "_debug", derive(debug2::Debug))]
 pub enum Instr {
     /// An operation that does nothing.
     Nop,

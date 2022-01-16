@@ -29,7 +29,7 @@ pub fn execute<'bc>(
 }
 
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "pretty", derive(debug2::Debug))]
+#[cfg_attr(feature = "_debug", derive(debug2::Debug))]
 pub enum Value {
     /// `null`
     Null,
@@ -278,7 +278,7 @@ impl Display for Value {
     }
 }
 
-#[cfg(feature = "pretty")]
+#[cfg(feature = "_debug")]
 impl debug2::Debug for Ptr {
     fn fmt(&self, f: &mut debug2::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Ptr").finish()

@@ -68,11 +68,11 @@ fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Con
     match bytecode {
         Ok(code) => {
             if cfg.debug {
-                #[cfg(feature = "pretty")]
+                #[cfg(feature = "_debug")]
                 {
                     println!("Bytecode:\n{}\n", debug2::pprint(code));
                 }
-                #[cfg(not(feature = "pretty"))]
+                #[cfg(not(feature = "_debug"))]
                 {
                     println!("Bytecode:\n{:#?}\n", code);
                 }

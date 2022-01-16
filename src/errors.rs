@@ -13,7 +13,7 @@ pub use span::Span;
 mod span {
 
     #[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
-    #[cfg_attr(feature = "pretty", derive(debug2::Debug))]
+    #[cfg_attr(feature = "_debug", derive(debug2::Debug))]
     pub struct Span {
         pub start: usize,
         pub end: usize,

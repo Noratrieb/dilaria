@@ -13,8 +13,7 @@ pub struct Ident {
     pub span: Span,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Program<'ast>(pub Vec<'ast, Stmt<'ast>>);
+pub type Program<'ast> = Block<'ast>;
 
 #[derive(Debug, PartialEq)]
 pub struct Block<'ast> {

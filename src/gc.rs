@@ -30,14 +30,14 @@ impl<T: ?Sized> Deref for Gc<T> {
     }
 }
 
-#[cfg(feature = "pretty")]
+#[cfg(feature = "_debug")]
 impl<T: debug2::Debug> debug2::Debug for Gc<T> {
     fn fmt(&self, f: &mut debug2::Formatter<'_>) -> std::fmt::Result {
         T::fmt(&*self, f)
     }
 }
 
-#[cfg(feature = "pretty")]
+#[cfg(feature = "_debug")]
 impl debug2::Debug for Gc<str> {
     fn fmt(&self, f: &mut debug2::Formatter<'_>) -> std::fmt::Result {
         let str = self.deref();
@@ -61,7 +61,7 @@ impl<T: ?Sized> Copy for Gc<T> {}
 
 /// An reference to an interned String. Hashing and Equality are O(1) and just look at the pointer address
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "pretty", derive(debug2::Debug))]
+#[cfg_attr(feature = "_debug", derive(debug2::Debug))]
 pub struct Symbol {
     gc: Gc<str>,
 }
@@ -74,20 +74,20 @@ type ObjectMap = HashMap<Symbol, Value>;
 /// ```
 /// This is inside the local x now.
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "pretty", derive(debug2::Debug))]
+#[cfg_attr(feature = "_debug", derive(debug2::Debug))]
 pub struct Object {
     gc: Gc<HeapObject>,
 }
 
 #[derive(Debug)]
 #[repr(C)]
-#[cfg_attr(feature = "pretty", derive(debug2::Debug))]
+#[cfg_attr(feature = "_debug", derive(debug2::Debug))]
 struct HeapObject {
     kind: HeapObjectKind,
 }
 
 #[derive(Debug)]
-#[cfg_attr(feature = "pretty", derive(debug2::Debug))]
+#[cfg_attr(feature = "_debug", derive(debug2::Debug))]
 enum HeapObjectKind {
     String(Gc<str>),
     Object(ObjectMap),

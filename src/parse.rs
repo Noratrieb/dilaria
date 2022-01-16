@@ -78,7 +78,10 @@ where
     const MAX_DEPTH: usize = 100;
 
     fn program(&mut self) -> ParseResult<Program<'ast>> {
-        Ok(Program(self.statement_list()?))
+        Ok(Block {
+            stmts: self.statement_list()?,
+            span: Span::dummy(),
+        })
     }
 
     fn too_nested_error(&mut self) -> ParseResult<()> {

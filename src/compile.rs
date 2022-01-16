@@ -11,7 +11,6 @@ use crate::vm::Value;
 use crate::{HashMap, RtAlloc};
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -95,11 +94,15 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         self.blocks.push(global_block);
         self.current_block = self.blocks.len() - 1;
 
-        // padding for backwards jumps
-        self.push_instr(Instr::Nop, StackChange::None, Span::dummy());
-
-        self.compile_stmts(&ast.0)?;
+        self.compile_fn(ast)?;
         Ok(())
+    }
+
+    fn compile_fn(&mut self, block: &Block) -> CResult {
+        // padding for backwards jumps
+        self.push_instr(Instr::Nop, StackChange::None, block.span);
+
+        self.compile_stmts(&block.stmts)
     }
 
     fn compile_stmts(&mut self, stmts: &[Stmt]) -> CResult {
@@ -168,8 +171,27 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
             })?,
         };
 
+        let new_block_idx = self.blocks.len();
         self.blocks.push(block);
-        self.current_block = self.blocks.len() - 1;
+        let old_block = self.current_block;
+        self.current_block = new_block_idx;
+
+        self.compile_fn(&decl.body)?;
+
+        self.current_block = old_block;
+
+        self.push_instr(
+            Instr::PushVal(Value::Function(new_block_idx)),
+            StackChange::Grow,
+            decl.span,
+        );
+
+        let stack_pos = self.current_stack_top();
+
+        self.env
+            .borrow_mut()
+            .locals
+            .insert(decl.name.sym, stack_pos);
 
         Ok(())
     }
