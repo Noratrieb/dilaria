@@ -4,7 +4,6 @@ use crate::util;
 use crate::Config;
 use std::fmt::{Debug, Display, Formatter};
 use std::io::{Read, Write};
-use std::ptr::NonNull;
 
 type VmError = Box<&'static str>;
 type VmResult = Result<(), VmError>;
@@ -53,9 +52,6 @@ pub enum Value {
 }
 
 util::assert_size!(Value == 24);
-
-#[derive(Debug, Clone, Copy)]
-pub struct Ptr(NonNull<()>);
 
 const TRUE: Value = Value::Bool(true);
 const FALSE: Value = Value::Bool(false);
@@ -278,12 +274,5 @@ impl Display for Value {
             Value::Function(_) => f.write_str("[function]"),
             Value::NativeU(_) => panic!("Called display on native value!"),
         }
-    }
-}
-
-#[cfg(feature = "_debug")]
-impl debug2::Debug for Ptr {
-    fn fmt(&self, f: &mut debug2::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Ptr").finish()
     }
 }
