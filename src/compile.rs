@@ -16,12 +16,13 @@ use std::rc::Rc;
 
 type CResult<T = ()> = Result<T, CompilerError>;
 
+#[derive(Debug, PartialEq, Eq)]
 enum OuterEnvKind {
     Block,
     Closure,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Env {
     locals: HashMap<Symbol, usize>,
     outer: Option<Rc<RefCell<Env>>>,
@@ -32,7 +33,7 @@ impl Env {
     fn lookup_local(&self, name: &Ident) -> CResult<usize> {
         fn lookup_inner(env: &Env, name: &Ident) -> Option<usize> {
             env.locals.get(&name.sym).copied().or_else(|| {
-                // TODO: closure handling 👀
+                // TODO: closure handling lol 👀
                 if env.outer_kind == OuterEnvKind::Closure {
                     return None;
                 }
@@ -84,7 +85,11 @@ pub fn compile<'ast, 'bc, 'gc>(
         blocks: Vec::new_in(bytecode_bump),
         current_block_idx: 0,
         bump: bytecode_bump,
-        env: Rc::new(RefCell::new(Env::default())),
+        env: Rc::new(RefCell::new(Env {
+            locals: HashMap::default(),
+            outer: None,
+            outer_kind: OuterEnvKind::Block,
+        })),
         rt,
         loop_nesting: 0,
         breaks: HashMap::default(),

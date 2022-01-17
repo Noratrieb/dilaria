@@ -1,4 +1,4 @@
-#![deny(clippy::disallowed_types)]
+#![deny(clippy::disallowed_type)]
 
 mod ast;
 mod bytecode;
@@ -18,14 +18,14 @@ pub use lex::*;
 pub use parse::*;
 
 #[cfg(not(feature = "fxhash"))]
-#[allow(clippy::disallowed_types)]
+#[allow(clippy::disallowed_type)]
 type HashMap<K, V> = std::collections::HashMap<K, V>;
 
 #[cfg(feature = "fxhash")]
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
 #[cfg(not(feature = "fxhash"))]
-#[allow(clippy::disallowed_types)]
+#[allow(clippy::disallowed_type)]
 type HashSet<T> = std::collections::HashSet<T>;
 
 #[cfg(feature = "fxhash")]

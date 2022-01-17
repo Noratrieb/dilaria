@@ -61,7 +61,6 @@
 use crate::errors::Span;
 use crate::vm::Value;
 use bumpalo::collections::Vec;
-use debug2::Formatter;
 
 /// This struct contains all data for a function.
 #[derive(Debug)]
@@ -80,7 +79,7 @@ pub struct FnBlock<'bc> {
 
 #[cfg(feature = "_debug")]
 impl debug2::Debug for FnBlock<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut debug2::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FnBlock")
             .field("code", &self.code.as_slice())
             .field("stack_sizes", &self.stack_sizes.as_slice())

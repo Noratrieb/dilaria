@@ -17,7 +17,7 @@ fxhash = ["rustc-hash"]
 _debug = ["debug2"]
 
 # todo: we don't actually want this as a default feature
-default = ["_debug"]
+default = ["_debug", "fxhash"]
 
 [dev-dependencies]
 insta = "1.9.0"
