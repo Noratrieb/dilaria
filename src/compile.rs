@@ -16,16 +16,27 @@ use std::rc::Rc;
 
 type CResult<T = ()> = Result<T, CompilerError>;
 
+enum OuterEnvKind {
+    Block,
+    Closure,
+}
+
 #[derive(Debug, Default)]
 struct Env {
     locals: HashMap<Symbol, usize>,
     outer: Option<Rc<RefCell<Env>>>,
+    outer_kind: OuterEnvKind,
 }
 
 impl Env {
     fn lookup_local(&self, name: &Ident) -> CResult<usize> {
         fn lookup_inner(env: &Env, name: &Ident) -> Option<usize> {
             env.locals.get(&name.sym).copied().or_else(|| {
+                // TODO: closure handling 👀
+                if env.outer_kind == OuterEnvKind::Closure {
+                    return None;
+                }
+
                 env.outer
                     .as_ref()
                     .and_then(|outer| lookup_inner(&outer.borrow(), name))
@@ -40,10 +51,11 @@ impl Env {
         })
     }
 
-    fn new_inner(outer: Rc<RefCell<Self>>) -> Rc<RefCell<Self>> {
+    fn new_inner(outer: Rc<RefCell<Self>>, outer_kind: OuterEnvKind) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             locals: HashMap::default(),
             outer: Some(outer),
+            outer_kind,
         }))
     }
 }
@@ -51,7 +63,7 @@ impl Env {
 #[derive(Debug)]
 struct Compiler<'bc, 'gc> {
     blocks: Vec<'bc, FnBlock<'bc>>,
-    current_block: usize,
+    current_block_idx: usize,
     bump: &'bc Bump,
     /// the current local variables that are in scope, only needed for compiling
     env: Rc<RefCell<Env>>,
@@ -70,7 +82,7 @@ pub fn compile<'ast, 'bc, 'gc>(
 ) -> Result<&'bc [FnBlock<'bc>], CompilerError> {
     let mut compiler = Compiler {
         blocks: Vec::new_in(bytecode_bump),
-        current_block: 0,
+        current_block_idx: 0,
         bump: bytecode_bump,
         env: Rc::new(RefCell::new(Env::default())),
         rt,
@@ -92,13 +104,13 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
             arity: 0,
         };
         self.blocks.push(global_block);
-        self.current_block = self.blocks.len() - 1;
+        self.current_block_idx = self.blocks.len() - 1;
 
-        self.compile_fn(ast)?;
+        self.compile_fn_body(ast)?;
         Ok(())
     }
 
-    fn compile_fn(&mut self, block: &Block) -> CResult {
+    fn compile_fn_body(&mut self, block: &Block) -> CResult {
         // padding for backwards jumps
         self.push_instr(Instr::Nop, StackChange::None, block.span);
 
@@ -171,15 +183,26 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
             })?,
         };
 
+        // set the new block as the current block
         let new_block_idx = self.blocks.len();
         self.blocks.push(block);
-        let old_block = self.current_block;
-        self.current_block = new_block_idx;
+        let old_block_idx = self.current_block_idx;
+        self.current_block_idx = new_block_idx;
 
-        self.compile_fn(&decl.body)?;
+        // compile the body with a captured environment
+        let inner_env = Env::new_inner(self.env.clone(), OuterEnvKind::Closure);
+        self.env = inner_env;
 
-        self.current_block = old_block;
+        // todo push params as locals
 
+        self.compile_fn_body(&decl.body)?;
+
+        let outer = self.env.borrow().outer.clone().expect("outer env got lost");
+        self.env = outer;
+
+        self.current_block_idx = old_block_idx;
+
+        // save the function as a local variable
         self.push_instr(
             Instr::PushVal(Value::Function(new_block_idx)),
             StackChange::Grow,
@@ -316,7 +339,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
     }
 
     fn compile_block(&mut self, block: &Block) -> CResult {
-        let next_env = Env::new_inner(self.env.clone());
+        let next_env = Env::new_inner(self.env.clone(), OuterEnvKind::Block);
         self.env = next_env;
 
         self.compile_stmts(&block.stmts)?;
@@ -446,7 +469,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
     }
 
     fn current_stack_top(&self) -> usize {
-        let block = &self.blocks[self.current_block];
+        let block = &self.blocks[self.current_block_idx];
         // we want the stack position, not the size, so the `- 1`
         *block.stack_sizes.last().expect("empty stack") - 1
     }
@@ -464,23 +487,23 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
     }
 
     fn code_len(&self) -> isize {
-        let block = &self.blocks[self.current_block];
+        let block = &self.blocks[self.current_block_idx];
         block.code.len() as isize
     }
 
     fn current_stack_size(&self) -> usize {
-        let block = &self.blocks[self.current_block];
+        let block = &self.blocks[self.current_block_idx];
         block.stack_sizes.last().copied().unwrap_or(0)
     }
 
     fn change_instr(&mut self, index: usize, instr: Instr) {
-        let block = &mut self.blocks[self.current_block];
+        let block = &mut self.blocks[self.current_block_idx];
         block.code[index] = instr;
     }
 
     /// Pushes an instruction and returns the index of the new instruction
     fn push_instr(&mut self, instr: Instr, stack_change: StackChange, span: Span) -> usize {
-        let block = &mut self.blocks[self.current_block];
+        let block = &mut self.blocks[self.current_block_idx];
         let stack_top = block.stack_sizes.last().copied().unwrap_or(0);
         let new_stack_top = stack_top as isize + stack_change.as_isize();
         assert!(new_stack_top >= 0, "instruction popped stack below 0");
