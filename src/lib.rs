@@ -7,6 +7,7 @@ mod errors;
 mod gc;
 mod lex;
 mod parse;
+mod util;
 mod vm;
 
 use crate::ast::Program;

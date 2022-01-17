@@ -1,12 +1,15 @@
 use crate::bytecode::{FnBlock, Function, Instr};
 use crate::gc::{Object, RtAlloc, Symbol};
+use crate::util;
 use crate::Config;
 use std::fmt::{Debug, Display, Formatter};
 use std::io::{Read, Write};
 use std::ptr::NonNull;
 
-type VmError = &'static str;
+type VmError = Box<&'static str>;
 type VmResult = Result<(), VmError>;
+
+util::assert_size!(VmResult == 8);
 
 pub fn execute<'bc>(
     bytecode: &'bc [FnBlock<'bc>],
@@ -49,8 +52,7 @@ pub enum Value {
     NativeU(usize),
 }
 
-#[cfg(target_pointer_width = "64")]
-const _: [(); 24] = [(); std::mem::size_of::<Value>()];
+util::assert_size!(Value == 24);
 
 #[derive(Debug, Clone, Copy)]
 pub struct Ptr(NonNull<()>);
@@ -114,51 +116,51 @@ impl<'bc> Vm<'bc, '_> {
             }
             Instr::BinAdd => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a + b)),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::BinSub => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a - b)),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::BinMul => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a * b)),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::BinDiv => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a / b)),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::BinMod => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a % b)),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::BinAnd => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a && b)),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::BinOr => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a || b)),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::CmpGreater => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a > b)),
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() > b.as_str())),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::CmpGreaterEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a >= b)),
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() >= b.as_str())),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::CmpLess => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a < b)),
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() < b.as_str())),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::CmpLessEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a <= b)),
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() <= b.as_str())),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::CmpEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Null, Value::Null) => Ok(TRUE),
@@ -166,7 +168,7 @@ impl<'bc> Vm<'bc, '_> {
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a == b)),
                 (Value::Object(_a), Value::Object(_b)) => todo!(),
                 (Value::Array, Value::Array) => Ok(TRUE),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::CmpNotEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Null, Value::Null) => Ok(FALSE),
@@ -174,7 +176,7 @@ impl<'bc> Vm<'bc, '_> {
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a != b)),
                 (Value::Object(_a), Value::Object(_b)) => todo!(),
                 (Value::Array, Value::Array) => Ok(FALSE),
-                _ => Err("bad type"),
+                _ => Err("bad type".into()),
             })?,
             Instr::Print => {
                 let val = self.stack.pop().unwrap();
@@ -185,7 +187,7 @@ impl<'bc> Vm<'bc, '_> {
                 match val {
                     Value::Bool(false) => self.pc = (self.pc as isize + pos) as usize,
                     Value::Bool(true) => {}
-                    _ => return Err("bad type"),
+                    _ => return Err("bad type".into()),
                 }
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
@@ -236,14 +238,14 @@ impl<'bc> Vm<'bc, '_> {
             // TODO don't be recursive like this
             self.execute_function()?;
         } else {
-            return Err("not a function");
+            return Err("not a function".into());
         }
 
         Ok(())
     }
 
     fn type_error(&self) -> VmError {
-        "bad type"
+        "bad type".into()
     }
 
     fn step_debug(&self) {

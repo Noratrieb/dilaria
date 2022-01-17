@@ -1,5 +1,5 @@
-fn hello(uwu) {
-    3 + 1;
-}
+let i = 0;
 
-let yeah = hello;
+while i < 100_000_000 {
+    i = i + 1;
+}
