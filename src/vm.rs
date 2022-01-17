@@ -192,7 +192,8 @@ impl<'bc> Vm<'bc, '_> {
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
             Instr::Call => self.call()?,
-            Instr::Return => todo!(),
+            // todo implement
+            Instr::Return => return Ok(()),
             Instr::ShrinkStack(size) => {
                 assert!(self.stack.len() >= size);
                 let new_len = self.stack.len() - size;

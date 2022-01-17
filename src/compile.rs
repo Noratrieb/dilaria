@@ -16,6 +16,8 @@ use std::rc::Rc;
 
 type CResult<T = ()> = Result<T, CompilerError>;
 
+const CALLCONV_OFFSET_DATA: usize = 3;
+
 #[derive(Debug, PartialEq, Eq)]
 enum OuterEnvKind {
     Block,
@@ -112,6 +114,13 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         self.current_block_idx = self.blocks.len() - 1;
 
         self.compile_fn_body(ast)?;
+        self.push_instr(
+            Instr::PushVal(Value::Null),
+            StackChange::Grow,
+            Span::dummy(),
+        );
+        // exit the program.
+        self.push_instr(Instr::Return, StackChange::None, Span::dummy());
         Ok(())
     }
 
@@ -198,9 +207,25 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         let inner_env = Env::new_inner(self.env.clone(), OuterEnvKind::Closure);
         self.env = inner_env;
 
-        // todo push params as locals
+        {
+            // insert params as locals
+            let mut env_mut = self.env.borrow_mut();
+            for (i, param) in decl.params.iter().enumerate() {
+                env_mut.locals.insert(param.sym, i);
+            }
 
-        self.compile_fn_body(&decl.body)?;
+            let block = &mut self.blocks[self.current_block_idx];
+            block.code.push(Instr::Nop);
+            block.spans.push(decl.span);
+            block
+                .stack_sizes
+                .push(decl.params.len() + CALLCONV_OFFSET_DATA);
+        }
+
+        self.compile_stmts(&decl.body.stmts)?;
+
+        self.push_instr(Instr::PushVal(Value::Null), StackChange::Grow, decl.span);
+        self.push_instr(Instr::Return, StackChange::None, decl.span);
 
         let outer = self.env.borrow().outer.clone().expect("outer env got lost");
         self.env = outer;
@@ -331,8 +356,16 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         Ok(())
     }
 
-    fn compile_return(&mut self, _: &Option<Expr>, _: Span) -> CResult {
-        todo!()
+    fn compile_return(&mut self, expr: &Option<Expr>, span: Span) -> CResult {
+        if let Some(expr) = expr {
+            self.compile_expr(expr)?;
+        } else {
+            self.push_instr(Instr::PushVal(Value::Null), StackChange::Grow, span);
+        }
+
+        self.push_instr(Instr::Return, StackChange::None, span);
+
+        Ok(())
     }
 
     fn compile_print(&mut self, expr: &Expr, span: Span) -> CResult {
