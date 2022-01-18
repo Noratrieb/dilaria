@@ -1,0 +1,7 @@
+---
+source: tests/functions.rs
+assertion_line: 3
+expression: output
+
+---
+"correct\n"

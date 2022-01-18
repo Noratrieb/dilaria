@@ -1,5 +1,4 @@
 mod common;
-use crate::common::_run_test;
 
 run_test!(
     single_if,

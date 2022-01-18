@@ -84,7 +84,7 @@ impl<'bc> Vm<'bc, '_> {
                 Some(&instr) => self.dispatch_instr(instr)?,
                 None => return Ok(()),
             }
-            debug_assert_eq!(self.current.stack_sizes[self.pc], self.stack.len());
+            // debug_assert_eq!(self.current.stack_sizes[self.pc], self.stack.len());
             self.pc += 1;
         }
     }
@@ -189,7 +189,7 @@ impl<'bc> Vm<'bc, '_> {
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
             Instr::Call => self.call()?,
             // todo implement
-            Instr::Return => return Ok(()),
+            Instr::Return => self.ret()?,
             Instr::ShrinkStack(size) => {
                 assert!(self.stack.len() >= size);
                 let new_len = self.stack.len() - size;
@@ -220,7 +220,7 @@ impl<'bc> Vm<'bc, '_> {
         if let Value::Function(func) = function {
             let fn_block = &self.blocks[func];
 
-            let new_stack_frame_start = self.stack.len() - fn_block.arity as usize;
+            let new_stack_frame_start = self.stack.len();
             self.stack_offset = new_stack_frame_start;
 
             self.stack.push(Value::NativeU(old_offset));
@@ -237,6 +237,23 @@ impl<'bc> Vm<'bc, '_> {
         } else {
             return Err("not a function".into());
         }
+
+        Ok(())
+    }
+
+    fn ret(&mut self) -> VmResult {
+        let current_arity: usize = self.current.arity.try_into().unwrap();
+
+        let bookkeeping_offset = self.stack_offset + current_arity;
+
+        let old_stack_offset = self.stack[bookkeeping_offset].as_native_int();
+        let old_pc = self.stack[bookkeeping_offset + 1].as_native_int();
+        let old_function = self.stack[bookkeeping_offset + 2].as_function();
+
+        self.stack_offset = old_stack_offset;
+        self.pc = old_pc;
+        self.current_block_index = old_function;
+        self.current = &self.blocks[old_function];
 
         Ok(())
     }
@@ -259,6 +276,26 @@ Expected Stack size after instruction: {}",
 
         let mut buf = [0; 64];
         let _ = std::io::stdin().read(&mut buf);
+    }
+}
+
+impl Value {
+    /// Unwrap the Value into a `usize` expecting the `NativeU` variant
+    fn as_native_int(&self) -> usize {
+        if let Value::NativeU(n) = self {
+            *n
+        } else {
+            unreachable!("expected native int, got {:?}", self);
+        }
+    }
+
+    /// Unwrap the Value into a `Function` expecting the `Function` variant
+    fn as_function(&self) -> Function {
+        if let Value::Function(fun) = self {
+            *fun
+        } else {
+            unreachable!("expected function, got {:?}", self);
+        }
     }
 }
 

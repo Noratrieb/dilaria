@@ -1,3 +1,10 @@
-fn test(uwu) {
-    let owo = 5;
+fn test() {
+    print "yo wtf";
 }
+
+test();
+test();
+
+fn uwu() {}
+
+uwu();

@@ -192,7 +192,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
                     decl.params[u8::MAX as usize]
                         .span
                         .extend(decl.params.last().unwrap().span),
-                    "Too many parameters".to_string(),
+                    "Too many parameters. How the fuck did you do this.".to_string(),
                 )
             })?,
         };

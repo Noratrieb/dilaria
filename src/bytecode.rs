@@ -74,7 +74,8 @@ pub struct FnBlock<'bc> {
     /// used if there are errors.
     pub spans: Vec<'bc, Span>,
     /// How many parameters the function accepts.
-    pub arity: u8,
+    /// Yes, it supports 4294967295 parameters. I dare you to overflow that.
+    pub arity: u32,
 }
 
 #[cfg(feature = "_debug")]
