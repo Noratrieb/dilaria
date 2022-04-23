@@ -7,14 +7,13 @@ edition = "2021"
 
 [dependencies]
 bumpalo = { version = "3.8.0", features = ["collections"] }
+dbg-pls = { version = "0.2.2", features = ["colors", "derive"], optional = true }
 rustc-hash = { version = "1.1.0", optional = true }
-
-debug2 = { version = "0.1.0", optional = true }
 
 
 [features]
 fxhash = ["rustc-hash"]
-_debug = ["debug2"]
+_debug = ["dbg-pls"]
 
 # todo: we don't actually want this as a default feature
 default = ["_debug", "fxhash"]

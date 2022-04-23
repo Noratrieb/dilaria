@@ -19,14 +19,14 @@ pub use lex::*;
 pub use parse::*;
 
 #[cfg(not(feature = "fxhash"))]
-#[allow(clippy::disallowed_type)]
+#[allow(clippy::disallowed_types)]
 type HashMap<K, V> = std::collections::HashMap<K, V>;
 
 #[cfg(feature = "fxhash")]
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
 #[cfg(not(feature = "fxhash"))]
-#[allow(clippy::disallowed_type)]
+#[allow(clippy::disallowed_types)]
 type HashSet<T> = std::collections::HashSet<T>;
 
 #[cfg(feature = "fxhash")]
@@ -59,7 +59,7 @@ pub fn run_program(program: &str, cfg: &mut Config) {
 
 fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Config<'_>) {
     if cfg.debug {
-        println!("AST:\n{:?}\n", ast);
+        util::dbg("AST:\n", ast);
     }
 
     let bytecode_alloc = Bump::new();
@@ -69,14 +69,7 @@ fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Con
     match bytecode {
         Ok(code) => {
             if cfg.debug {
-                #[cfg(feature = "_debug")]
-                {
-                    println!("Bytecode:\n{}\n", debug2::pprint(code));
-                }
-                #[cfg(not(feature = "_debug"))]
-                {
-                    println!("Bytecode:\n{:#?}\n", code);
-                }
+                println!("Bytecode:\n{:#?}\n", code);
             }
 
             let result = vm::execute(code, runtime, cfg);

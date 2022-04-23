@@ -471,7 +471,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
 
         let offset = self.env.borrow().lookup_local(name)?;
 
-        for param in params {
+        for param in params.iter() {
             self.compile_expr(param)?;
         }
 

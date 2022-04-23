@@ -8,7 +8,8 @@ use std::io::{Read, Write};
 type VmError = Box<&'static str>;
 type VmResult = Result<(), VmError>;
 
-util::assert_size!(VmResult == 8);
+// never get bigger than a machine word.
+util::assert_size!(VmResult <= std::mem::size_of::<usize>());
 
 pub fn execute<'bc>(
     bytecode: &'bc [FnBlock<'bc>],
@@ -31,7 +32,7 @@ pub fn execute<'bc>(
 }
 
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "_debug", derive(debug2::Debug))]
+#[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
 pub enum Value {
     /// `null`
     Null,
@@ -51,7 +52,7 @@ pub enum Value {
     NativeU(usize),
 }
 
-util::assert_size!(Value == 24);
+util::assert_size!(Value <= 24);
 
 const TRUE: Value = Value::Bool(true);
 const FALSE: Value = Value::Bool(false);
@@ -70,22 +71,23 @@ struct Vm<'bc, 'io> {
     current_block_index: usize,
     /// The offset of the first parameter of the current function
     stack_offset: usize,
-    /// Index of the instruction currently being executed
+    /// Index of the next instruction being executed. is out of bounds if the current
+    /// instruction is the last one
     pc: usize,
 }
 
 impl<'bc> Vm<'bc, '_> {
     fn execute_function(&mut self) -> VmResult {
-        let code = &self.current.code;
-
         loop {
-            let instr = code.get(self.pc);
+            let instr = self.current.code.get(self.pc);
+            self.pc += 1;
             match instr {
                 Some(&instr) => self.dispatch_instr(instr)?,
                 None => return Ok(()),
             }
-            // debug_assert_eq!(self.current.stack_sizes[self.pc], self.stack.len());
-            self.pc += 1;
+            if self.pc > 0 {
+                debug_assert_eq!(self.current.stack_sizes[self.pc - 1], self.stack.len());
+            }
         }
     }
 
@@ -188,8 +190,7 @@ impl<'bc> Vm<'bc, '_> {
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
             Instr::Call => self.call()?,
-            // todo implement
-            Instr::Return => self.ret()?,
+            Instr::Return => return Ok(()),
             Instr::ShrinkStack(size) => {
                 assert!(self.stack.len() >= size);
                 let new_len = self.stack.len() - size;
@@ -217,26 +218,22 @@ impl<'bc> Vm<'bc, '_> {
         let old_offset = self.stack_offset;
         let old_idx = self.current_block_index;
         let function = self.stack.pop().unwrap();
-        if let Value::Function(func) = function {
-            let fn_block = &self.blocks[func];
+        let function = function.unwrap_function();
+        let fn_block = &self.blocks[function];
 
-            let new_stack_frame_start = self.stack.len();
-            self.stack_offset = new_stack_frame_start;
+        let new_stack_frame_start = self.stack.len();
+        self.stack_offset = new_stack_frame_start;
 
-            self.stack.push(Value::NativeU(old_offset));
-            self.stack.push(Value::NativeU(self.pc));
-            self.stack.push(Value::Function(old_idx));
+        self.stack.push(Value::NativeU(old_offset));
+        self.stack.push(Value::NativeU(self.pc));
+        self.stack.push(Value::Function(old_idx));
 
-            self.current_block_index = func;
-            self.current = fn_block;
+        self.current_block_index = function;
+        self.current = fn_block;
 
-            self.pc = 0;
+        self.pc = 0;
 
-            // TODO don't be recursive like this
-            self.execute_function()?;
-        } else {
-            return Err("not a function".into());
-        }
+        // we are now set up correctly, let the next instruction run
 
         Ok(())
     }
@@ -246,9 +243,9 @@ impl<'bc> Vm<'bc, '_> {
 
         let bookkeeping_offset = self.stack_offset + current_arity;
 
-        let old_stack_offset = self.stack[bookkeeping_offset].as_native_int();
-        let old_pc = self.stack[bookkeeping_offset + 1].as_native_int();
-        let old_function = self.stack[bookkeeping_offset + 2].as_function();
+        let old_stack_offset = self.stack[bookkeeping_offset].unwrap_native_int();
+        let old_pc = self.stack[bookkeeping_offset + 1].unwrap_native_int();
+        let old_function = self.stack[bookkeeping_offset + 2].unwrap_function();
 
         self.stack_offset = old_stack_offset;
         self.pc = old_pc;
@@ -281,7 +278,7 @@ Expected Stack size after instruction: {}",
 
 impl Value {
     /// Unwrap the Value into a `usize` expecting the `NativeU` variant
-    fn as_native_int(&self) -> usize {
+    fn unwrap_native_int(&self) -> usize {
         if let Value::NativeU(n) = self {
             *n
         } else {
@@ -290,7 +287,7 @@ impl Value {
     }
 
     /// Unwrap the Value into a `Function` expecting the `Function` variant
-    fn as_function(&self) -> Function {
+    fn unwrap_function(&self) -> Function {
         if let Value::Function(fun) = self {
             *fun
         } else {

@@ -4,7 +4,3 @@ fn test() {
 
 test();
 test();
-
-fn uwu() {}
-
-uwu();

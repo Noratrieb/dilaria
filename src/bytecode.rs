@@ -61,14 +61,15 @@
 use crate::errors::Span;
 use crate::vm::Value;
 use bumpalo::collections::Vec;
+use std::fmt::{Debug, Formatter};
 
 /// This struct contains all data for a function.
-#[derive(Debug)]
+#[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
 pub struct FnBlock<'bc> {
     /// The bytecode of the function
     pub code: Vec<'bc, Instr>,
-    /// The sizes of the stack required by the function after the instruction at the same index. This is only used
-    /// during compilation to calculate local variable offsets.
+    /// The sizes of the stack required by the function after the instruction at the same index.
+    /// This is only used during compilation to calculate local variable offsets.
     pub stack_sizes: Vec<'bc, usize>,
     /// The corresponding source code location of each instruction. This is debuginfo and only
     /// used if there are errors.
@@ -78,23 +79,19 @@ pub struct FnBlock<'bc> {
     pub arity: u32,
 }
 
-#[cfg(feature = "_debug")]
-impl debug2::Debug for FnBlock<'_> {
-    fn fmt(&self, f: &mut debug2::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("FnBlock")
-            .field("code", &self.code.as_slice())
-            .field("stack_sizes", &self.stack_sizes.as_slice())
-            .field("spans", &self.spans.as_slice())
-            .field("arity", &self.arity)
-            .finish()
+impl Debug for FnBlock<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.code.fmt(f)
     }
 }
 
+/// Index into the block list
 pub type Function = usize;
 
-/// A bytecode instruction. For more details on the structure of the bytecode, read the module level docs [`bytecode`](`self`)
+/// A bytecode instruction. For more details on the structure of the bytecode,
+/// read the module level docs [`bytecode`](`self`)
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "_debug", derive(debug2::Debug))]
+#[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
 pub enum Instr {
     /// An operation that does nothing.
     Nop,

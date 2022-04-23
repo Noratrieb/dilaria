@@ -4,7 +4,7 @@ macro_rules! run_test {
         #[test]
         fn $name() {
             let code = $code;
-            let output = crate::common::_run_test(code);
+            let output = $crate::common::_run_test(code);
             insta::assert_debug_snapshot!(output);
         }
     };

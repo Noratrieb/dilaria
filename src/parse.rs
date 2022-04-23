@@ -97,12 +97,12 @@ where
         }
     }
 
-    fn statement_list(&mut self) -> ParseResult<Vec<'ast, Stmt<'ast>>> {
+    fn statement_list(&mut self) -> ParseResult<&'ast [Stmt<'ast>]> {
         enter_parse!(self);
         let mut stmts = Vec::new_in(self.bump);
         let return_stmts = loop {
             if let Some(TokenKind::BraceC) | None = self.peek_kind() {
-                break Ok(stmts);
+                break Ok(stmts.into_bump_slice());
             }
             let stmt = self.statement()?;
             stmts.push(stmt);
@@ -190,7 +190,7 @@ where
         }))
     }
 
-    fn fn_args(&mut self) -> ParseResult<Vec<'ast, Ident>> {
+    fn fn_args(&mut self) -> ParseResult<&'ast [Ident]> {
         enter_parse!(self);
 
         self.expect(TokenKind::ParenO)?;
@@ -597,7 +597,7 @@ where
         return_expr
     }
 
-    fn parse_list<T, F>(&mut self, close: TokenKind, mut parser: F) -> ParseResult<Vec<'ast, T>>
+    fn parse_list<T, F>(&mut self, close: TokenKind, mut parser: F) -> ParseResult<&'ast [T]>
     where
         F: FnMut(&mut Self) -> ParseResult<T>,
     {
@@ -606,7 +606,7 @@ where
         let mut elements = Vec::new_in(self.bump);
 
         if self.peek_kind() == Some(&close) {
-            return Ok(elements);
+            return Ok(elements.into_bump_slice());
         }
 
         let expr = parser(self)?;
@@ -632,7 +632,7 @@ where
         }
 
         exit_parse!(self);
-        Ok(elements)
+        Ok(elements.into_bump_slice())
     }
 
     // token helpers
