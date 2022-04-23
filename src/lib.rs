@@ -10,7 +10,8 @@ impl<'a, D: CoolTrait> CoolTrait for &'a D {}
 pub enum Parent<'a> {
     A(Box<A<'a>>),
     B(Box<B<'a>>),
-    // We need a lifetime or else everything is fine
+    // We need a lifetime. otherwise, if we remove it, we get:
+    // error[E0275]: overflow evaluating the requirement `A: CoolTrait`
     Boo(PhantomData<&'a ()>)
 }
 
