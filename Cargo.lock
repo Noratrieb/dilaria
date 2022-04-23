@@ -3,12 +3,5 @@
 version = 3
 
 [[package]]
-name = "dbg-pls"
-version = "0.2.2"
-
-[[package]]
 name = "dilaria"
 version = "0.1.0"
-dependencies = [
- "dbg-pls",
-]
