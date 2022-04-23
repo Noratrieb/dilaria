@@ -64,7 +64,6 @@ use bumpalo::collections::Vec;
 use std::fmt::{Debug, Formatter};
 
 /// This struct contains all data for a function.
-#[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
 pub struct FnBlock<'bc> {
     /// The bytecode of the function
     pub code: Vec<'bc, Instr>,
@@ -135,4 +134,14 @@ pub enum Instr {
 
     /// Shrinks the stack by `usize` elements, should always be emitted before backwards jumps
     ShrinkStack(usize),
+}
+
+#[cfg(feature = "_debug")]
+impl dbg_pls::DebugPls for FnBlock<'_> {
+    fn fmt(&self, f: dbg_pls::Formatter<'_>) {
+        f.debug_struct("FnBlock")
+            .field("arity", &self.arity)
+            .field("code", &self.code.as_slice())
+            .finish_non_exhaustive()
+    }
 }

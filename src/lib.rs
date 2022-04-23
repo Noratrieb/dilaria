@@ -69,7 +69,7 @@ fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Con
     match bytecode {
         Ok(code) => {
             if cfg.debug {
-                println!("Bytecode:\n{:#?}\n", code);
+                util::dbg("Bytecode:\n", code);
             }
 
             let result = vm::execute(code, runtime, cfg);

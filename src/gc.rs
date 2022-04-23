@@ -4,6 +4,7 @@
 
 use crate::vm::Value;
 use crate::{HashMap, HashSet};
+use dbg_pls::DebugPls;
 use std::collections::LinkedList;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -19,9 +20,9 @@ pub struct Gc<T: ?Sized> {
 }
 
 #[cfg(feature = "_debug")]
-impl<T: ?Sized> dbg_pls::DebugPls for Gc<T> {
+impl<T: ?Sized + DebugPls> dbg_pls::DebugPls for Gc<T> {
     fn fmt(&self, f: dbg_pls::Formatter<'_>) {
-        todo!()
+        DebugPls::fmt(self.deref(), f)
     }
 }
 
@@ -208,7 +209,7 @@ impl Deref for Symbol {
 
 impl Debug for Symbol {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.as_str().fmt(f)
+        Debug::fmt(self.as_str(), f)
     }
 }
 

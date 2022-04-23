@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 bumpalo = { version = "3.8.0", features = ["collections"] }
-dbg-pls = { version = "0.2.2", features = ["colors", "derive"], optional = true }
+dbg-pls = { version = "0.3.0", features = ["colors", "derive"], optional = true }
 rustc-hash = { version = "1.1.0", optional = true }
 
 
