@@ -6,22 +6,20 @@ pub trait CoolTrait {}
 // implement that trait for all reference to someone implementing the trait
 impl<'a, D: CoolTrait> CoolTrait for &'a D {}
 
-// a type with a lifetime that contains two other types
-pub enum Parent<'a> {
-    A(Box<A<'a>>),
-    B(Box<B<'a>>),
+// a type with a lifetime
+pub struct Parent<'a> {
     // We need a lifetime. otherwise, if we remove it, we get:
     // error[E0275]: overflow evaluating the requirement `A: CoolTrait`
-    Boo(PhantomData<&'a ()>)
+    _boo: PhantomData<&'a ()>,
 }
 
-// those two types that in turn contain the parent type recursively
+// two more types with a lifetime
 pub struct A<'a> {
-    parent: Parent<'a>,
+    _boo: PhantomData<&'a ()>,
 }
 
 pub struct B<'a> {
-    parent: Parent<'a>,
+    _boo: PhantomData<&'a ()>,
 }
 
 // implement CoolTrait only when the two types themselves implement it
