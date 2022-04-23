@@ -3,11 +3,16 @@
 //!
 //! All AST nodes are bump allocated into the lifetime `'ast`  
 
-use crate::errors::Span;
+#[derive(dbg_pls::DebugPls)]
+pub struct Span {
+    pub start: usize,
+    pub end: usize,
+}
+
 
 type Symbol = usize;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct Ident {
     pub sym: Symbol,
     pub span: Span,
@@ -15,13 +20,13 @@ pub struct Ident {
 
 pub type Program<'ast> = Block<'ast>;
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct Block<'ast> {
     pub stmts: &'ast [Stmt<'ast>],
     pub span: Span,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub enum Stmt<'ast> {
     Declaration(Declaration<'ast>),
     Assignment(Assignment<'ast>),
@@ -36,21 +41,21 @@ pub enum Stmt<'ast> {
     Print(Expr<'ast>, Span),
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct Declaration<'ast> {
     pub span: Span,
     pub name: Ident,
     pub init: Expr<'ast>,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct Assignment<'ast> {
     pub span: Span,
     pub lhs: Expr<'ast>,
     pub rhs: Expr<'ast>,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct FnDecl<'ast> {
     pub span: Span,
     pub name: Ident,
@@ -58,7 +63,7 @@ pub struct FnDecl<'ast> {
     pub body: Block<'ast>,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct IfStmt<'ast> {
     pub span: Span,
     pub cond: Expr<'ast>,
@@ -66,7 +71,7 @@ pub struct IfStmt<'ast> {
     pub else_part: Option<&'ast ElsePart<'ast>>,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub enum ElsePart<'ast> {
     Else(Block<'ast>, Span),
     ElseIf(IfStmt<'ast>, Span),
@@ -80,14 +85,14 @@ impl ElsePart<'_> {
     }
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct WhileStmt<'ast> {
     pub span: Span,
     pub cond: Expr<'ast>,
     pub body: Block<'ast>,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub enum Expr<'ast> {
     Ident(Ident),
     Literal(Literal<'ast>),
@@ -108,7 +113,7 @@ impl Expr<'_> {
     }
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub enum Literal<'ast> {
     String(Symbol, Span),
     Number(f64, Span),
@@ -131,20 +136,20 @@ impl Literal<'_> {
     }
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct UnaryOp<'ast> {
     pub span: Span,
     pub expr: Expr<'ast>,
     pub kind: UnaryOpKind,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub enum UnaryOpKind {
     Not,
     Neg,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct BinaryOp<'ast> {
     pub span: Span,
     pub lhs: Expr<'ast>,
@@ -152,7 +157,7 @@ pub struct BinaryOp<'ast> {
     pub kind: BinaryOpKind,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub enum BinaryOpKind {
     And,
     Or,
@@ -169,14 +174,14 @@ pub enum BinaryOpKind {
     Mod,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub struct Call<'ast> {
     pub callee: Expr<'ast>,
     pub span: Span,
     pub kind: CallKind<'ast>,
 }
 
-#[derive(Debug, PartialEq, dbg_pls::DebugPls)]
+#[derive(dbg_pls::DebugPls)]
 pub enum CallKind<'ast> {
     Field(Ident),
     Fn(&'ast [Expr<'ast>]),

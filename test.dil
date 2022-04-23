@@ -1,6 +1,0 @@
-fn test() {
-    print "yo wtf";
-}
-
-test();
-test();
