@@ -1,7 +1,0 @@
----
-source: tests/control_flow.rs
-assertion_line: 82
-expression: output
-
----
-"iter\ndone\n"

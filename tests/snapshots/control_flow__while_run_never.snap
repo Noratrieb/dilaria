@@ -1,7 +1,0 @@
----
-source: tests/control_flow.rs
-assertion_line: 108
-expression: output
-
----
-"good.\n"
