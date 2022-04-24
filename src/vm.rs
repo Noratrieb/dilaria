@@ -86,14 +86,14 @@ impl<'bc> Vm<'bc, '_> {
                 None => return Ok(()),
             }
             if self.pc > 0 {
-                debug_assert_eq!(self.current.stack_sizes[self.pc - 1], self.stack.len());
+                //debug_assert_eq!(self.current.stack_sizes[self.pc - 1], self.stack.len());
             }
         }
     }
 
     fn dispatch_instr(&mut self, instr: Instr) -> VmResult {
         if self.step {
-            self.step_debug();
+            self.step_debug(instr);
         }
 
         match instr {
@@ -190,7 +190,7 @@ impl<'bc> Vm<'bc, '_> {
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
             Instr::Call => self.call()?,
-            Instr::Return => return Ok(()),
+            Instr::Return => self.ret()?,
             Instr::ShrinkStack(size) => {
                 assert!(self.stack.len() >= size);
                 let new_len = self.stack.len() - size;
@@ -241,16 +241,25 @@ impl<'bc> Vm<'bc, '_> {
     fn ret(&mut self) -> VmResult {
         let current_arity: usize = self.current.arity.try_into().unwrap();
 
+        // we save the return value first.
+        let return_value = self.stack.pop().expect("return value");
+
         let bookkeeping_offset = self.stack_offset + current_arity;
 
+        // now, we get all the bookkeeping info out
         let old_stack_offset = self.stack[bookkeeping_offset].unwrap_native_int();
         let old_pc = self.stack[bookkeeping_offset + 1].unwrap_native_int();
         let old_function = self.stack[bookkeeping_offset + 2].unwrap_function();
 
+        // get the interpreter back to the nice state
         self.stack_offset = old_stack_offset;
         self.pc = old_pc;
         self.current_block_index = old_function;
         self.current = &self.blocks[old_function];
+
+        // and kill the function stack frame
+        // note: don't emit a return instruction from the whole global script.
+        todo!();
 
         Ok(())
     }
@@ -259,16 +268,17 @@ impl<'bc> Vm<'bc, '_> {
         "bad type".into()
     }
 
-    fn step_debug(&self) {
-        let current_instr = &self.current.code[self.pc];
+    fn step_debug(&self, current_instr: Instr) {
         let curr_stack_size = self.stack.len();
-        let expected_stack_size = &self.current.stack_sizes[self.pc];
+        // at this point, we've always incremented the pc already
+        let expected_stack_size = &self.current.stack_sizes[self.pc - 1];
 
         eprintln!(
-            "Current Instruction: {:?}
-Current Stack size: {}
-Expected Stack size after instruction: {}",
-            current_instr, curr_stack_size, expected_stack_size
+            "Next Instruction: {current_instr:?}
+Current Stack size: {curr_stack_size}
+Expected Stack size after instruction: {expected_stack_size}
+Stack: {:?}",
+            self.stack
         );
 
         let mut buf = [0; 64];

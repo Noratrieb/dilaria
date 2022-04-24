@@ -1,5 +1,5 @@
 fn test() {
-    print "yo wtf";
+    let a = 5;
 }
 
 test();

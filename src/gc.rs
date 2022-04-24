@@ -72,7 +72,6 @@ pub struct Object {
 }
 
 #[derive(Debug)]
-#[repr(C)]
 #[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
 struct HeapObject {
     kind: HeapObjectKind,
