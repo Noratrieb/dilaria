@@ -475,7 +475,6 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
 
         for param in params.iter() {
             self.compile_expr(param)?;
-            todo!("no params yet")
         }
 
         self.push_instr(Instr::Load(offset), StackChange::Grow, call.span);

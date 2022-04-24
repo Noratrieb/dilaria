@@ -41,3 +41,47 @@ test2();
 print "correct3";
 "#
 );
+
+run_test!(
+    parameters,
+    r#"
+fn fancy_print(str) {
+    print str;
+}
+
+fancy_print("correct");
+"#
+);
+
+run_test!(
+    parameters_and_return,
+    r#"
+fn add(a, b) {
+    return a + b;
+}
+
+let added = add(1, 5);
+
+if added == 6 {
+    print "correct";
+} else {
+    print "FAILED";
+}
+"#
+);
+
+run_test!(
+    fib5,
+    r#"
+fn fib(n) {
+    if n < 2 {
+        return n;
+    } else {
+        return fib(n - 1) + fib(n - 2);
+    }
+}
+
+let fib5 = fib(5);
+print fib5;
+"#
+);
