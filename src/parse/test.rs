@@ -42,21 +42,28 @@ where {
     }
 }
 
-fn test_literal_bin_op<F: FnOnce(Vec<Token>, &Bump) -> Expr>(token_type: TokenType, parser: F) {
-    let tokens = [Number(10.0), token_type, Number(4.0)].map(token).into();
+//fn test_literal_bin_op<F: FnOnce(Vec<Token>, &Bump) -> Expr>(token_type: TokenType, parser: F) {
+macro_rules! test_literal_bin_op {
+    ($token_type:expr, $parser:expr) => {
+        let tokens = [Number(10.0), $token_type, Number(4.0)].map(token).into();
 
-    let alloc = Bump::new();
-    let ast = parser(tokens, &alloc);
-    insta::assert_debug_snapshot!(ast);
+        let alloc = Bump::new();
+        let ast = ($parser)(tokens, &alloc);
+        insta::assert_debug_snapshot!(ast);
+    };
 }
+use test_literal_bin_op;
 
-fn test_number_literal<F: FnOnce(Vec<Token>, &Bump) -> Expr>(parser: F) {
-    let tokens = [Number(10.0)].map(token).into();
+macro_rules! test_number_literal {
+    ($parser:expr) => {
+        let tokens = [Number(10.0)].map(token).into();
 
-    let alloc = Bump::new();
-    let ast = parser(tokens, &alloc);
-    insta::assert_debug_snapshot!(ast);
+        let alloc = Bump::new();
+        let ast = ($parser)(tokens, &alloc);
+        insta::assert_debug_snapshot!(ast);
+    };
 }
+use test_number_literal;
 
 mod assignment {
     use bumpalo::Bump;
@@ -343,7 +350,7 @@ mod expr {
 
     #[test]
     fn number_literal() {
-        test_number_literal(parse_expr);
+        test_number_literal!(parse_expr);
     }
 
     #[test]
@@ -395,12 +402,12 @@ mod logical_or {
 
     #[test]
     fn number_literal() {
-        test_number_literal(parse_logical_or);
+        test_number_literal!(parse_logical_or);
     }
 
     #[test]
     fn or() {
-        test_literal_bin_op(Or, parse_logical_or);
+        test_literal_bin_op!(Or, parse_logical_or);
     }
 }
 
@@ -414,12 +421,12 @@ mod logical_and {
 
     #[test]
     fn number_literal() {
-        test_number_literal(parse_logical_and);
+        test_number_literal!(parse_logical_and);
     }
 
     #[test]
     fn and() {
-        test_literal_bin_op(And, parse_logical_and);
+        test_literal_bin_op!(And, parse_logical_and);
     }
 }
 
@@ -433,17 +440,17 @@ mod equality {
 
     #[test]
     fn number_literal() {
-        test_number_literal(parse_equality);
+        test_number_literal!(parse_equality);
     }
 
     #[test]
     fn not_equal() {
-        test_literal_bin_op(BangEqual, parse_equality);
+        test_literal_bin_op!(BangEqual, parse_equality);
     }
 
     #[test]
     fn equal() {
-        test_literal_bin_op(EqualEqual, parse_equality);
+        test_literal_bin_op!(EqualEqual, parse_equality);
     }
 }
 
@@ -457,27 +464,27 @@ mod comparison {
 
     #[test]
     fn number_literal() {
-        test_number_literal(parse_comparison);
+        test_number_literal!(parse_comparison);
     }
 
     #[test]
     fn greater() {
-        test_literal_bin_op(Greater, parse_comparison);
+        test_literal_bin_op!(Greater, parse_comparison);
     }
 
     #[test]
     fn greater_equal() {
-        test_literal_bin_op(GreaterEqual, parse_comparison);
+        test_literal_bin_op!(GreaterEqual, parse_comparison);
     }
 
     #[test]
     fn less() {
-        test_literal_bin_op(Less, parse_comparison);
+        test_literal_bin_op!(Less, parse_comparison);
     }
 
     #[test]
     fn less_equal() {
-        test_literal_bin_op(LessEqual, parse_comparison);
+        test_literal_bin_op!(LessEqual, parse_comparison);
     }
 }
 
@@ -491,17 +498,17 @@ mod term {
 
     #[test]
     fn number_literal() {
-        test_number_literal(parse_term);
+        test_number_literal!(parse_term);
     }
 
     #[test]
     fn add() {
-        test_literal_bin_op(Plus, parse_term);
+        test_literal_bin_op!(Plus, parse_term);
     }
 
     #[test]
     fn sub() {
-        test_literal_bin_op(Minus, parse_term);
+        test_literal_bin_op!(Minus, parse_term);
     }
 }
 
@@ -515,22 +522,22 @@ mod factor {
 
     #[test]
     fn number_literal() {
-        test_number_literal(parse_factor);
+        test_number_literal!(parse_factor);
     }
 
     #[test]
     fn multiply() {
-        test_literal_bin_op(Asterisk, parse_factor);
+        test_literal_bin_op!(Asterisk, parse_factor);
     }
 
     #[test]
     fn divide() {
-        test_literal_bin_op(Slash, parse_factor);
+        test_literal_bin_op!(Slash, parse_factor);
     }
 
     #[test]
     fn modulo() {
-        test_literal_bin_op(Percent, parse_factor);
+        test_literal_bin_op!(Percent, parse_factor);
     }
 }
 
@@ -544,7 +551,7 @@ mod unary {
 
     #[test]
     fn number_literal() {
-        test_number_literal(parse_unary);
+        test_number_literal!(parse_unary);
     }
 
     #[test]

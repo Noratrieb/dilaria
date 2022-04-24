@@ -1,0 +1,5 @@
+---
+source: tests/functions.rs
+expression: output
+---
+"correct1\ncorrect2\ncorrect3\n"
