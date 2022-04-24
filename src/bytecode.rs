@@ -142,6 +142,7 @@ impl dbg_pls::DebugPls for FnBlock<'_> {
         f.debug_struct("FnBlock")
             .field("arity", &self.arity)
             .field("code", &self.code.as_slice())
+            .field("stack_sizes", &self.stack_sizes.as_slice())
             .finish_non_exhaustive()
     }
 }

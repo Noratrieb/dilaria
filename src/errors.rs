@@ -11,9 +11,9 @@ use std::fmt::Debug;
 pub use span::Span;
 
 mod span {
+    use std::fmt::{Debug, Formatter};
 
-    #[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
-    #[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
+    #[derive(Default, Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
     pub struct Span {
         pub start: usize,
         pub end: usize,
@@ -64,6 +64,24 @@ mod span {
 
         pub fn len(&self) -> usize {
             self.end - self.start
+        }
+    }
+
+    impl Debug for Span {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_tuple("Span")
+                .field(&(self.start..self.end))
+                .finish()
+        }
+    }
+
+    #[cfg(feature = "_debug")]
+    impl dbg_pls::DebugPls for Span {
+        fn fmt(&self, f: dbg_pls::Formatter<'_>) {
+            f.debug_tuple_struct("Span")
+                // todo: wait for https://github.com/conradludgate/dbg-pls/pull/1
+                .field(&format!("{:?}", (self.start..self.end)))
+                .finish()
         }
     }
 }

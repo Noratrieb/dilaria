@@ -11,7 +11,7 @@ use std::fmt::Display;
 
 #[cfg(feature = "_debug")]
 pub fn dbg(prefix: impl Display, x: impl dbg_pls::DebugPls) {
-    eprintln!("{prefix}{}", dbg_pls::pretty(&x))
+    eprintln!("{prefix}{}", dbg_pls::color(&x))
 }
 
 #[cfg(not(feature = "_debug"))]

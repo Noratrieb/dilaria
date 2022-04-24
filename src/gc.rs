@@ -54,7 +54,6 @@ impl<T: ?Sized> Copy for Gc<T> {}
 
 /// An reference to an interned String. Hashing and Equality are O(1) and just look at the pointer address
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
 pub struct Symbol {
     gc: Gc<str>,
 }
@@ -74,11 +73,13 @@ pub struct Object {
 
 #[derive(Debug)]
 #[repr(C)]
+#[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
 struct HeapObject {
     kind: HeapObjectKind,
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]
 enum HeapObjectKind {
     String(Gc<str>),
     Object(ObjectMap),
@@ -213,6 +214,13 @@ impl Debug for Symbol {
     }
 }
 
+#[cfg(feature = "_debug")]
+impl dbg_pls::DebugPls for Symbol {
+    fn fmt(&self, f: dbg_pls::Formatter<'_>) {
+        DebugPls::fmt(self.as_str(), f)
+    }
+}
+
 impl Deref for Object {
     type Target = ObjectMap;
 
@@ -226,6 +234,6 @@ impl Deref for Object {
 
 impl Debug for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.gc.deref().fmt(f)
+        Debug::fmt(self.gc.deref(), f)
     }
 }
