@@ -1,8 +1,6 @@
 ---
 source: src/parse/test.rs
-assertion_line: 232
 expression: ast
-
 ---
 Loop(
     Block {
@@ -10,30 +8,25 @@ Loop(
             Loop(
                 Block {
                     stmts: [],
-                    span: Span {
-                        start: 0,
-                        end: 0,
-                    },
+                    span: Span(
+                        0..0,
+                    ),
                 },
-                Span {
-                    start: 0,
-                    end: 0,
-                },
+                Span(
+                    0..0,
+                ),
             ),
             Break(
-                Span {
-                    start: 0,
-                    end: 0,
-                },
+                Span(
+                    0..0,
+                ),
             ),
         ],
-        span: Span {
-            start: 0,
-            end: 0,
-        },
+        span: Span(
+            0..0,
+        ),
     },
-    Span {
-        start: 0,
-        end: 0,
-    },
+    Span(
+        0..0,
+    ),
 )

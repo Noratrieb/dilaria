@@ -15,21 +15,13 @@ BinaryOp(
                 ),
             ),
         ),
-        rhs: UnaryOp(
-            UnaryOp {
-                span: Span(
+        rhs: Literal(
+            Number(
+                4.0,
+                Span(
                     0..0,
                 ),
-                expr: Literal(
-                    Number(
-                        10.0,
-                        Span(
-                            0..0,
-                        ),
-                    ),
-                ),
-                kind: Neg,
-            },
+            ),
         ),
         kind: Equal,
     },

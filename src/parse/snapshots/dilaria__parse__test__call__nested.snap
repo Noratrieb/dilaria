@@ -1,8 +1,6 @@
 ---
 source: src/parse/test.rs
-assertion_line: 558
 expression: ast
-
 ---
 Call(
     Call {
@@ -13,46 +11,40 @@ Call(
                         callee: Ident(
                             Ident {
                                 sym: "hugo",
-                                span: Span {
-                                    start: 0,
-                                    end: 0,
-                                },
+                                span: Span(
+                                    0..0,
+                                ),
                             },
                         ),
-                        span: Span {
-                            start: 0,
-                            end: 0,
-                        },
+                        span: Span(
+                            0..0,
+                        ),
                         kind: Field(
                             Ident {
                                 sym: "name",
-                                span: Span {
-                                    start: 0,
-                                    end: 0,
-                                },
+                                span: Span(
+                                    0..0,
+                                ),
                             },
                         ),
                     },
                 ),
-                span: Span {
-                    start: 0,
-                    end: 0,
-                },
+                span: Span(
+                    0..0,
+                ),
                 kind: Field(
                     Ident {
                         sym: "print",
-                        span: Span {
-                            start: 0,
-                            end: 0,
-                        },
+                        span: Span(
+                            0..0,
+                        ),
                     },
                 ),
             },
         ),
-        span: Span {
-            start: 0,
-            end: 0,
-        },
+        span: Span(
+            0..0,
+        ),
         kind: Fn(
             [],
         ),

@@ -1,63 +1,54 @@
 ---
 source: src/parse/test.rs
-assertion_line: 72
 expression: ast
-
 ---
 Assignment(
     Assignment {
-        span: Span {
-            start: 0,
-            end: 0,
-        },
+        span: Span(
+            0..0,
+        ),
         lhs: Call(
             Call {
                 callee: Ident(
                     Ident {
                         sym: "hugo",
-                        span: Span {
-                            start: 0,
-                            end: 0,
-                        },
+                        span: Span(
+                            0..0,
+                        ),
                     },
                 ),
-                span: Span {
-                    start: 0,
-                    end: 0,
-                },
+                span: Span(
+                    0..0,
+                ),
                 kind: Field(
                     Ident {
                         sym: "age",
-                        span: Span {
-                            start: 0,
-                            end: 0,
-                        },
+                        span: Span(
+                            0..0,
+                        ),
                     },
                 ),
             },
         ),
         rhs: BinaryOp(
             BinaryOp {
-                span: Span {
-                    start: 0,
-                    end: 0,
-                },
+                span: Span(
+                    0..0,
+                ),
                 lhs: Literal(
                     Number(
                         2021.0,
-                        Span {
-                            start: 0,
-                            end: 0,
-                        },
+                        Span(
+                            0..0,
+                        ),
                     ),
                 ),
                 rhs: Literal(
                     Number(
                         1986.0,
-                        Span {
-                            start: 0,
-                            end: 0,
-                        },
+                        Span(
+                            0..0,
+                        ),
                     ),
                 ),
                 kind: Sub,

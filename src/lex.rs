@@ -366,58 +366,60 @@ mod test {
 
     type StdString = std::string::String;
 
-    fn lex_test(code: &str) {
-        // SAFETY: we only work in this tiny scope
-        let mut runtime = unsafe { RtAlloc::new() };
+    macro_rules! lex_test {
+        ($code:expr) => {
+            // SAFETY: we only work in this tiny scope
+            let mut runtime = unsafe { RtAlloc::new() };
 
-        let lexer = Lexer::new(code, &mut runtime);
-        let tokens = lexer.map(|token| token.kind).collect::<Vec<_>>();
+            let lexer = Lexer::new($code, &mut runtime);
+            let tokens = lexer.map(|token| token.kind).collect::<Vec<_>>();
 
-        insta::assert_debug_snapshot!(tokens);
+            insta::assert_debug_snapshot!(tokens);
+        };
     }
 
     #[test]
     fn smiley_face() {
-        lex_test(">>.<<");
+        lex_test!(">>.<<");
     }
 
     #[test]
     fn greater_than_less_than_equal() {
-        lex_test(">= <= == < < >=");
+        lex_test!(">= <= == < < >=");
     }
 
     #[test]
     fn no_no_no() {
-        lex_test("!= != = !=");
+        lex_test!("!= != = !=");
     }
 
     #[test]
     fn braces_brackets_parens() {
-        lex_test("{([]]}");
+        lex_test!("{([]]}");
     }
 
     #[test]
     fn braces_brackets_parens_whitespace() {
-        lex_test(
+        lex_test!(
             "{     (   [      ]         ]   
         
-        }",
+        }"
         );
     }
 
     #[test]
     fn fancy_stuff() {
-        lex_test(". ,- * -, .");
+        lex_test!(". ,- * -, .");
     }
 
     #[test]
     fn comments() {
-        lex_test("fn # fn");
+        lex_test!("fn # fn");
     }
 
     #[test]
     fn long_multiline_comment() {
-        lex_test(
+        lex_test!(
             "fn ## hello i am something
      
      i span multiple lines
@@ -427,13 +429,13 @@ mod test {
 pls :) o(*￣▽￣*)ブ
  
    i like the indentation here ngl |     sneak for -> ## for ## <- sneak for
-     ## and",
+     ## and"
         );
     }
 
     #[test]
     fn terminate_multiline_comment_correctly() {
-        lex_test(
+        lex_test!(
             "fn ## # no not here :( ## let # ## <- this is commented out 
         # so no multiline comment
         ## 
@@ -442,53 +444,53 @@ pls :) o(*￣▽￣*)ブ
         # let #
         # # and
         ## or
-        ",
+        "
         );
     }
 
     #[test]
     fn greeting() {
-        lex_test("-.- /%");
+        lex_test!("-.- /%");
     }
 
     #[test]
     fn countdown() {
-        lex_test("3 . . 2 . . 1 . . 0");
+        lex_test!("3 . . 2 . . 1 . . 0");
     }
 
     #[test]
     fn underscore_number() {
-        lex_test("1_000_000");
+        lex_test!("1_000_000");
     }
 
     #[test]
     fn trailing_underscore_number() {
-        lex_test("1_00_");
+        lex_test!("1_00_");
     }
 
     #[test]
     fn larger_numbers() {
-        lex_test("123456789, 123456789.1234, 64785903");
+        lex_test!("123456789, 123456789.1234, 64785903");
     }
 
     #[test]
     fn string() {
-        lex_test(r#""uwu""#);
+        lex_test!(r#""uwu""#);
     }
 
     #[test]
     fn strings() {
-        lex_test(r#"(  "hi" "uwu" "\"uwu\""  "no \\ u" )"#);
+        lex_test!(r#"(  "hi" "uwu" "\"uwu\""  "no \\ u" )"#);
     }
 
     #[test]
     fn keywords() {
-        lex_test("let fn if else loop while break for true false null and not or print");
+        lex_test!("let fn if else loop while break for true false null and not or print");
     }
 
     #[test]
     fn keyword_and_ident() {
-        lex_test("let variable be a loop if false is true");
+        lex_test!("let variable be a loop if false is true");
     }
 
     #[test]
@@ -517,12 +519,12 @@ pls :) o(*￣▽￣*)ブ
             .map(|word| format!("{} ", word))
             .collect::<StdString>();
 
-        lex_test(&sentences);
+        lex_test!(&sentences);
     }
 
     #[test]
     fn serious_program() {
-        lex_test(
+        lex_test!(
             r#"let string = "hallol"
     let number = 5
     let me out ._.
@@ -530,7 +532,7 @@ pls :) o(*￣▽￣*)ブ
         if number == 5 or true == false and not false {
             println("Hello \\ World!")
         }
-    }"#,
+    }"#
         );
     }
 }

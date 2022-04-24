@@ -1,8 +1,6 @@
 ---
 source: src/parse/test.rs
-assertion_line: 258
 expression: ast
-
 ---
 Block {
     stmts: [
@@ -10,10 +8,9 @@ Block {
             Literal(
                 Number(
                     10.0,
-                    Span {
-                        start: 0,
-                        end: 0,
-                    },
+                    Span(
+                        0..0,
+                    ),
                 ),
             ),
         ),
@@ -21,16 +18,14 @@ Block {
             Literal(
                 Number(
                     20.0,
-                    Span {
-                        start: 0,
-                        end: 0,
-                    },
+                    Span(
+                        0..0,
+                    ),
                 ),
             ),
         ),
     ],
-    span: Span {
-        start: 0,
-        end: 0,
-    },
+    span: Span(
+        0..0,
+    ),
 }

@@ -1,36 +1,30 @@
 ---
 source: src/parse/test.rs
-assertion_line: 113
 expression: ast
-
 ---
 FnDecl(
     FnDecl {
-        span: Span {
-            start: 0,
-            end: 0,
-        },
+        span: Span(
+            0..0,
+        ),
         name: Ident {
             sym: "empty",
-            span: Span {
-                start: 0,
-                end: 0,
-            },
+            span: Span(
+                0..0,
+            ),
         },
         params: [
             Ident {
                 sym: "a",
-                span: Span {
-                    start: 0,
-                    end: 0,
-                },
+                span: Span(
+                    0..0,
+                ),
             },
             Ident {
                 sym: "b",
-                span: Span {
-                    start: 0,
-                    end: 0,
-                },
+                span: Span(
+                    0..0,
+                ),
             },
         ],
         body: Block {
@@ -38,26 +32,23 @@ FnDecl(
                 Expr(
                     BinaryOp(
                         BinaryOp {
-                            span: Span {
-                                start: 0,
-                                end: 0,
-                            },
+                            span: Span(
+                                0..0,
+                            ),
                             lhs: Literal(
                                 Number(
                                     10.0,
-                                    Span {
-                                        start: 0,
-                                        end: 0,
-                                    },
+                                    Span(
+                                        0..0,
+                                    ),
                                 ),
                             ),
                             rhs: Literal(
                                 Number(
                                     20.0,
-                                    Span {
-                                        start: 0,
-                                        end: 0,
-                                    },
+                                    Span(
+                                        0..0,
+                                    ),
                                 ),
                             ),
                             kind: Add,
@@ -65,10 +56,9 @@ FnDecl(
                     ),
                 ),
             ],
-            span: Span {
-                start: 0,
-                end: 0,
-            },
+            span: Span(
+                0..0,
+            ),
         },
     },
 )

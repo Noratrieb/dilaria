@@ -2,20 +2,12 @@
 source: src/parse/test.rs
 expression: ast
 ---
-Assignment(
-    Assignment {
+BinaryOp(
+    BinaryOp {
         span: Span(
             0..0,
         ),
-        lhs: Ident(
-            Ident {
-                sym: "hugo",
-                span: Span(
-                    0..0,
-                ),
-            },
-        ),
-        rhs: Literal(
+        lhs: Literal(
             Number(
                 10.0,
                 Span(
@@ -23,5 +15,14 @@ Assignment(
                 ),
             ),
         ),
+        rhs: Literal(
+            Number(
+                4.0,
+                Span(
+                    0..0,
+                ),
+            ),
+        ),
+        kind: Add,
     },
 )

@@ -1,15 +1,12 @@
 ---
 source: src/parse/test.rs
-assertion_line: 639
 expression: ast
-
 ---
 Literal(
     Boolean(
         true,
-        Span {
-            start: 0,
-            end: 0,
-        },
+        Span(
+            0..0,
+        ),
     ),
 )

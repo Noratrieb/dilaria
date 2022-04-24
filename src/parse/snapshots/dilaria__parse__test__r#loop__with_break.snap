@@ -1,26 +1,21 @@
 ---
 source: src/parse/test.rs
-assertion_line: 223
 expression: ast
-
 ---
 Loop(
     Block {
         stmts: [
             Break(
-                Span {
-                    start: 0,
-                    end: 0,
-                },
+                Span(
+                    0..0,
+                ),
             ),
         ],
-        span: Span {
-            start: 0,
-            end: 0,
-        },
+        span: Span(
+            0..0,
+        ),
     },
-    Span {
-        start: 0,
-        end: 0,
-    },
+    Span(
+        0..0,
+    ),
 )

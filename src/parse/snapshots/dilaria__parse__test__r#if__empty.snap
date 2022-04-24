@@ -1,29 +1,24 @@
 ---
 source: src/parse/test.rs
-assertion_line: 130
 expression: ast
-
 ---
 IfStmt {
-    span: Span {
-        start: 0,
-        end: 0,
-    },
+    span: Span(
+        0..0,
+    ),
     cond: Literal(
         Boolean(
             true,
-            Span {
-                start: 0,
-                end: 0,
-            },
+            Span(
+                0..0,
+            ),
         ),
     ),
     body: Block {
         stmts: [],
-        span: Span {
-            start: 0,
-            end: 0,
-        },
+        span: Span(
+            0..0,
+        ),
     },
     else_part: None,
 }

@@ -1,8 +1,6 @@
 ---
 source: src/parse/test.rs
-assertion_line: 667
 expression: ast
-
 ---
 Literal(
     Array(
@@ -10,16 +8,14 @@ Literal(
             Literal(
                 Number(
                     10.0,
-                    Span {
-                        start: 0,
-                        end: 0,
-                    },
+                    Span(
+                        0..0,
+                    ),
                 ),
             ),
         ],
-        Span {
-            start: 0,
-            end: 0,
-        },
+        Span(
+            0..0,
+        ),
     ),
 )

@@ -1,22 +1,18 @@
 ---
 source: src/parse/test.rs
-assertion_line: 494
 expression: ast
-
 ---
 UnaryOp(
     UnaryOp {
-        span: Span {
-            start: 0,
-            end: 0,
-        },
+        span: Span(
+            0..0,
+        ),
         expr: Literal(
             Boolean(
                 true,
-                Span {
-                    start: 0,
-                    end: 0,
-                },
+                Span(
+                    0..0,
+                ),
             ),
         ),
         kind: Not,

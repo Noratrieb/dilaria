@@ -1,8 +1,6 @@
 ---
 source: src/lex.rs
-assertion_line: 370
 expression: tokens
-
 ---
 [
     ParenO,

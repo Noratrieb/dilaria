@@ -1,37 +1,31 @@
 ---
 source: src/parse/test.rs
-assertion_line: 200
 expression: ast
-
 ---
 While(
     WhileStmt {
-        span: Span {
-            start: 0,
-            end: 0,
-        },
+        span: Span(
+            0..0,
+        ),
         cond: BinaryOp(
             BinaryOp {
-                span: Span {
-                    start: 0,
-                    end: 0,
-                },
+                span: Span(
+                    0..0,
+                ),
                 lhs: Literal(
                     Boolean(
                         false,
-                        Span {
-                            start: 0,
-                            end: 0,
-                        },
+                        Span(
+                            0..0,
+                        ),
                     ),
                 ),
                 rhs: Literal(
                     Boolean(
                         true,
-                        Span {
-                            start: 0,
-                            end: 0,
-                        },
+                        Span(
+                            0..0,
+                        ),
                     ),
                 ),
                 kind: Or,
@@ -40,16 +34,14 @@ While(
         body: Block {
             stmts: [
                 Break(
-                    Span {
-                        start: 0,
-                        end: 0,
-                    },
+                    Span(
+                        0..0,
+                    ),
                 ),
             ],
-            span: Span {
-                start: 0,
-                end: 0,
-            },
+            span: Span(
+                0..0,
+            ),
         },
     },
 )
