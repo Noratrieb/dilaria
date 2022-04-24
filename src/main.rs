@@ -1,5 +1,6 @@
-use dilaria::Config;
 use std::io;
+
+use dilaria::Config;
 
 fn main() {
     let mut args = std::env::args();

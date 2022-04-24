@@ -4,11 +4,13 @@
 //! For error handling, there is a single `Error` token, which contains the error. The lexer
 //! is an iterator, and can therefore be used without any allocations
 
-use crate::errors::{CompilerError, Span};
-use crate::gc::Symbol;
-use crate::RtAlloc;
-use std::iter::Peekable;
-use std::str::CharIndices;
+use std::{iter::Peekable, str::CharIndices};
+
+use crate::{
+    errors::{CompilerError, Span},
+    gc::Symbol,
+    RtAlloc,
+};
 
 ///
 /// A single token generated from the lexer
@@ -360,8 +362,7 @@ fn is_valid_ident_start(char: char) -> bool {
 
 #[cfg(test)]
 mod test {
-    use crate::lex::Lexer;
-    use crate::RtAlloc;
+    use crate::{lex::Lexer, RtAlloc};
 
     type StdString = std::string::String;
 

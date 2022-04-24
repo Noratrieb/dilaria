@@ -3,16 +3,17 @@
 //! These tests are horrible and break all the time. Never do it like this again.
 //! That said it's too late to fix it.
 
-use crate::errors::Span;
-use crate::parse::Parser;
-use crate::RtAlloc;
 use bumpalo::Bump;
 use prelude::*;
 
+use crate::{errors::Span, parse::Parser, RtAlloc};
+
 mod prelude {
     pub(super) use super::{parser, rt, test_literal_bin_op, test_number_literal, token};
-    pub(super) use crate::ast::{Expr, Stmt};
-    pub(super) use crate::lex::TokenKind::*;
+    pub(super) use crate::{
+        ast::{Expr, Stmt},
+        lex::TokenKind::*,
+    };
     pub type Token = crate::lex::Token;
     pub type TokenType = crate::lex::TokenKind;
     pub(super) use bumpalo::Bump;
@@ -58,9 +59,10 @@ fn test_number_literal<F: FnOnce(Vec<Token>, &Bump) -> Expr>(parser: F) {
 }
 
 mod assignment {
+    use bumpalo::Bump;
+
     use super::prelude::*;
     use crate::parse::test::rt;
-    use bumpalo::Bump;
 
     fn parse_assignment(tokens: Vec<Token>, alloc: &Bump) -> Stmt {
         let mut parser = parser(tokens, alloc);

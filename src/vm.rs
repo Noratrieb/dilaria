@@ -1,21 +1,36 @@
-use crate::bytecode::{FnBlock, Function, Instr};
-use crate::gc::{Object, RtAlloc, Symbol};
-use crate::util;
-use crate::Config;
-use std::fmt::{Debug, Display, Formatter};
-use std::io::{Read, Write};
+use std::{
+    fmt::{Debug, Display, Formatter},
+    io::{Read, Write},
+};
 
-type VmError = Box<&'static str>;
+use crate::{
+    bytecode::{FnBlock, Function, Instr},
+    gc::{Object, RtAlloc, Symbol},
+    util, Config,
+};
+
+type ActualBackingVmError = &'static str;
+
+type VmError = Box<VmErrorInner>;
+
+#[derive(Debug)]
+enum VmErrorInner {
+    Exit,
+    Error(ActualBackingVmError),
+}
+
 type VmResult = Result<(), VmError>;
 
 // never get bigger than a machine word.
 util::assert_size!(VmResult <= std::mem::size_of::<usize>());
 
+type PublicVmError = ActualBackingVmError;
+
 pub fn execute<'bc>(
     bytecode: &'bc [FnBlock<'bc>],
     alloc: RtAlloc,
     cfg: &mut Config,
-) -> Result<(), VmError> {
+) -> Result<(), PublicVmError> {
     let mut vm = Vm {
         blocks: bytecode,
         current: bytecode.first().ok_or("no bytecode found")?,
@@ -28,7 +43,13 @@ pub fn execute<'bc>(
         step: cfg.step,
     };
 
-    vm.execute_function()
+    match vm.execute_function() {
+        Ok(()) => Ok(()),
+        Err(boxed) => match *boxed {
+            VmErrorInner::Exit => Ok(()),
+            VmErrorInner::Error(err) => Err(err),
+        },
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -86,7 +107,7 @@ impl<'bc> Vm<'bc, '_> {
                 None => return Ok(()),
             }
             if self.pc > 0 {
-                //debug_assert_eq!(self.current.stack_sizes[self.pc - 1], self.stack.len());
+                // debug_assert_eq!(self.current.stack_sizes[self.pc - 1], self.stack.len());
             }
         }
     }
@@ -109,56 +130,56 @@ impl<'bc> Vm<'bc, '_> {
                 match val {
                     Value::Bool(bool) => self.stack.push(Value::Bool(!bool)),
                     Value::Num(float) => self.stack.push(Value::Num(-float)),
-                    _ => return Err(self.type_error()),
+                    _ => return Err(err("bad type")),
                 }
             }
             Instr::BinAdd => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a + b)),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::BinSub => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a - b)),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::BinMul => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a * b)),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::BinDiv => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a / b)),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::BinMod => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a % b)),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::BinAnd => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a && b)),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::BinOr => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a || b)),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::CmpGreater => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a > b)),
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() > b.as_str())),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::CmpGreaterEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a >= b)),
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() >= b.as_str())),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::CmpLess => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a < b)),
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() < b.as_str())),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::CmpLessEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Num(a), Value::Num(b)) => Ok(Value::Bool(a <= b)),
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a.as_str() <= b.as_str())),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::CmpEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Null, Value::Null) => Ok(TRUE),
@@ -166,7 +187,7 @@ impl<'bc> Vm<'bc, '_> {
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a == b)),
                 (Value::Object(_a), Value::Object(_b)) => todo!(),
                 (Value::Array, Value::Array) => Ok(TRUE),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::CmpNotEq => self.bin_op(|lhs, rhs| match (lhs, rhs) {
                 (Value::Null, Value::Null) => Ok(FALSE),
@@ -174,23 +195,24 @@ impl<'bc> Vm<'bc, '_> {
                 (Value::String(a), Value::String(b)) => Ok(Value::Bool(a != b)),
                 (Value::Object(_a), Value::Object(_b)) => todo!(),
                 (Value::Array, Value::Array) => Ok(FALSE),
-                _ => Err("bad type".into()),
+                _ => Err(err("bad type")),
             })?,
             Instr::Print => {
                 let val = self.stack.pop().unwrap();
-                writeln!(self.stdout, "{}", val).map_err(|_| "failed to write to stdout")?;
+                writeln!(self.stdout, "{}", val).map_err(|_| err("failed to write to stdout"))?;
             }
             Instr::JmpFalse(pos) => {
                 let val = self.stack.pop().unwrap();
                 match val {
                     Value::Bool(false) => self.pc = (self.pc as isize + pos) as usize,
                     Value::Bool(true) => {}
-                    _ => return Err("bad type".into()),
+                    _ => return Err(err("bad type")),
                 }
             }
             Instr::Jmp(pos) => self.pc = (self.pc as isize + pos) as usize,
             Instr::Call => self.call()?,
             Instr::Return => self.ret()?,
+            Instr::Exit => return Err(Box::new(VmErrorInner::Exit)),
             Instr::ShrinkStack(size) => {
                 assert!(self.stack.len() >= size);
                 let new_len = self.stack.len() - size;
@@ -246,6 +268,8 @@ impl<'bc> Vm<'bc, '_> {
 
         let bookkeeping_offset = self.stack_offset + current_arity;
 
+        let inner_stack_offset = self.stack_offset;
+
         // now, we get all the bookkeeping info out
         let old_stack_offset = self.stack[bookkeeping_offset].unwrap_native_int();
         let old_pc = self.stack[bookkeeping_offset + 1].unwrap_native_int();
@@ -259,13 +283,12 @@ impl<'bc> Vm<'bc, '_> {
 
         // and kill the function stack frame
         // note: don't emit a return instruction from the whole global script.
-        todo!();
+        unsafe { self.stack.set_len(inner_stack_offset) };
+
+        // everything that remains...
+        self.stack.push(return_value);
 
         Ok(())
-    }
-
-    fn type_error(&self) -> VmError {
-        "bad type".into()
     }
 
     fn step_debug(&self, current_instr: Instr) {
@@ -319,4 +342,8 @@ impl Display for Value {
             Value::NativeU(_) => panic!("Called display on native value!"),
         }
     }
+}
+
+fn err(msg: &'static str) -> VmError {
+    Box::new(VmErrorInner::Error(msg))
 }

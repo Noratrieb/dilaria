@@ -2,14 +2,17 @@
 //!
 //! The structure of the GC might change, but for now it's simply a `LinkedList` of `Object`s.
 
-use crate::vm::Value;
-use crate::{HashMap, HashSet};
+use std::{
+    collections::LinkedList,
+    fmt::{Debug, Formatter},
+    hash::{Hash, Hasher},
+    ops::Deref,
+    ptr::NonNull,
+};
+
 use dbg_pls::DebugPls;
-use std::collections::LinkedList;
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
-use std::ops::Deref;
-use std::ptr::NonNull;
+
+use crate::{vm::Value, HashMap, HashSet};
 
 /// A pointer to a garbage collected value. This pointer *must* always be valid, and a value
 /// is only allowed to be freed once no Gc is pointing at it anymore. This is achieved through

@@ -58,10 +58,11 @@
 //!
 //! ```
 
-use crate::errors::Span;
-use crate::vm::Value;
-use bumpalo::collections::Vec;
 use std::fmt::{Debug, Formatter};
+
+use bumpalo::collections::Vec;
+
+use crate::{errors::Span, vm::Value};
 
 /// This struct contains all data for a function.
 pub struct FnBlock<'bc> {
@@ -129,8 +130,11 @@ pub enum Instr {
 
     /// Calls the function at the top of the stack, after the parameters
     Call,
-
+    /// Returns from the function, removing that stack frame
     Return,
+
+    /// Stop the program
+    Exit,
 
     /// Shrinks the stack by `usize` elements, should always be emitted before backwards jumps
     ShrinkStack(usize),

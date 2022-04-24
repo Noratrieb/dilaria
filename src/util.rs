@@ -6,8 +6,9 @@ macro_rules! assert_size {
     };
 }
 
-pub(crate) use assert_size;
 use std::fmt::Display;
+
+pub(crate) use assert_size;
 
 #[cfg(feature = "_debug")]
 pub fn dbg(prefix: impl Display, x: impl dbg_pls::DebugPls) {

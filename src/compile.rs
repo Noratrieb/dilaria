@@ -1,18 +1,20 @@
 //! The compiler that compiles the AST down to bytecode
 
-use crate::ast::{
-    Assignment, BinaryOp, BinaryOpKind, Block, Call, CallKind, Declaration, ElsePart, Expr, FnDecl,
-    Ident, IfStmt, Literal, Program, Stmt, UnaryOp, WhileStmt,
+use std::{cell::RefCell, rc::Rc};
+
+use bumpalo::{collections::Vec, Bump};
+
+use crate::{
+    ast::{
+        Assignment, BinaryOp, BinaryOpKind, Block, Call, CallKind, Declaration, ElsePart, Expr,
+        FnDecl, Ident, IfStmt, Literal, Program, Stmt, UnaryOp, WhileStmt,
+    },
+    bytecode::{FnBlock, Instr},
+    errors::{CompilerError, Span},
+    gc::Symbol,
+    vm::Value,
+    HashMap, RtAlloc,
 };
-use crate::bytecode::{FnBlock, Instr};
-use crate::errors::{CompilerError, Span};
-use crate::gc::Symbol;
-use crate::vm::Value;
-use crate::{HashMap, RtAlloc};
-use bumpalo::collections::Vec;
-use bumpalo::Bump;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 type CResult<T = ()> = Result<T, CompilerError>;
 
@@ -119,8 +121,8 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
             StackChange::Grow,
             Span::dummy(),
         );
-        // exit the program.
-        self.push_instr(Instr::Return, StackChange::None, Span::dummy());
+        // exit the program. here, we use `exit` instead of `return` because there is no stack frame
+        self.push_instr(Instr::Exit, StackChange::None, Span::dummy());
         Ok(())
     }
 
@@ -128,7 +130,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         // padding for backwards jumps
         self.push_instr(Instr::Nop, StackChange::None, block.span);
 
-        self.compile_stmts(&block.stmts)
+        self.compile_stmts(block.stmts)
     }
 
     fn compile_stmts(&mut self, stmts: &[Stmt]) -> CResult {
@@ -222,7 +224,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
                 .push(decl.params.len() + CALLCONV_OFFSET_DATA);
         }
 
-        self.compile_stmts(&decl.body.stmts)?;
+        self.compile_stmts(decl.body.stmts)?;
 
         self.push_instr(Instr::PushVal(Value::Null), StackChange::Grow, decl.span);
         self.push_instr(Instr::Return, StackChange::None, decl.span);
@@ -380,7 +382,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         let next_env = Env::new_inner(self.env.clone(), OuterEnvKind::Block);
         self.env = next_env;
 
-        self.compile_stmts(&block.stmts)?;
+        self.compile_stmts(block.stmts)?;
 
         let outer = self.env.borrow().outer.clone().expect("outer env got lost");
         self.env = outer;

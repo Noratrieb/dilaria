@@ -3,8 +3,7 @@
 //!
 //! All AST nodes are bump allocated into the lifetime `'ast`  
 
-use crate::errors::Span;
-use crate::gc::Symbol;
+use crate::{errors::Span, gc::Symbol};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 #[cfg_attr(feature = "_debug", derive(dbg_pls::DebugPls))]

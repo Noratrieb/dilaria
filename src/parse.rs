@@ -6,12 +6,15 @@
 #[cfg(test)]
 mod test;
 
-use crate::ast::*;
-use crate::errors::{CompilerError, Span};
-use crate::lex::{Token, TokenKind};
-use bumpalo::collections::Vec;
-use bumpalo::Bump;
 use std::iter::Peekable;
+
+use bumpalo::{collections::Vec, Bump};
+
+use crate::{
+    ast::*,
+    errors::{CompilerError, Span},
+    lex::{Token, TokenKind},
+};
 
 #[derive(Debug)]
 struct Parser<'ast, I>

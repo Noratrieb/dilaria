@@ -1,4 +1,4 @@
-#![deny(clippy::disallowed_type)]
+#![deny(clippy::disallowed_types)]
 
 mod ast;
 mod bytecode;
@@ -10,13 +10,13 @@ mod parse;
 mod util;
 mod vm;
 
-use crate::ast::Program;
-use crate::gc::RtAlloc;
 use std::io::Write;
 
 pub use bumpalo::Bump;
 pub use lex::*;
 pub use parse::*;
+
+use crate::{ast::Program, gc::RtAlloc};
 
 #[cfg(not(feature = "fxhash"))]
 #[allow(clippy::disallowed_types)]
@@ -73,8 +73,8 @@ fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Con
             }
 
             let result = vm::execute(code, runtime, cfg);
-            if let Err(result) = result {
-                eprintln!("error: {}", result);
+            if let Err(msg) = result {
+                eprintln!("error: {msg}");
             }
         }
         Err(err) => errors::display_error(program, err),
