@@ -1,0 +1,9 @@
+---
+source: src/syntax/lex.rs
+expression: tokens
+---
+[
+    Number(
+        1000000.0,
+    ),
+]

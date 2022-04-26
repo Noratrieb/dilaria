@@ -1,0 +1,21 @@
+---
+source: src/syntax/lex.rs
+expression: tokens
+---
+[
+    Let,
+    Fn,
+    If,
+    Else,
+    Loop,
+    While,
+    Break,
+    For,
+    True,
+    False,
+    Null,
+    And,
+    Not,
+    Or,
+    Print,
+]

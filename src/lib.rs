@@ -1,22 +1,22 @@
 #![deny(clippy::disallowed_types)]
 
-mod ast;
 mod bytecode;
 mod compile;
 mod errors;
 mod gc;
-mod lex;
-mod parse;
+mod syntax;
 mod util;
 mod vm;
 
 use std::io::Write;
 
 pub use bumpalo::Bump;
-pub use lex::*;
-pub use parse::*;
 
-use crate::{ast::Program, gc::RtAlloc};
+pub use crate::syntax::{lex::*, parse::*};
+use crate::{
+    gc::RtAlloc,
+    syntax::{ast::Program, lex, parse},
+};
 
 #[cfg(not(feature = "fxhash"))]
 #[allow(clippy::disallowed_types)]

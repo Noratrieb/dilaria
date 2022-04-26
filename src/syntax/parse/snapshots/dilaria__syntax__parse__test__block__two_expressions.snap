@@ -1,0 +1,31 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+Block {
+    stmts: [
+        Expr(
+            Literal(
+                Number(
+                    10.0,
+                    Span(
+                        0..0,
+                    ),
+                ),
+            ),
+        ),
+        Expr(
+            Literal(
+                Number(
+                    20.0,
+                    Span(
+                        0..0,
+                    ),
+                ),
+            ),
+        ),
+    ],
+    span: Span(
+        0..0,
+    ),
+}

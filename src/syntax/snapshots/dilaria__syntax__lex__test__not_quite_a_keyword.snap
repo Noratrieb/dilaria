@@ -1,0 +1,57 @@
+---
+source: src/syntax/lex.rs
+expression: tokens
+---
+[
+    Ident(
+        "letter",
+    ),
+    Ident(
+        "fori",
+    ),
+    Ident(
+        "fnfn",
+    ),
+    Ident(
+        "iffy",
+    ),
+    Ident(
+        "bloop",
+    ),
+    Ident(
+        "loopy_yeah",
+    ),
+    Ident(
+        "whileTrue",
+    ),
+    Ident(
+        "truefalse",
+    ),
+    Ident(
+        "falsetrue",
+    ),
+    Ident(
+        "nullability",
+    ),
+    Ident(
+        "rot",
+    ),
+    Ident(
+        "ornot",
+    ),
+    Ident(
+        "nor",
+    ),
+    Ident(
+        "andnowQuestionMark",
+    ),
+    Ident(
+        "notOrAnd",
+    ),
+    Ident(
+        "breakMe",
+    ),
+    Ident(
+        "Ibreak",
+    ),
+]

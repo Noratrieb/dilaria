@@ -1,7 +1,0 @@
----
-source: src/lex.rs
-expression: tokens
----
-[
-    Fn,
-]

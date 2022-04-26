@@ -1,0 +1,19 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+Block {
+    stmts: [
+        Block(
+            Block {
+                stmts: [],
+                span: Span(
+                    0..0,
+                ),
+            },
+        ),
+    ],
+    span: Span(
+        0..0,
+    ),
+}

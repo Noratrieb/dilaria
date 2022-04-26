@@ -1,0 +1,24 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+FnDecl(
+    FnDecl {
+        span: Span(
+            0..0,
+        ),
+        name: Ident {
+            sym: "empty",
+            span: Span(
+                0..0,
+            ),
+        },
+        params: [],
+        body: Block {
+            stmts: [],
+            span: Span(
+                0..0,
+            ),
+        },
+    },
+)

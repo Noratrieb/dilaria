@@ -1,0 +1,12 @@
+---
+source: src/syntax/lex.rs
+expression: tokens
+---
+[
+    GreaterEqual,
+    LessEqual,
+    EqualEqual,
+    Less,
+    Less,
+    GreaterEqual,
+]

@@ -1,0 +1,50 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+IfStmt {
+    span: Span(
+        0..0,
+    ),
+    cond: Literal(
+        Boolean(
+            true,
+            Span(
+                0..0,
+            ),
+        ),
+    ),
+    body: Block {
+        stmts: [],
+        span: Span(
+            0..0,
+        ),
+    },
+    else_part: Some(
+        ElseIf(
+            IfStmt {
+                span: Span(
+                    0..0,
+                ),
+                cond: Literal(
+                    Boolean(
+                        true,
+                        Span(
+                            0..0,
+                        ),
+                    ),
+                ),
+                body: Block {
+                    stmts: [],
+                    span: Span(
+                        0..0,
+                    ),
+                },
+                else_part: None,
+            },
+            Span(
+                0..0,
+            ),
+        ),
+    ),
+}

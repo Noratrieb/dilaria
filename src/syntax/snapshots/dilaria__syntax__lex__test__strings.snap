@@ -1,0 +1,20 @@
+---
+source: src/syntax/lex.rs
+expression: tokens
+---
+[
+    ParenO,
+    String(
+        "hi",
+    ),
+    String(
+        "uwu",
+    ),
+    String(
+        "\"uwu\"",
+    ),
+    String(
+        "no \\ u",
+    ),
+    ParenC,
+]

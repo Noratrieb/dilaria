@@ -5,13 +5,13 @@ use std::{cell::RefCell, rc::Rc};
 use bumpalo::{collections::Vec, Bump};
 
 use crate::{
-    ast::{
-        Assignment, BinaryOp, BinaryOpKind, Block, Call, CallKind, Declaration, ElsePart, Expr,
-        FnDecl, Ident, IfStmt, Literal, Program, Stmt, UnaryOp, WhileStmt,
-    },
     bytecode::{FnBlock, Instr},
     errors::{CompilerError, Span},
     gc::Symbol,
+    syntax::ast::{
+        Assignment, BinaryOp, BinaryOpKind, Block, Call, CallKind, Declaration, ElsePart, Expr,
+        FnDecl, Ident, IfStmt, Literal, Program, Stmt, UnaryOp, WhileStmt,
+    },
     vm::Value,
     HashMap, RtAlloc,
 };

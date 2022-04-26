@@ -1,0 +1,44 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+BinaryOp(
+    BinaryOp {
+        span: Span(
+            0..0,
+        ),
+        lhs: Literal(
+            Number(
+                10.0,
+                Span(
+                    0..0,
+                ),
+            ),
+        ),
+        rhs: BinaryOp(
+            BinaryOp {
+                span: Span(
+                    0..0,
+                ),
+                lhs: Literal(
+                    Number(
+                        20.0,
+                        Span(
+                            0..0,
+                        ),
+                    ),
+                ),
+                rhs: Literal(
+                    Number(
+                        100.0,
+                        Span(
+                            0..0,
+                        ),
+                    ),
+                ),
+                kind: Mul,
+            },
+        ),
+        kind: Add,
+    },
+)

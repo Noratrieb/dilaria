@@ -1,0 +1,21 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+Loop(
+    Block {
+        stmts: [
+            Break(
+                Span(
+                    0..0,
+                ),
+            ),
+        ],
+        span: Span(
+            0..0,
+        ),
+    },
+    Span(
+        0..0,
+    ),
+)

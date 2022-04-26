@@ -1,0 +1,24 @@
+---
+source: src/syntax/lex.rs
+expression: tokens
+---
+[
+    Number(
+        3.0,
+    ),
+    Dot,
+    Dot,
+    Number(
+        2.0,
+    ),
+    Dot,
+    Dot,
+    Number(
+        1.0,
+    ),
+    Dot,
+    Dot,
+    Number(
+        0.0,
+    ),
+]

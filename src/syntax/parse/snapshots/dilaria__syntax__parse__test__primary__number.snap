@@ -1,0 +1,12 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+Literal(
+    String(
+        "uwu",
+        Span(
+            0..0,
+        ),
+    ),
+)

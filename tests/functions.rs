@@ -43,6 +43,7 @@ print "correct3";
 );
 
 run_test!(
+    #[ignore]
     parameters,
     r#"
 fn fancy_print(str) {
@@ -54,6 +55,7 @@ fancy_print("correct");
 );
 
 run_test!(
+    #[ignore]
     parameters_and_return,
     r#"
 fn add(a, b) {
@@ -71,6 +73,7 @@ if added == 6 {
 );
 
 run_test!(
+    #[ignore]
     fib5,
     r#"
 fn fib(n) {

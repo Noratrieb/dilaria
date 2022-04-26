@@ -1,0 +1,12 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+Literal(
+    Number(
+        10.0,
+        Span(
+            0..0,
+        ),
+    ),
+)

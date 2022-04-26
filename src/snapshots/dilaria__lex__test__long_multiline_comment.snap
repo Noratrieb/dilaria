@@ -1,9 +1,0 @@
----
-source: src/lex.rs
-expression: tokens
----
-[
-    Fn,
-    For,
-    And,
-]

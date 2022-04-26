@@ -1,0 +1,23 @@
+---
+source: src/syntax/lex.rs
+expression: tokens
+---
+[
+    Let,
+    Ident(
+        "variable",
+    ),
+    Ident(
+        "be",
+    ),
+    Ident(
+        "a",
+    ),
+    Loop,
+    If,
+    False,
+    Ident(
+        "is",
+    ),
+    True,
+]

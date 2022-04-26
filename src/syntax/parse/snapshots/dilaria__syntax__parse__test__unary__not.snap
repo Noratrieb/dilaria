@@ -1,0 +1,20 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+UnaryOp(
+    UnaryOp {
+        span: Span(
+            0..0,
+        ),
+        expr: Literal(
+            Boolean(
+                true,
+                Span(
+                    0..0,
+                ),
+            ),
+        ),
+        kind: Not,
+    },
+)

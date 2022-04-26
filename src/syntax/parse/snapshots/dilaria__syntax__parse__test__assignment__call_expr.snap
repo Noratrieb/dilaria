@@ -1,0 +1,58 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+Assignment(
+    Assignment {
+        span: Span(
+            0..0,
+        ),
+        lhs: Call(
+            Call {
+                callee: Ident(
+                    Ident {
+                        sym: "hugo",
+                        span: Span(
+                            0..0,
+                        ),
+                    },
+                ),
+                span: Span(
+                    0..0,
+                ),
+                kind: Field(
+                    Ident {
+                        sym: "age",
+                        span: Span(
+                            0..0,
+                        ),
+                    },
+                ),
+            },
+        ),
+        rhs: BinaryOp(
+            BinaryOp {
+                span: Span(
+                    0..0,
+                ),
+                lhs: Literal(
+                    Number(
+                        2021.0,
+                        Span(
+                            0..0,
+                        ),
+                    ),
+                ),
+                rhs: Literal(
+                    Number(
+                        1986.0,
+                        Span(
+                            0..0,
+                        ),
+                    ),
+                ),
+                kind: Sub,
+            },
+        ),
+    },
+)

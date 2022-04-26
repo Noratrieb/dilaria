@@ -1,0 +1,12 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+Ident(
+    Ident {
+        sym: "tokens",
+        span: Span(
+            0..0,
+        ),
+    },
+)

@@ -1,0 +1,11 @@
+---
+source: src/syntax/lex.rs
+expression: tokens
+---
+[
+    Minus,
+    Dot,
+    Minus,
+    Slash,
+    Percent,
+]

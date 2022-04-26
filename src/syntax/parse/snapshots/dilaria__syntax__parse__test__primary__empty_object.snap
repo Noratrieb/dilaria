@@ -1,0 +1,11 @@
+---
+source: src/syntax/parse/test.rs
+expression: ast
+---
+Literal(
+    Object(
+        Span(
+            0..0,
+        ),
+    ),
+)

@@ -1,6 +1,7 @@
 #[macro_export]
 macro_rules! run_test {
-    ($name:ident, $code:expr) => {
+    ($(#[$attr:tt])* $name:ident, $code:expr) => {
+        $(#[$attr])*
         #[test]
         fn $name() {
             let code = $code;
