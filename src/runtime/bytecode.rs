@@ -23,40 +23,7 @@
 //! It is the compilers job to generate the correct loading of the arguments and assure that the arity
 //! is correct before the `Call` instruction.
 //!
-//!
-//! # ABI
-//! Function arguments are passed on the stack and can be loaded just like local variables. They belong
-//! to the stack frame of the new function and are cleaned up after returning, leaving the return value where
-//! the stack frame was
-//!
-//! When a call happens, the current stack offset is pushed onto the stack as a `Value::Native` and
-//! the element before it is stored as the new offset.
-//! Then all parameters are pushed onto the stack, from first to last
-//! Afterwards, execution of the code is started. A function always has to return, and compiler
-//! inserts `return null` at the end of every function implicitly.
-//!
-//! If a return happens, the VM loads the current value on the stack. It then goes to the start
-//! of the stack frame and saves the `Value::Native` that stores the old stack offset and loads that
-//! into its stack offset. It then removes the whole stack frame from the stack, and pushes the
-//! returned value.
-//!
-//! ```text
-//!                   old stack offset─╮
-//!         ╭─Parameters─╮             │           old Function─╮     local─╮
-//!         v            v             v                        v           v  
-//! ───────┬─────────┬──────────┬─────────────┬────────────┬──────────┬─────────╮
-//! Num(6) │ Num(5)  │  Num(6)  │ NativeU(20) │ NativeU(4) │ Function │  Num(5) │
-//! ───────┴─────────┴──────────┴─────────────┴────────────┴──────────┴─────────╯
-//!  ^     ╰────────────────────────────────────────────────────────────────── current stack frame
-//!  │                                             ^
-//!  ╰─ old local                                  ╰─old PC
-//!
-//!         ^
-//! Vm      ╰────────────╮
-//!                      │
-//! Current stack offset─╯
-//!
-//! ```
+//! See [`stack_frame`](`super::stack_frame`) for mode details
 
 use std::fmt::{Debug, Formatter};
 

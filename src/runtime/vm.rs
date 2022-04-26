@@ -7,6 +7,7 @@ use crate::{
     runtime::{
         bytecode::{FnBlock, Function, Instr},
         gc::{Object, RtAlloc, Symbol},
+        stack_frame::Frame,
     },
     util, Config,
 };
@@ -28,6 +29,25 @@ util::assert_size!(VmResult <= std::mem::size_of::<usize>());
 
 type PublicVmError = ActualBackingVmError;
 
+pub(super) struct Vm<'bc, 'io> {
+    // -- global
+    blocks: &'bc [FnBlock<'bc>],
+    _alloc: RtAlloc,
+    pub stack: Vec<Value>,
+    stdout: &'io mut dyn Write,
+    step: bool,
+
+    // -- local to the current function
+    /// The current function
+    current: &'bc FnBlock<'bc>,
+    pub current_block_index: usize,
+    /// The offset of the first parameter of the current function
+    pub stack_frame_offset: usize,
+    /// Index of the next instruction being executed. is out of bounds if the current
+    /// instruction is the last one
+    pub pc: usize,
+}
+
 pub fn execute<'bc>(
     bytecode: &'bc [FnBlock<'bc>],
     alloc: RtAlloc,
@@ -37,7 +57,7 @@ pub fn execute<'bc>(
         blocks: bytecode,
         current: bytecode.first().ok_or("no bytecode found")?,
         current_block_index: 0,
-        stack_offset: 0,
+        stack_frame_offset: 0,
         pc: 0,
         stack: Vec::with_capacity(1024 << 5),
         _alloc: alloc,
@@ -80,25 +100,6 @@ util::assert_size!(Value <= 24);
 const TRUE: Value = Value::Bool(true);
 const FALSE: Value = Value::Bool(false);
 
-struct Vm<'bc, 'io> {
-    // -- global
-    blocks: &'bc [FnBlock<'bc>],
-    _alloc: RtAlloc,
-    stack: Vec<Value>,
-    stdout: &'io mut dyn Write,
-    step: bool,
-
-    // -- local to the current function
-    /// The current function
-    current: &'bc FnBlock<'bc>,
-    current_block_index: usize,
-    /// The offset of the first parameter of the current function
-    stack_offset: usize,
-    /// Index of the next instruction being executed. is out of bounds if the current
-    /// instruction is the last one
-    pc: usize,
-}
-
 impl<'bc> Vm<'bc, '_> {
     fn execute_function(&mut self) -> VmResult {
         loop {
@@ -109,6 +110,7 @@ impl<'bc> Vm<'bc, '_> {
                 None => return Ok(()),
             }
             if self.pc > 0 {
+                // this must respect stack frame stuff
                 // debug_assert_eq!(self.current.stack_sizes[self.pc - 1], self.stack.len());
             }
         }
@@ -123,9 +125,10 @@ impl<'bc> Vm<'bc, '_> {
             Instr::Nop => {}
             Instr::Store(index) => {
                 let val = self.stack.pop().unwrap();
-                self.stack[self.stack_offset + index] = val;
+                self.stack[self.stack_frame_offset + index] = val;
             }
-            Instr::Load(index) => self.stack.push(self.stack[self.stack_offset + index]),
+            // todo: no no no no no no this is wrong
+            Instr::Load(index) => self.stack.push(self.stack[self.stack_frame_offset + index]),
             Instr::PushVal(value) => self.stack.push(value),
             Instr::Neg => {
                 let val = self.stack.pop().unwrap();
@@ -239,21 +242,16 @@ impl<'bc> Vm<'bc, '_> {
     }
 
     fn call(&mut self) -> VmResult {
-        let old_offset = self.stack_offset;
-        let old_idx = self.current_block_index;
-        let function = self.stack.pop().unwrap();
-        let function = function.unwrap_function();
-        let fn_block = &self.blocks[function];
+        // save the function to be called
+        let to_be_called_fn = self.stack.pop().unwrap().unwrap_function();
+        let to_be_called_fn_block = &self.blocks[to_be_called_fn];
 
-        let new_stack_frame_start = self.stack.len();
-        self.stack_offset = new_stack_frame_start;
+        // create a new frame (the params are already pushed)
+        let new_stack_frame_start = Frame::create(self, to_be_called_fn_block.arity);
 
-        self.stack.push(Value::NativeU(old_offset));
-        self.stack.push(Value::NativeU(self.pc));
-        self.stack.push(Value::Function(old_idx));
-
-        self.current_block_index = function;
-        self.current = fn_block;
+        self.stack_frame_offset = new_stack_frame_start;
+        self.current_block_index = to_be_called_fn;
+        self.current = to_be_called_fn_block;
 
         self.pc = 0;
 
@@ -263,29 +261,27 @@ impl<'bc> Vm<'bc, '_> {
     }
 
     fn ret(&mut self) -> VmResult {
-        let current_arity: usize = self.current.arity.try_into().unwrap();
-
         // we save the return value first.
         let return_value = self.stack.pop().expect("return value");
 
-        let bookkeeping_offset = self.stack_offset + current_arity;
+        let frame = Frame::new(&self.stack[self.stack_frame_offset..], self.current.arity);
 
-        let inner_stack_offset = self.stack_offset;
+        let inner_stack_frame_start = self.stack_frame_offset;
 
         // now, we get all the bookkeeping info out
-        let old_stack_offset = self.stack[bookkeeping_offset].unwrap_native_int();
-        let old_pc = self.stack[bookkeeping_offset + 1].unwrap_native_int();
-        let old_function = self.stack[bookkeeping_offset + 2].unwrap_function();
+        let old_stack_offset = frame.old_stack_offset();
+        let old_pc = frame.old_pc();
+        let old_function = frame.old_fn_block();
 
         // get the interpreter back to the nice state
-        self.stack_offset = old_stack_offset;
+        self.stack_frame_offset = old_stack_offset;
         self.pc = old_pc;
         self.current_block_index = old_function;
         self.current = &self.blocks[old_function];
 
         // and kill the function stack frame
         // note: don't emit a return instruction from the whole global script.
-        unsafe { self.stack.set_len(inner_stack_offset) };
+        unsafe { self.stack.set_len(inner_stack_frame_start) };
 
         // everything that remains...
         self.stack.push(return_value);
@@ -308,26 +304,6 @@ Stack: {:?}",
 
         let mut buf = [0; 64];
         let _ = std::io::stdin().read(&mut buf);
-    }
-}
-
-impl Value {
-    /// Unwrap the Value into a `usize` expecting the `NativeU` variant
-    fn unwrap_native_int(&self) -> usize {
-        if let Value::NativeU(n) = self {
-            *n
-        } else {
-            unreachable!("expected native int, got {:?}", self);
-        }
-    }
-
-    /// Unwrap the Value into a `Function` expecting the `Function` variant
-    fn unwrap_function(&self) -> Function {
-        if let Value::Function(fun) = self {
-            *fun
-        } else {
-            unreachable!("expected function, got {:?}", self);
-        }
     }
 }
 
