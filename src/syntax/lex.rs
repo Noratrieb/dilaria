@@ -8,8 +8,7 @@ use std::{iter::Peekable, str::CharIndices};
 
 use crate::{
     errors::{CompilerError, Span},
-    gc::Symbol,
-    RtAlloc,
+    runtime::gc::{RtAlloc, Symbol},
 };
 
 ///

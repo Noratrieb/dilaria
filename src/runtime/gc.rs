@@ -12,7 +12,7 @@ use std::{
 
 use dbg_pls::DebugPls;
 
-use crate::{vm::Value, HashMap, HashSet};
+use crate::{runtime::vm::Value, HashMap, HashSet};
 
 /// A pointer to a garbage collected value. This pointer *must* always be valid, and a value
 /// is only allowed to be freed once no Gc is pointing at it anymore. This is achieved through

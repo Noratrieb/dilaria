@@ -62,7 +62,7 @@ use std::fmt::{Debug, Formatter};
 
 use bumpalo::collections::Vec;
 
-use crate::{errors::Span, vm::Value};
+use crate::{errors::Span, runtime::vm::Value};
 
 /// This struct contains all data for a function.
 pub struct FnBlock<'bc> {

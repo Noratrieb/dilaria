@@ -4,8 +4,10 @@ use std::{
 };
 
 use crate::{
-    bytecode::{FnBlock, Function, Instr},
-    gc::{Object, RtAlloc, Symbol},
+    runtime::{
+        bytecode::{FnBlock, Function, Instr},
+        gc::{Object, RtAlloc, Symbol},
+    },
     util, Config,
 };
 

@@ -5,15 +5,17 @@ use std::{cell::RefCell, rc::Rc};
 use bumpalo::{collections::Vec, Bump};
 
 use crate::{
-    bytecode::{FnBlock, Instr},
     errors::{CompilerError, Span},
-    gc::Symbol,
+    runtime::{
+        bytecode::{FnBlock, Instr},
+        gc::{RtAlloc, Symbol},
+        vm::Value,
+    },
     syntax::ast::{
         Assignment, BinaryOp, BinaryOpKind, Block, Call, CallKind, Declaration, ElsePart, Expr,
         FnDecl, Ident, IfStmt, Literal, Program, Stmt, UnaryOp, WhileStmt,
     },
-    vm::Value,
-    HashMap, RtAlloc,
+    HashMap,
 };
 
 type CResult<T = ()> = Result<T, CompilerError>;

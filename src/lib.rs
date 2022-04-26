@@ -1,12 +1,10 @@
 #![deny(clippy::disallowed_types)]
 
-mod bytecode;
 mod compile;
 mod errors;
-mod gc;
+mod runtime;
 mod syntax;
 mod util;
-mod vm;
 
 use std::io::Write;
 
@@ -14,7 +12,7 @@ pub use bumpalo::Bump;
 
 pub use crate::syntax::{lex::*, parse::*};
 use crate::{
-    gc::RtAlloc,
+    runtime::gc::RtAlloc,
     syntax::{ast::Program, lex, parse},
 };
 
@@ -72,7 +70,7 @@ fn process_ast(program: &str, ast: &Program, mut runtime: RtAlloc, cfg: &mut Con
                 util::dbg("Bytecode:\n", code);
             }
 
-            let result = vm::execute(code, runtime, cfg);
+            let result = runtime::vm::execute(code, runtime, cfg);
             if let Err(msg) = result {
                 eprintln!("error: {msg}");
             }
