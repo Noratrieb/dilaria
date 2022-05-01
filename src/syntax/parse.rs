@@ -609,6 +609,7 @@ where
         let mut elements = Vec::new_in(self.bump);
 
         if self.peek_kind() == Some(&close) {
+            exit_parse!(self);
             return Ok(elements.into_bump_slice());
         }
 
