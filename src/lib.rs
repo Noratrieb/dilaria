@@ -36,6 +36,7 @@ type HashSet<T> = rustc_hash::FxHashSet<T>;
 pub struct Config<'io> {
     pub debug: bool,
     pub step: bool,
+    pub parse_only: bool,
     pub stdout: &'io mut dyn Write,
 }
 
@@ -53,7 +54,12 @@ pub fn run_program(program: &str, cfg: &mut Config) {
     let ast = parse::parse(lexer, &ast_alloc);
 
     match ast {
-        Ok(ast) => process_ast(program, &ast, runtime, cfg),
+        Ok(ast) => {
+            if cfg.parse_only {
+                return;
+            }
+            process_ast(program, &ast, runtime, cfg)
+        }
         Err(err) => errors::display_error(program, err),
     }
 }

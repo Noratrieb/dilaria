@@ -89,28 +89,28 @@ enum HeapObjectKind {
 
 #[derive(Debug)]
 pub struct RtAlloc {
-    symbols: HashSet<NonNullStrWrapper>,
+    symbols: HashSet<NonNullStrStructuralEq>,
     objects: LinkedList<HeapObject>,
 }
 
 #[derive(Debug)]
-struct NonNullStrWrapper(NonNull<str>);
+struct NonNullStrStructuralEq(NonNull<str>);
 
-impl Hash for NonNullStrWrapper {
+impl Hash for NonNullStrStructuralEq {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // SAFETY: Assume the ptr is valid, same rules as `Gc<T>`
         unsafe { self.0.as_ref().hash(state) }
     }
 }
 
-impl PartialEq for NonNullStrWrapper {
+impl PartialEq for NonNullStrStructuralEq {
     fn eq(&self, other: &Self) -> bool {
         // SAFETY: Assume the ptr is valid, same rules as `Gc<T>`
         unsafe { self.0.as_ref().eq(other.0.as_ref()) }
     }
 }
 
-impl Eq for NonNullStrWrapper {}
+impl Eq for NonNullStrStructuralEq {}
 
 impl RtAlloc {
     /// # Safety
@@ -153,11 +153,11 @@ impl RtAlloc {
     pub fn intern_string(&mut self, str: &str) -> Symbol {
         let original_nonnull = NonNull::from(str);
 
-        if let Some(interned) = self.symbols.get(&NonNullStrWrapper(original_nonnull)) {
+        if let Some(interned) = self.symbols.get(&NonNullStrStructuralEq(original_nonnull)) {
             Symbol::new(Gc { ptr: interned.0 })
         } else {
             let allocated = self.alloc_str(str);
-            self.symbols.insert(NonNullStrWrapper(allocated.ptr));
+            self.symbols.insert(NonNullStrStructuralEq(allocated.ptr));
             Symbol::new(allocated)
         }
     }

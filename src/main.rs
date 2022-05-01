@@ -11,6 +11,7 @@ fn main() {
         let mut cfg = Config {
             debug: false,
             step: false,
+            parse_only: false,
             stdout: &mut stdout,
         };
 
@@ -18,6 +19,7 @@ fn main() {
             match &*arg {
                 "--debug" => cfg.debug = true,
                 "--step" => cfg.step = true,
+                "--parse-only" => cfg.parse_only = true,
                 _ => {}
             }
         }
