@@ -1,0 +1,2456 @@
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);
+
+fn main() {
+    cool_stuff(get_a(), get_b());
+    uwu();
+}
+
+fn cool_stuff(a, b) {
+    return (
+        a + b / a.b * b.hello().world
+    );
+}
+
+fn uwu() {
+    let a = 5;
+    let b = 5;
+    let c = 6;
+    let d = 6;
+
+    let x = a + c - b + d / d;
+    print x;
+
+    let y = {};
+    y.a = a;
+    y.b = b;
+    y.c = c;
+
+    fn to_string(y) {
+        let string = "";
+        let string = string + y;
+        return y;
+    }
+
+    y.to_string = to_string;
+
+    more_magic();
+
+    owo();
+}
+
+fn owo() {
+    turn_left();
+    turn_right();
+    turn_center();
+
+    let d = direction();
+
+    if d < 0 {
+        turn_right();
+    } else if d == 0 {
+        turn_center();
+    } else {
+        turn_left();
+    }
+
+    really_long_function_name_wow_its_so_long();
+}
+
+fn really_long_function_name_wow_its_so_long() {
+    let code = "fn main() {}";
+    fs.write("main.rs", code);
+    command.spawn("rustc main.rs");
+    let program = fs.read("main");
+    let output = command.exec("main");
+
+    if output == "" {
+        print "correct";
+    }
+}
+
+##
+    comment
+     yeah a comment
+##
+
+let x = 5;
+
+frobnify(x);

@@ -19,4 +19,9 @@ _debug = ["dbg-pls"]
 default = ["_debug", "fxhash"]
 
 [dev-dependencies]
+criterion = "0.3.5"
 insta = "1.9.0"
+
+[[bench]]
+name = "parser"
+harness = false

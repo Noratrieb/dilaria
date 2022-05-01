@@ -6,7 +6,7 @@
 use bumpalo::Bump;
 use prelude::*;
 
-use crate::{errors::Span, parse::Parser, RtAlloc};
+use crate::{errors::Span, parse::Parser, Lexer, RtAlloc};
 
 mod prelude {
     pub(super) use super::{parser, rt, test_literal_bin_op, test_number_literal, token};
@@ -31,7 +31,7 @@ fn rt() -> RtAlloc {
     unsafe { RtAlloc::new() }
 }
 
-fn parser(tokens: std::vec::Vec<Token>, alloc: &Bump) -> Parser<std::vec::IntoIter<Token>>
+fn parser(tokens: Vec<Token>, alloc: &Bump) -> Parser<std::vec::IntoIter<Token>>
 where {
     Parser {
         tokens: tokens.into_iter().peekable(),
@@ -798,4 +798,14 @@ mod primary {
         let expr = parser.primary();
         assert!(expr.is_err());
     }
+}
+
+#[test]
+fn benchfile_parses() {
+    let code = include_str!("../../../benches/benchfile.dil");
+    let mut rt_alloc = unsafe { RtAlloc::new() };
+    let alloc = Bump::new();
+    let lexer = Lexer::new(code, &mut rt_alloc);
+    let program = super::parse(lexer, &alloc);
+    insta::assert_debug_snapshot!(program);
 }

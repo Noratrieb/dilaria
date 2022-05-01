@@ -10,10 +10,13 @@ use std::io::Write;
 
 pub use bumpalo::Bump;
 
-pub use crate::syntax::{lex::*, parse::*};
 use crate::{
-    runtime::gc::RtAlloc,
+    errors::CompilerError,
     syntax::{ast::Program, lex, parse},
+};
+pub use crate::{
+    runtime::gc::RtAlloc,
+    syntax::{lex::*, parse::*},
 };
 
 #[cfg(not(feature = "fxhash"))]
@@ -46,7 +49,7 @@ pub fn run_program(program: &str, cfg: &mut Config) {
     // SAFETY: I will try to 🥺
     let mut runtime = unsafe { RtAlloc::new() };
 
-    let lexer = lex::Lexer::new(program, &mut runtime);
+    let lexer = Lexer::new(program, &mut runtime);
     let ast = parse::parse(lexer, &ast_alloc);
 
     match ast {
@@ -112,4 +115,14 @@ pub fn _fuzz_lex(program: &str) {
     let mut runtime = unsafe { RtAlloc::new() };
     let lexer = lex::Lexer::new(program, &mut runtime);
     for _token in lexer {}
+}
+
+#[doc(hidden)]
+pub fn _parse<'ast>(
+    program: &str,
+    alloc: &'ast Bump,
+    rt_alloc: &mut RtAlloc,
+) -> Result<Program<'ast>, CompilerError> {
+    let lex = Lexer::new(program, rt_alloc);
+    parse(lex, alloc)
 }
