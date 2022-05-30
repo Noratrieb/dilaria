@@ -55,6 +55,18 @@ fancy_print("correct");
 );
 
 run_test!(
+    return_value,
+    r#"
+fn get_value() {
+    return 1;
+}
+
+let x = get_value();
+print x;
+"#
+);
+
+run_test!(
     #[ignore]
     parameters_and_return,
     r#"

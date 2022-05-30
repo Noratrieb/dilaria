@@ -1,0 +1,5 @@
+---
+source: tests/functions.rs
+expression: output
+---
+"1\n"

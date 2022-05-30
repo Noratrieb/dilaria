@@ -4,3 +4,9 @@ fn test() {
 
 test();
 test();
+
+let i = 0;
+while i < 100_000 {
+	test();
+	i = i + 1;
+}

@@ -17,6 +17,7 @@ pub fn _run_test(code: &str) -> String {
         debug: false,
         step: false,
         stdout: &mut stdout,
+        parse_only: false,
     };
 
     dilaria::run_program(code, &mut cfg);
