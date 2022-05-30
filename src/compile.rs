@@ -109,6 +109,7 @@ pub fn compile<'ast, 'bc, 'gc>(
 impl<'bc, 'gc> Compiler<'bc, 'gc> {
     fn compile(&mut self, ast: &Program) -> CResult {
         let global_block = FnBlock {
+            name: self.rt.intern_string("<main>"),
             code: Vec::new_in(self.bump),
             stack_sizes: Vec::new_in(self.bump),
             spans: Vec::new_in(self.bump),
@@ -188,6 +189,7 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
 
     fn compile_fn_decl(&mut self, decl: &FnDecl) -> CResult {
         let block = FnBlock {
+            name: decl.name.sym,
             code: Vec::new_in(self.bump),
             stack_sizes: Vec::new_in(self.bump),
             spans: Vec::new_in(self.bump),
@@ -480,7 +482,14 @@ impl<'bc, 'gc> Compiler<'bc, 'gc> {
         }
 
         self.push_instr(Instr::Load(offset), StackChange::Grow, call.span);
-        self.push_instr(Instr::Call, StackChange::None, call.span);
+        // The callee gets rid of the params. We also pushed the load for the function above,
+        // but the callee also leaves behind a return value.
+        let expected_stack_shrink = params.len();
+        self.push_instr(
+            Instr::Call,
+            StackChange::ShrinkN(expected_stack_shrink),
+            call.span,
+        );
 
         Ok(())
     }

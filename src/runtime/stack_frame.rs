@@ -58,7 +58,7 @@ impl<'s> Frame<'s> {
         vm_state.stack.push(Value::NativeU(old_pc));
         vm_state.stack.push(Value::Function(old_fn_block));
 
-        let frame_slice = &vm_state.stack[new_frame_offset..];
+        // let frame_slice = &vm_state.stack[new_frame_offset..];
 
         new_frame_offset
     }

@@ -1,12 +1,15 @@
-fn test() {
-    let a = 5;
+fn cooler_add(a, b) {
+    return a + b;
 }
 
-test();
-test();
+fn add(a, b) {
+    return cooler_add(a, b);
+}
 
-let i = 0;
-while i < 100_000 {
-	test();
-	i = i + 1;
+let added = add(1, 5);
+
+if added == 6 {
+    print "correct";
+} else {
+    print "FAILED";
 }

@@ -29,10 +29,14 @@ use std::fmt::{Debug, Formatter};
 
 use bumpalo::collections::Vec;
 
-use crate::{errors::Span, runtime::vm::Value};
+use crate::{
+    errors::Span,
+    runtime::{gc::Symbol, vm::Value},
+};
 
 /// This struct contains all data for a function.
 pub struct FnBlock<'bc> {
+    pub name: Symbol,
     /// The bytecode of the function
     pub code: Vec<'bc, Instr>,
     /// The sizes of the stack required by the function after the instruction at the same index.
@@ -111,6 +115,7 @@ pub enum Instr {
 impl dbg_pls::DebugPls for FnBlock<'_> {
     fn fmt(&self, f: dbg_pls::Formatter<'_>) {
         f.debug_struct("FnBlock")
+            .field("name", &self.name)
             .field("arity", &self.arity)
             .field("code", &self.code.as_slice())
             .field("stack_sizes", &self.stack_sizes.as_slice())

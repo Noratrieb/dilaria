@@ -43,7 +43,6 @@ print "correct3";
 );
 
 run_test!(
-    #[ignore]
     parameters,
     r#"
 fn fancy_print(str) {
@@ -67,11 +66,32 @@ print x;
 );
 
 run_test!(
-    #[ignore]
     parameters_and_return,
     r#"
 fn add(a, b) {
     return a + b;
+}
+
+let added = add(1, 5);
+
+if added == 6 {
+    print "correct";
+} else {
+    print "FAILED";
+}
+"#
+);
+
+run_test!(
+    #[ignore]
+    nested_calls,
+    r#"
+fn cooler_add(a, b) {
+    return a + b;
+}
+
+fn add(a, b) {
+    return cooler_add(a, b);
 }
 
 let added = add(1, 5);
